@@ -2971,6 +2971,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-executive",
  "frame-metadata-hash-extension",
+ "frame-suite",
  "frame-support",
  "frame-system",
  "frame-system-benchmarking",
@@ -2983,6 +2984,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-xp",
  "parity-scale-codec",
  "scale-info",
  "serde_json",
@@ -6108,6 +6110,24 @@ dependencies = [
  "sp-api",
  "sp-runtime",
  "sp-weights",
+]
+
+[[package]]
+name = "pallet-xp"
+version = "0.1.1"
+dependencies = [
+ "derive_more 0.99.20",
+ "frame-benchmarking",
+ "frame-suite",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

@@ -221,4 +221,7 @@ mod runtime {
 
 	#[runtime::pallet_index(6)]
 	pub type Sudo = pallet_sudo;
+
+    #[runtime::pallet_index(7)]
+    pub type Xp = pallet_xp;
 }

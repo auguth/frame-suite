@@ -10,6 +10,7 @@ members = [
     "node",
     "runtime",
 	"frame/suite",
+    "pallets/xp",
 ]
 resolver = "2"
 
@@ -54,7 +55,8 @@ zero-prefixed-literal = { level = "allow", priority = 2 }            # 00_1000_0
 [workspace.dependencies]
 # --- Local Crates ---
 frame-suite-runtime = { path = "./runtime", default-features = false }
-frame-suite = { path = "./frame/suite", version = "0.1.0", default-features = false }
+frame-suite = { path = "./frame/suite", version = "0.1.1", default-features = false }
+pallet-xp = { path = "./pallets/xp", version = "0.1.1", default-features = false }
 
 
 # --- Substrate/Polkadot Core ---

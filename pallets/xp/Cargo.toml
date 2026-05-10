@@ -1,0 +1,55 @@
+[package]
+name = "pallet-xp"
+version = "0.1.1"
+description = "A reputation-driven XP system for tracking contribution, consistency, and participation in non-trusted runtime environments"
+readme = "README.md"
+keywords = ["substrate", "frame", "polkadot", "fungible", "non-fungible"]
+documentation = "https://auguth.github.io/frame-suite/rust-doc/pallet_xp/index.html"
+
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+
+[dependencies]
+frame-support.workspace = true
+frame-system.workspace = true
+frame-suite.workspace = true
+frame-benchmarking = { workspace = true, default-features = false, optional = true }
+sp-std.workspace = true
+codec.workspace = true
+sp-runtime.workspace = true
+scale-info.workspace = true
+sp-core.workspace = true
+serde.workspace = true
+derive_more.workspace = true
+
+[dev-dependencies]
+sp-io.workspace = true
+
+[features]
+default = ["std"]
+std = [
+    "frame-benchmarking?/std",
+    "frame-support/std",
+    "frame-system/std",
+    "frame-suite/std",
+    "sp-io/std",
+    "sp-std/std",
+    "sp-runtime/std",
+]
+
+dev = []
+
+runtime-benchmarks = [
+    "frame-benchmarking/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "frame-system/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+]
+
+try-runtime = ["frame-support/try-runtime", "frame-system/try-runtime"]
+
+[lints]
+workspace = true
