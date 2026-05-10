@@ -1,0 +1,57 @@
+[package]
+name = "pallet-authors"
+version = "0.1.1"
+description = "An economically secured role system for managing authors (validators) with collateral, staking, elections, and lifecycle primitives"
+readme = "README.md"
+keywords = ["substrate", "frame", "pallet", "validators", "staking"]
+documentation = "https://auguth.github.io/frame-suite/rust-doc/pallet_authors/index.html"
+
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+
+[dependencies]
+codec.workspace = true
+frame-benchmarking = { workspace = true, default-features = false, optional = true }
+frame-plugins.workspace = true
+frame-suite.workspace = true
+serde.workspace = true
+frame-support.workspace = true
+frame-system.workspace = true
+sp-core.workspace = true
+sp-std.workspace = true
+sp-runtime.workspace = true
+scale-info.workspace = true
+derive_more.workspace = true
+
+
+[features]
+default = ["std"]
+std = [
+    "frame-benchmarking?/std",
+    "frame-plugins/std",
+    "frame-support/std",
+    "frame-suite/std",
+    "frame-system/std",
+    "sp-core/std",
+    "sp-std/std",
+    "sp-runtime/std",
+]
+
+dev = []
+
+runtime-benchmarks = [
+    "frame-benchmarking/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "frame-system/runtime-benchmarks",
+]
+
+try-runtime = [
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+]
+
+[lints]
+workspace = true

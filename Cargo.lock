@@ -3000,6 +3000,7 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "pallet-aura",
+ "pallet-authors",
  "pallet-balances",
  "pallet-commitment",
  "pallet-grandpa",
@@ -5974,6 +5975,24 @@ dependencies = [
  "sp-application-crypto",
  "sp-consensus-aura",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-authors"
+version = "0.1.1"
+dependencies = [
+ "derive_more 0.99.20",
+ "frame-benchmarking",
+ "frame-plugins",
+ "frame-suite",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

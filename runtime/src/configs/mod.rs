@@ -44,14 +44,20 @@ use frame_suite::{
     plugin_context, Disposition, Ignore
 };
 use frame_plugins::{
+	elections::{TopDownFairModel, TopDownFlatModel},
+	influence::LinearModel,
     balances::{ShareBalanceFamily, ShareBalanceContext},
 };
+
+// temp
+use codec::{Encode, Decode};
+use frame_support::pallet_prelude::{TypeInfo, MaxEncodedLen, DecodeWithMemTracking, DispatchError};
 
 // Local module imports
 use super::{
 	AccountId, Aura, Balance, Balances, Block, BlockNumber, Hash, Nonce, PalletInfo, Runtime,
 	RuntimeCall, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask,
-	System, EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION, Xp, Commitment
+	System, EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION, Xp, Commitment, Authors
 };
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -214,3 +220,49 @@ macro_rules! const_assert_size_eq {
 
 // Usage (inside runtime):
 const_assert_size_eq!(AccountId, Hash);
+
+impl pallet_authors::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CommitmentAdapter = pallet_commitment::Pallet<Self>;
+    type AssetFreeze = RuntimeFreezeReason;
+    type Asset = pallet_xp::Pallet<Self>;
+    type Influence = Balance;
+    type InfluenceContext = ();
+    type InfluenceModel = LinearModel;
+    type FlatElectionContext = ();
+    type FlatElectionModel = TopDownFlatModel;
+    type FairElectionContext = ();
+    type FairElectionModel = TopDownFairModel;
+	type WeightInfo = ();
+    type ActivityProvider = NoActivity;
+    type EmitEvents = ConstBool<true>;
+}
+
+
+// Temporary impl
+
+#[derive(
+    Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq,
+    MaxEncodedLen, TypeInfo, Debug,
+)]
+pub enum NeverActive {}
+
+impl From<NeverActive> for DispatchError {
+    fn from(x: NeverActive) -> DispatchError {
+        match x {}  
+    }
+}
+
+impl frame_support::traits::VariantCount for NeverActive {
+    const VARIANT_COUNT: u32 = 0;
+}
+
+pub struct NoActivity;
+
+impl frame_suite::RoleActivity<AccountId, BlockNumber> for NoActivity {
+    type Activity = NeverActive;
+
+    fn is_idle(_who: &AccountId) -> Result<(), Self::Activity> {
+        Ok(())
+    }
+}

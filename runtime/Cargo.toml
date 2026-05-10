@@ -14,7 +14,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 codec = { features = ["derive"], workspace = true }
-frame-benchmarking = { optional = true, workspace = true }
+frame-benchmarking.workspace = true 
 frame-executive.workspace = true
 frame-metadata-hash-extension.workspace = true
 frame-plugins.workspace = true
@@ -25,6 +25,7 @@ frame-system-rpc-runtime-api.workspace = true
 frame-system.workspace = true
 frame-try-runtime = { optional = true, workspace = true }
 pallet-aura.workspace = true
+pallet-authors.workspace = true
 pallet-balances.workspace = true
 pallet-commitment.workspace = true
 pallet-grandpa.workspace = true
@@ -57,7 +58,7 @@ substrate-wasm-builder = { optional = true, workspace = true, default-features =
 default = ["std"]
 std = [
 	"codec/std",
-	"frame-benchmarking?/std",
+	"frame-benchmarking/std",
 	"frame-executive/std",
 	"frame-metadata-hash-extension/std",
 	"frame-plugins/std",
@@ -68,6 +69,7 @@ std = [
 	"frame-system/std",
 	"frame-try-runtime?/std",
 	"pallet-aura/std",
+	"pallet-authors/std",
 	"pallet-balances/std",
 	"pallet-commitment/std",
 	"pallet-grandpa/std",

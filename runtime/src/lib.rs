@@ -227,4 +227,7 @@ mod runtime {
 
     #[runtime::pallet_index(8)]
     pub type Commitment = pallet_commitment;
+
+    #[runtime::pallet_index(9)]
+    pub type Authors = pallet_authors;
 }
