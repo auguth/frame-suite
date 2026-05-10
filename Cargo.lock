@@ -2904,6 +2904,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "frame-plugins"
+version = "0.1.1"
+dependencies = [
+ "frame-suite",
+ "frame-support",
+ "frame-system",
+ "log",
+ "once_cell",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "rand 0.8.5",
+ "scale-info",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "frame-suite"
 version = "0.1.1"
 dependencies = [

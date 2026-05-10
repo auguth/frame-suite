@@ -10,6 +10,7 @@ members = [
     "node",
     "runtime",
 	"frame/suite",
+    "frame/plugins",
     "pallets/xp",
 ]
 resolver = "2"
@@ -56,6 +57,7 @@ zero-prefixed-literal = { level = "allow", priority = 2 }            # 00_1000_0
 # --- Local Crates ---
 frame-suite-runtime = { path = "./runtime", default-features = false }
 frame-suite = { path = "./frame/suite", version = "0.1.1", default-features = false }
+frame-plugins = { path = "./frame/plugins", version = "0.1.1", default-features = false }
 pallet-xp = { path = "./pallets/xp", version = "0.1.1", default-features = false }
 
 
