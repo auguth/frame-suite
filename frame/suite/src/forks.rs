@@ -1892,3 +1892,1433 @@ fn block_key(tag: &[u8], hash: impl Encode) -> [u8; 32] {
     let identity = hash.encode();
     make_hash(tag, &identity, b"block")
 }
+
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+        
+    // -------------------------------------------------------------------------
+    // ```````````````````````````````` IMPORTS ````````````````````````````````
+    // -------------------------------------------------------------------------
+    use super::*;
+
+    // --- FRAME Support ---
+    use frame_support::derive_impl;
+
+    // --- FRAME System --- 
+    use frame_system::pallet_prelude::BlockNumberFor;
+
+    // --- Substrate crates ---
+    use sp_core::offchain::{
+        testing::{TestOffchainExt, TestTransactionPoolExt},
+        OffchainDbExt, OffchainWorkerExt, TransactionPoolExt,
+    };
+    use sp_io::TestExternalities;
+    use sp_runtime::{
+        offchain::storage::StorageValueRef,
+        traits::{BlakeTwo256, Hash},
+        AccountId32, BuildStorage, DispatchError,
+    };
+
+    // -------------------------------------------------------------------------
+    // `````````````````````````````` MOCK RUNTIME `````````````````````````````
+    // -------------------------------------------------------------------------
+
+    pub type Block = frame_system::mocking::MockBlock<Test>;
+
+    #[frame_support::runtime]
+    pub mod runtime {
+        #[runtime::runtime]
+        #[runtime::derive(
+            RuntimeCall,
+            RuntimeEvent,
+            RuntimeError,
+            RuntimeOrigin,
+            RuntimeFreezeReason,
+            RuntimeHoldReason,
+            RuntimeSlashReason,
+            RuntimeLockId,
+            RuntimeTask,
+            RuntimeViewFunction
+        )]
+        pub struct Test;
+
+        #[runtime::pallet_index(0)]
+        pub type System = frame_system::Pallet<Test>;
+    }
+
+    #[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
+    impl frame_system::Config for Test {
+        type Block = Block;
+        type AccountId = AccountId32;
+        type Lookup = sp_runtime::traits::IdentityLookup<Self::AccountId>;
+    }
+
+    // -------------------------------------------------------------------------
+    // `````````````````````````` OCW TEST ENVIRONMENT `````````````````````````
+    // -------------------------------------------------------------------------
+
+    fn new_ocw_ext() -> TestExternalities {
+        let storage = frame_system::GenesisConfig::<Test>::default()
+            .build_storage()
+            .unwrap();
+
+        let mut ext = TestExternalities::new(storage);
+        ext.execute_with(|| System::set_block_number(1u64));
+
+        let (offchain, _state) = TestOffchainExt::new();
+        ext.register_extension(OffchainWorkerExt::new(offchain.clone()));
+        ext.register_extension(OffchainDbExt::new(offchain));
+
+        let (pool, _) = TestTransactionPoolExt::new();
+        ext.register_extension(TransactionPoolExt::new(pool));
+
+        ext
+    }
+
+    // -------------------------------------------------------------------------
+    // `````````````````````````` MOCK IMPL FORKSCOPES `````````````````````````
+    // -------------------------------------------------------------------------
+
+    // A minimal scope implementation that actually tracks local and inherited
+    // keys
+    #[derive(Clone, Debug, Default, Encode, Decode)]
+    struct TestScope {
+        local: std::collections::BTreeSet<[u8; 32]>,
+        inherited: std::collections::BTreeSet<[u8; 32]>,
+    }
+
+    impl Accrete for TestScope {
+        type Item = Vec<u8>;
+
+        fn accrete(&self) -> Self {
+            let mut inh = self.inherited.clone();
+            inh.extend(self.local.iter().copied());
+            Self { local: std::collections::BTreeSet::new(), inherited: inh }
+        }
+
+        fn inherited(&self) -> Vec<[u8; 32]> { self.inherited.iter().copied().collect() }
+        fn local(&self) -> Vec<[u8; 32]>     { self.local.iter().copied().collect() }
+
+        fn add_to_local(&mut self, item: Self::Item) -> [u8; 32] {
+            let key = Self::make_key(&item);
+            self.local.insert(key);
+            key
+        }
+
+        fn exists_in_local(&self, key: &[u8; 32]) -> bool { self.local.contains(key) }
+        fn exists_in_inherited(&self, key: &[u8; 32]) -> bool { self.inherited.contains(key) }
+        fn remove_from_local(&mut self, key: &[u8; 32]) { self.local.remove(key); }
+        fn remove_from_inherited(&mut self, key: &[u8; 32]) { self.inherited.remove(key); }
+    }
+
+    // -------------------------------------------------------------------------
+    // ```````````````````````````````` CONSTANTS ``````````````````````````````
+    // -------------------------------------------------------------------------
+
+    const TAG: &[u8] = b"test_forks";
+
+    // -------------------------------------------------------------------------
+    // ```````````````````````` MOCK IMPL FORKS-HANDLER ````````````````````````
+    // -------------------------------------------------------------------------
+
+    struct TestForks;
+
+    impl ForksHandler<Test, TestScope> for TestForks {
+        const TAG: &[u8] = b"test_forks";
+        const MAX_FORKS: u32 = 3;
+        const MAX_RECOVER_TRAVERSAL: u32 = 10;
+
+        fn max_forks_error() -> DispatchError {
+            DispatchError::Other("max_forks_exceeded")
+        }
+
+        fn forks_not_enabled() -> DispatchError {
+            DispatchError::Other("forks-not-enabled")
+        }
+        
+        fn inconsistent_forks() -> DispatchError {
+            DispatchError::Other("inconsistent-forks")
+        }
+    }
+ 
+    // -------------------------------------------------------------------------
+    // ```````````````````````````````` HELPERS ````````````````````````````````
+    // -------------------------------------------------------------------------
+
+    /// Returns a deterministic non-zero mock hash for block `n`.
+    fn mock_hash(n: u64) -> <Test as frame_system::Config>::Hash {
+        BlakeTwo256::hash(&n.to_le_bytes())
+    }
+
+    /// Populates frame_system::BlockHash for blocks `start..=end`.
+    fn register_block_hashes(start: u64, end: u64) {
+        for n in start..=end {
+            frame_system::BlockHash::<Test>::insert(n, mock_hash(n));
+        }
+    }
+
+    /// Sets system block number.
+    fn set_block(n: u64) { System::set_block_number(n) }
+
+    /// Reads HEAD from offchain storage.
+    fn read_head() -> Option<BlockNumberFor<Test>> {
+        load_value::<BlockNumberFor<Test>>(&[TAG, HEAD_BLOCK].concat())
+    }
+
+    /// Resolves a branch via the full routing chain for block `n`:
+    /// block_hash(n) -> block_key -> divider -> branch_key -> Branch
+    fn resolve_branch(n: u64) -> Option<Branch<Test, TestScope>> {
+        TestForks::get_block_branch(mock_hash(n))
+    }
+ 
+    /// Reads a branch directly by genesis + counter.
+    fn branch_by_lineage(
+        genesis: [u8; 32],
+        counter: &[u32],
+    ) -> Option<Branch<Test, TestScope>> {
+        load_value::<Branch<Test, TestScope>>(&branch_key(TAG, genesis, counter))
+    }
+
+    /// Returns the genesis that the None recovery path derives when
+    /// grand_parent = block_hash(gp_block).
+    fn recovery_genesis(gp_block: u64) -> [u8; 32] {
+        mock_hash(gp_block).encode().using_encoded(blake2_256)
+    }
+
+    // -------------------------------------------------------------------------
+    // ````````````````````` TS 1 - KEY BUILDER DETERMINISM ````````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: block_key is deterministic, TAG-namespaced, and distinct
+    /// across different block hashes.
+    ///
+    /// Scenario: two block hashes, two TAGs.
+    #[test]
+    fn key_builders_block_key_is_deterministic_and_tag_namespaced() {
+        let h1 = mock_hash(1);
+        let h2 = mock_hash(2);
+        let tag_a = b"pallet_a".as_ref();
+        let tag_b = b"pallet_b".as_ref();
+ 
+        // Deterministic.
+        assert_eq!(block_key(tag_a, h1), block_key(tag_a, h1));
+ 
+        // Different TAG -> different key.
+        assert_ne!(block_key(tag_a, h1), block_key(tag_b, h1));
+ 
+        // Different hash -> different key.
+        assert_ne!(block_key(tag_a, h1), block_key(tag_a, h2));
+    }
+ 
+    /// Behavior: divider_key differentiates sibling branches from the same
+    /// parent, which is what prevents them from overwriting each other.
+    ///
+    /// Scenario: one parent hash, two different branch keys (siblings).
+    #[test]
+    fn key_builders_divider_key_differentiates_siblings_from_same_parent() {
+        let tag = TAG;
+        let parent = mock_hash(5);
+        let branch_a = [0xAAu8; 32];
+        let branch_b = [0xBBu8; 32];
+ 
+        let d_a = divider_key(tag, parent, branch_a);
+        let d_b = divider_key(tag, parent, branch_b);
+ 
+        // Two siblings with the same parent must produce distinct divider keys.
+        assert_ne!(d_a, d_b);
+ 
+        // Deterministic
+        assert_eq!(d_a, divider_key(tag, parent, branch_a));
+    }
+
+    /// Behavior: branch_key encodes the full counter lineage, so branches at
+    /// different paths are always stored at distinct keys.
+    ///
+    /// Scenario: root [], first fork [0], second fork [1], nested fork [0,0],
+    /// and same counter under a different genesis.
+    #[test]
+    fn key_builders_branch_key_encodes_full_counter_lineage() {
+        let tag = TAG;
+        let genesis = recovery_genesis(0);
+ 
+        let k_root = branch_key(tag, genesis, &[]);
+        let k_fork0 = branch_key(tag, genesis, &[0]);
+        let k_fork1 = branch_key(tag, genesis, &[1]);
+        let k_nested = branch_key(tag, genesis, &[0, 0]);
+ 
+        assert_ne!(k_root, k_fork0);
+        assert_ne!(k_fork0, k_fork1);
+        assert_ne!(k_fork0, k_nested);
+ 
+        // Deterministic
+        assert_eq!(k_fork0, branch_key(tag, genesis, &[0]));
+ 
+        // Different genesis -> different key even with same counter.
+        let genesis2 = recovery_genesis(1);
+        assert_ne!(branch_key(tag, genesis, &[0]), branch_key(tag, genesis2, &[0]));
+    }
+
+    // -------------------------------------------------------------------------
+    // ````````````````````````` TS 2 - BOOTSTRAP GUARD ````````````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: start() returns immediately at block 0 - saturating sub
+    /// collapses parent and grandparent to the same value.
+    ///
+    /// Scenario: N=0, actual_parent(0) == actual_grandparent(0).
+    #[test]
+    fn bootstrap_guard_skips_block_zero() {
+        new_ocw_ext().execute_with(|| {
+            set_block(0);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+            assert!(!ran, "ocw must not run at block 0");
+            assert!(read_head().is_none());
+        });
+    }
+
+    /// Behavior: start() returns immediately at block 1.
+    ///
+    /// Scenario: N=1, actual_parent(0) == actual_grandparent(0).
+    #[test]
+    fn bootstrap_guard_skips_block_one() {
+        new_ocw_ext().execute_with(|| {
+            set_block(1);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+            assert!(!ran, "ocw must not run at block 1");
+            assert!(read_head().is_none());
+        });
+    }
+
+    /// Behavior: block 2 is the exact lower boundary where start() proceeds.
+    ///
+    /// Scenario: guard fires at N=1, passes at N=2.
+    /// since, actual_parent(1) != actual_grandparent(0)
+    #[test]
+    fn bootstrap_guard_exact_boundary_block_two_passes() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 2);
+
+            set_block(1);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+            assert!(!ran, "block 1 must be skipped by the bootstrap guard");
+
+            set_block(2);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+            assert!(ran, "block 2 must pass the bootstrap guard and call ocw");
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ``````````````````` TS 3 - FRESH GRAPH INITIALISATION ```````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: the first start() call creates a root branch and establishes
+    /// the full routing invariant for the resolved block.
+    ///
+    /// Scenario:
+    /// (no prior graph)
+    ///
+    /// After start(N=2) - resolves block 1:
+    /// root branch  counter=[]  head=1  parent=None
+    /// HEAD = 1
+    ///
+    /// Routing: block_hash(1) -> block_key -> divider -> branch
+    ///
+    /// Note: block_hash(0) also has routing because recovery stores it as
+    /// the synthetic root anchor for block 1's parent. Both point to the
+    /// same branch payload, which has head=1 after the longest-chain mutate.
+    #[test]
+    fn fresh_graph_initialisation_at_block_two() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 2);
+
+            set_block(2);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+            assert!(ran, "ocw must run after fresh graph initialisation");
+
+            // HEAD = N-1 = 1.
+            assert_eq!(read_head(), Some(1));
+
+            let root = resolve_branch(1)
+                .expect("block 1 routing must resolve");
+ 
+            assert!(root.parent.is_none());
+            assert!(root.counter.is_empty());
+            assert_eq!(root.head, 1);
+
+            // block 0 routes to the same branch as block 1 (synthetic root anchor).
+            let b0 = resolve_branch(0)
+                .expect("block 0 routing exists as the synthetic root anchor");
+            assert_eq!(b0.genesis, root.genesis);
+            assert_eq!(b0.head, 1);
+ 
+            // No sibling must exist
+            assert!(
+                branch_by_lineage(root.genesis, &[0]).is_none(),
+                "no sibling branch may exist after fresh init"
+            );
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // `````````````````````` TS 4 - SEQUENTIAL EXTENSION ``````````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: successive start() calls on the same lineage extend the root
+    /// branch head in-place without creating new branches.
+    ///
+    /// Scenario:
+    /// A(0) -> B(1) -> C(2) -> D(3)  => single root branch throughout
+    ///
+    /// After start(N=3): root.head=2, HEAD=2
+    /// After start(N=4): root.head=3, HEAD=3
+    #[test]
+    fn sequential_extension_advances_root_branch_head() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+
+            set_block(2);
+            TestForks::start(None, None, || {});
+
+            set_block(3);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+
+            assert!(ran, "ocw must run at block 3");
+            assert_eq!(read_head(), Some(2));
+
+            let b2 = resolve_branch(2).expect("block 2 routing must resolve");
+            assert_eq!(b2.head, 2);
+            assert!(b2.counter.is_empty());
+ 
+            // Earlier routing for block 1 must survive and share genesis.
+            let b1 = resolve_branch(1).expect("block 1 routing must still resolve");
+            assert_eq!(b1.genesis, b2.genesis);
+ 
+            // No sibling must exist.
+            assert!(
+                branch_by_lineage(b2.genesis, &[0]).is_none(),
+                "no sibling may exist after sequential extension"
+            );
+
+            set_block(4);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+
+            assert!(ran, "ocw must run at block 4");
+            assert_eq!(read_head(), Some(3));
+
+            let b3 = resolve_branch(3).expect("block 3 routing must resolve");
+            assert_eq!(b3.head, 3);
+            assert_eq!(b3.genesis, b2.genesis, "genesis must be stable across extensions");
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // `````````````````````` TS 5 - SIBLING FORK CREATION `````````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: a competing block at height <= HEAD triggers the sibling path.
+    /// A new branch is created with its own routing chain. HEAD is not updated.
+    ///
+    /// Scenario:
+    /// - Canonical: A(0) -> B(1) -> C(2)->D(3) => HEAD=3
+    /// - Fork: A(0) -> B(1) -> C'(2) -> D'(3) => competing hashes
+    ///
+    /// After fork start(N=4):
+    /// sibling  counter=[0]  head=3  parent=Some(fork_root_key)
+    /// HEAD stays at 3
+    #[test]
+    fn sibling_fork_created_when_block_at_or_below_head() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+            set_block(4);
+            TestForks::start(None, None, || {});
+            assert_eq!(read_head(), Some(3));
+
+            // Capture canonical routing before injecting the fork.
+            let canonical = resolve_branch(3).expect("canonical block 3 must resolve");
+
+            // Inject a competing fork at blocks 2 and 3.
+            let fork_hash_3 = BlakeTwo256::hash(b"fork_block_3");
+            let fork_hash_2 = BlakeTwo256::hash(b"fork_block_2");
+            frame_system::BlockHash::<Test>::insert(3, fork_hash_3);
+            frame_system::BlockHash::<Test>::insert(2, fork_hash_2);
+
+            set_block(4);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+
+            assert!(ran, "ocw must run on the sibling fork path");
+
+            // HEAD must not advance - sibling path does not update it.
+            assert_eq!(read_head(), Some(3), "HEAD must stay at 3");
+
+            // Resolve sibling via the fork's routing chain.
+            let sibling = TestForks::get_block_branch(fork_hash_3)
+                .expect("fork_hash_3 must resolve to sibling branch");
+            assert_eq!(sibling.head, 3);
+            assert_eq!(sibling.counter, vec![0u32]);
+            assert!(sibling.parent.is_some());
+ 
+            // Load fork_root via sibling.parent - no genesis derivation needed.
+            let fork_root_key = sibling.parent.unwrap();
+            let fork_root = TestForks::get_branch(&fork_root_key)
+                .expect("fork recovery root must be loadable via sibling.parent");
+            assert_eq!(fork_root.head, 2);
+            assert!(fork_root.counter.is_empty());
+ 
+            // Canonical routing must not have been overwritten by the fork.
+            frame_system::BlockHash::<Test>::insert(3, mock_hash(3));
+            let canonical_after = resolve_branch(3)
+                .expect("canonical routing must survive fork creation");
+            assert_eq!(canonical_after.genesis, canonical.genesis);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // `````````````````` TS 6 - OCW CLOSURE INVOCATION COUNT ``````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: OCW closure runs exactly once per successful start() call
+    /// and never during bootstrap-guarded blocks.
+    ///
+    /// Scenario: two bootstrap blocks (0,1) and three sequential blocks (2,3,4).
+    #[test]
+    fn ocw_closure_runs_exactly_once_per_successful_call() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+            let mut count = 0u32;
+
+            set_block(0); 
+            TestForks::start(None, None, || { count += 1; });
+            set_block(1); 
+            TestForks::start(None, None, || { count += 1; });
+            assert_eq!(count, 0, "ocw must never run at blocks 0 or 1");
+
+            set_block(2);
+            TestForks::start(None, None, || { count += 1; });
+            assert_eq!(count, 1);
+
+            set_block(3);
+            TestForks::start(None, None, || { count += 1; });
+            assert_eq!(count, 2);
+
+            set_block(4);
+            TestForks::start(None, None, || { count += 1; });
+            assert_eq!(count, 3);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ```````````````````` TS 7 - RECOVERY: MISSING DIVIDER ```````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: a wiped block_key routing entry triggers parent_divider_unavailable,
+    /// which delegates to parent_branch_hash_unavailable. Recovery rebuilds routing
+    /// for the gap and HEAD advances correctly.
+    ///
+    /// Scenario:
+    /// - Canonical: A(0) -> B(1) -> C(2) -> D(3) =>  HEAD=3
+    /// - Corrupt: block_key for block 3 wiped
+    ///
+    /// Recovery rebuilds block 3 routing with parent linkage to block 2.
+    /// Result: E(4) resolved, HEAD=4
+    #[test]
+    fn recovery_missing_divider_rebuilds_routing_and_advances_head() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 6);
+
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+            set_block(4);
+            TestForks::start(None, None, || {});
+            assert_eq!(read_head(), Some(3));
+
+            // Wipe the routing entry for block 3.
+            StorageValueRef::persistent(&block_key(TAG, mock_hash(3))).clear();
+            assert!(resolve_branch(3).is_none(), "block 3 routing must be broken after wipe");
+
+            set_block(5);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+
+            assert!(ran, "ocw must run after missing-divider recovery");
+            assert_eq!(read_head(), Some(4), "HEAD must advance to 4 after recovery");
+
+            let b4 = resolve_branch(4).expect("block 4 routing must resolve after recovery");
+            assert_eq!(b4.head, 4);
+ 
+            // Forward rebuild restores block 3's routing pointing to the same synthetic
+            // branch. The longest-chain mutate at iteration 2 then advances that
+            // branch's head from 3 -> 4 in-place, so both block 3 and block 4 route
+            // to the same payload with head=4.
+            let b3 = resolve_branch(3).expect("block 3 routing must be rebuilt by forward recovery");
+            assert_eq!(b3.head, 4, "rebuilt block 3 branch shares payload with block 4 (head advanced to 4 by mutate)");
+            assert_eq!(
+                b3.genesis, b4.genesis,
+                "block 3 and block 4 must share the same synthetic branch lineage"
+            );
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ``` TS 8 - RECOVERY: CORRUPTED BRANCH PAYLOAD + STALE DIVIDER CLEANUP ```
+    // -------------------------------------------------------------------------
+
+    /// Behavior: `parent_branch_unavailable` clears the stale divider before
+    /// delegating to recovery. This test confirms the divider is absent after
+    /// `start()` completes.
+    ///
+    /// The sibling path (block=3 <= head=3) is used so that
+    /// `parent_branch_unavailable(block=3)` computes:
+    ///
+    ///   parent = block_hash(2) = mock_hash(2)
+    ///
+    /// making divider(mock_hash(2)) the exact key captured and asserted cleared.
+    ///
+    /// Scenario:
+    /// - Canonical: A(0) -> B(1) -> C(2) -> D(3)  =>  HEAD=3
+    /// - Corrupt: branch payload wiped, routing intact
+    ///
+    /// start(N=4) again: block=3 <= head=3 -> sibling path
+    /// get_branch(branch_key) -> None
+    /// parent_branch_unavailable clears divider(mock_hash(2))
+    /// recovery runs, sibling created, HEAD unchanged
+    #[test]
+    fn recovery_stale_divider_is_cleared_before_fallback_recovery() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+
+            set_block(2); TestForks::start(None, None, || {});
+            set_block(3); TestForks::start(None, None, || {});
+            set_block(4); TestForks::start(None, None, || {});
+            assert_eq!(read_head(), Some(3));
+
+            // Capture the exact divider that parent_branch_unavailable will clear.
+            let divider_hash = TestForks::get_divider(mock_hash(2))
+                .expect("divider for mock_hash(2) must exist before corruption");
+
+            // routing resolves before corruption.
+            assert!(resolve_branch(3).is_some(),
+                "block 3 routing must be intact before corruption");
+
+            // Wipe the branch payload only.
+            // block_key -> divider -> branch_key all remain intact.
+            let b3 = resolve_branch(3).expect("block 3 must resolve");
+            let root_key = branch_key(TAG, b3.genesis, &[]);
+            StorageValueRef::persistent(&root_key).clear();
+
+            // routing now fails at the branch payload level.
+            assert!(resolve_branch(3).is_none(),
+                "routing must return None when branch payload is missing");
+
+            // start() again at N=4: block=3 <= head=3 -> sibling path
+            // -> get_branch returns None -> parent_branch_unavailable fires
+            // -> clears divider_hash -> recovery runs.
+            set_block(4);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+
+            // divider_hash must be absent: parent_branch_unavailable cleared it
+            // before delegating to recovery.
+            assert!(
+                load_value::<[u8; 32]>(&divider_hash).is_none(),
+                "stale divider must be cleared before recovery"
+            );
+
+            assert!(ran, "ocw must run after stale-divider recovery");
+
+            // HEAD must not advance - sibling path does not update HEAD.
+            assert_eq!(read_head(), Some(3));
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ````` TS 9 - RECOVERY: MULTI-BLOCK GAP WITH SHARED SYNTHETIC BRANCH `````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: the forward rebuild restores routing from recoverer+1 up to
+    /// block (exclusive). Block 3 is the recoverer itself and is not restored,
+    /// only block 4 is rebuilt, pointing to block 2 as its parent.
+    ///
+    /// Scenario:
+    /// - Before:  A(0) -> B(1) -> C(2) -> D(3) -> E(4)  =>  HEAD=4
+    /// - Corrupt: block_key for blocks 3 and 4 wiped
+    ///
+    /// Recovery walks back from recoverer=3, finds ancestor at block_hash(2).
+    /// Forward rebuild: target=4 only (target starts at recoverer+1=4).
+    /// block_key for block 3 is not restored.
+    /// block_key for block 4 is restored (synthetic branch with parent=block2_branch).
+    ///
+    /// Result: F(5) resolved, HEAD=5
+    #[test]
+    fn recovery_rebuilds_multi_block_gap_with_shared_synthetic_branch() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 7);
+ 
+            set_block(2); 
+            TestForks::start(None, None, || {});
+            set_block(3); 
+            TestForks::start(None, None, || {});
+            set_block(4); 
+            TestForks::start(None, None, || {});
+            set_block(5); 
+            TestForks::start(None, None, || {});
+            assert_eq!(read_head(), Some(4));
+ 
+            StorageValueRef::persistent(&block_key(TAG, mock_hash(3))).clear();
+            StorageValueRef::persistent(&block_key(TAG, mock_hash(4))).clear();
+ 
+            assert!(resolve_branch(3).is_none(), "block 3 routing must be broken");
+            assert!(resolve_branch(4).is_none(), "block 4 routing must be broken");
+ 
+            set_block(6);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+ 
+            assert!(ran, "ocw must run after multi-block gap recovery");
+            assert_eq!(read_head(), Some(5));
+ 
+            // Block 5 must resolve - it is the block resolved by this start() call.
+            let b5 = resolve_branch(5).expect("block 5 routing must resolve");
+            assert_eq!(b5.head, 5);
+ 
+            // Block 4 rebuilt by forward loop - parent links to block 2 (last intact ancestor).
+            let b4 = resolve_branch(4).expect("block 4 routing must be rebuilt by forward recovery");
+            let parent_key = b4.parent.expect("synthetic branch must carry parent linkage");
+            let parent_branch = TestForks::get_branch(&parent_key)
+                .expect("synthetic branch parent must be loadable");
+            let b2 = resolve_branch(2).expect("block 2 must be intact");
+            assert_eq!(parent_branch.genesis, b2.genesis,
+                "synthetic branch parent must link to the last intact ancestor (block 2)");
+
+            // Block 3 is the recoverer itself - the forward loop starts at recoverer+1=4
+            // and does not restore block 3's routing. It remains unresolvable.
+            assert!(resolve_branch(3).is_none(),
+                "block 3 routing is not restored by forward rebuild");
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ```````````````` TS 10 - RECOVERY: DECODE ERROR IN MUTATE ```````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: a garbage branch payload causes Branch::decode to fail inside
+    /// the mutate closure. inherited_branch_decode_error -> parent_branch_unavailable
+    /// -> stale divider cleared -> parent_branch_hash_unavailable rebuilds routing.
+    ///
+    /// Scenario:
+    /// - Canonical: A(0) -> B(1) -> C(2)  => HEAD=2
+    /// - Corrupt: branch payload replaced with 0xDEADBEEF
+    ///
+    /// mutate -> Err(decode) -> inherited_branch_decode_error -> recovery
+    /// Result: D(3) resolved, HEAD=3
+    #[test]
+    fn decode_error_in_mutate_triggers_recovery_and_ocw_still_runs() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+ 
+            set_block(2); 
+            TestForks::start(None, None, || {});
+            set_block(3); 
+            TestForks::start(None, None, || {});
+            assert_eq!(read_head(), Some(2));
+ 
+            // Derive genesis from the routing chain, not by independent computation.
+            let b2 = resolve_branch(2).expect("block 2 must resolve before corruption");
+            let root_key = branch_key(TAG, b2.genesis, &[]);
+            StorageValueRef::persistent(&root_key).set(&[0xDE, 0xAD, 0xBE, 0xEF]);
+ 
+            assert!(resolve_branch(2).is_none(),
+                "routing must return None when payload is corrupt");
+ 
+            set_block(4);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+ 
+            assert!(ran, "ocw must run after decode-error recovery");
+            assert_eq!(read_head(), Some(3), "HEAD must advance to 3");
+ 
+            let b3 = resolve_branch(3).expect("block 3 routing must resolve after recovery");
+            assert_eq!(b3.head, 3);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // `````````` TS 11 - CONCURRENT MODIFICATION / SIBLING PROMOTION ``````````
+    //
+    // StorageValueRef::mutate internally uses compare-and-set (CAS), so
+    // ConcurrentModification only happens if some other write updates
+    // storage between the read and write phase.
+    //
+    // In this test environment everything runs single-threaded, so we can't
+    // realistically reproduce that race condition through start() itself.
+    //
+    // Instead, this test calls inherited_branch_mutation_conflict()
+    // directly and verifies the same recovery path:
+    //
+    // - a sibling branch is created in the next available slot
+    // - the sibling keeps a parent pointer to the original branch
+    // - routing is rebuilt for the conflicted block
+    // - HEAD remains consistent after recovery
+    // -------------------------------------------------------------------------
+
+    /// Behavior: inherited_branch_mutation_conflict promotes the second writer
+    /// into a new sibling branch. The sibling shares genesis with the original
+    /// branch, carries parent=original_branch_key, and gets its own routing.
+    ///
+    /// Scenario:
+    /// Canonical chain built to HEAD=2.
+    /// Writer 1 already committed block 2 on the root branch (counter=[]).
+    /// Writer 2 arrives late - simulated by calling the conflict handler
+    /// directly with block=2 (the block both writers competed on).
+    ///
+    /// Before conflict handler:
+    ///   root  counter=[]  head=2  (writer 1 committed)
+    ///
+    /// After conflict handler:
+    ///   root  counter=[]  head=2   (unchanged)
+    ///     |
+    ///     +-- sibling  counter=[0]  head=2  parent=root_key  (writer 2)
+    #[test]
+    fn concurrent_modification_promotes_conflict_writer_to_sibling_branch() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 4);
+ 
+            set_block(2); TestForks::start(None, None, || {});
+            set_block(3); TestForks::start(None, None, || {});
+            assert_eq!(read_head(), Some(2));
+ 
+            // The conflict handler resolves parent = block_hash(block-1=1) = mock_hash(1).
+            // Capture the root branch at that key before the conflict fires.
+            let root_branch_hash = TestForks::get_branch_hash(mock_hash(1))
+                .expect("root branch hash must exist");
+ 
+            // Verify the root branch is reachable and at the expected state.
+            let root = TestForks::get_branch(&root_branch_hash)
+                .expect("root branch must be loadable");
+            assert!(root.counter.is_empty());
+            assert_eq!(root.head, 2);
+ 
+            // Fire the conflict handler directly for block=2.
+            let result = TestForks::inherited_branch_mutation_conflict(2, None, None);
+            assert!(result.is_ok(), "conflict handler must succeed");
+ 
+            assert_eq!(read_head(), Some(2), "HEAD must be 2 after conflict resolution");
+ 
+            // Routing for block 2 must now point to the sibling branch.
+            let sibling = TestForks::get_block_branch(mock_hash(2))
+                .expect("block 2 routing must resolve to the sibling branch");
+ 
+            assert_eq!(sibling.counter, vec![0u32]);
+            assert_eq!(sibling.head, 2);
+ 
+            // Sibling must point to the root branch as its structural parent.
+            let sibling_parent_key = sibling.parent
+                .expect("sibling must carry a parent key");
+            assert_eq!(sibling_parent_key, root_branch_hash,
+                "sibling parent must be the root branch (writer 1's branch)");
+ 
+            // Root branch must be unchanged - writer 1's commit is preserved.
+            let root_after = TestForks::get_branch(&root_branch_hash)
+                .expect("root branch must still exist");
+            assert_eq!(root_after.counter, root.counter);
+            assert_eq!(root_after.head, root.head);
+            assert_eq!(root_after.genesis, sibling.genesis);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // `````````````````````` TS 12 - MAX FORKS EXHAUSTION `````````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: when all counter slots [0..=MAX_FORKS] under the fork's
+    /// genesis are occupied, the slot search fails, max_forks() returns Err,
+    /// the loop breaks, and the OCW closure is not called.
+    ///
+    /// Scenario:
+    /// - Canonical: A(0) -> B(1) -> C(2) -> D(3)  => HEAD=3
+    /// - Fork: competing hashes for blocks 2 and 3
+    /// all sibling slots pre-filled under fork genesis
+    ///
+    /// Result: OCW not called, HEAD stays at 3
+    #[test]
+    fn max_forks_exhaustion_prevents_sibling_creation_and_ocw() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+ 
+            set_block(2); 
+            TestForks::start(None, None, || {});
+            set_block(3); 
+            TestForks::start(None, None, || {});
+            set_block(4); 
+            TestForks::start(None, None, || {});
+            assert_eq!(read_head(), Some(3));
+ 
+            // Fork genesis derived from grand_parent = block_hash(3-2=1)
+            let genesis_fork = recovery_genesis(1);
+            let root_key = branch_key(TAG, genesis_fork, &[]);
+ 
+            store_encoded(&root_key, &Branch::<Test, TestScope> {
+                parent: None,
+                head: 2,
+                scope: TestScope::default(),
+                genesis: genesis_fork,
+                counter: vec![],
+            });
+            
+            // Fill every sibling slot so no free slot exists.
+            for i in 0u32..=TestForks::MAX_FORKS {
+                let sibling_key = branch_key(TAG, genesis_fork, &[i]);
+                store_encoded(&sibling_key, &Branch::<Test, TestScope> {
+                    parent: Some(root_key),
+                    head: 2,
+                    scope: TestScope::default(),
+                    genesis: genesis_fork,
+                    counter: vec![i],
+                });
+            }
+ 
+            let fork_hash_2 = BlakeTwo256::hash(b"max_fork_block_2");
+            let fork_hash_3 = BlakeTwo256::hash(b"max_fork_block_3");
+            frame_system::BlockHash::<Test>::insert(2, fork_hash_2);
+            frame_system::BlockHash::<Test>::insert(3, fork_hash_3);
+            
+            // Wire routing so the fork is reachable via block_key(TAG, fork_hash_2).
+            let dh = divider_key(TAG, fork_hash_2, root_key);
+            store_encoded(&dh, &root_key);
+            store_encoded(&block_key(TAG, fork_hash_2), &dh);
+ 
+            set_block(4);
+            let mut ran = false;
+            TestForks::start(None, None, || { ran = true; });
+ 
+            assert!(!ran, "ocw must NOT run when MAX_FORKS is exhausted");
+            assert_eq!(read_head(), Some(3), "HEAD must stay at 3");
+            assert!(
+                branch_by_lineage(genesis_fork, &[TestForks::MAX_FORKS + 1]).is_none(),
+                "no branch beyond MAX_FORKS must be created"
+            );
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ``````````` TS 13 - RECOVERY: SYNTHETIC BRANCH PARENT LINKAGE ```````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: every synthetic branch created during forward rebuild must
+    /// carry a parent pointer to the last intact ancestor branch, not None.
+    ///
+    /// Scenario:
+    /// - Canonical:  A(0) -> B(1) -> C(2) -> D(3)  => HEAD=3
+    /// - Corrupt: block_key for block 3 wiped
+    ///
+    /// Rebuilt block 3 branch: parent = block_2_branch_key
+    #[test]
+    fn recovery_synthetic_branch_preserves_parent_linkage() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+ 
+            set_block(2); 
+            TestForks::start(None, None, || {});
+            set_block(3); 
+            TestForks::start(None, None, || {});
+            set_block(4); 
+            TestForks::start(None, None, || {});
+ 
+            // Capture block 2 branch hash before wiping block 3.
+            let b2_branch_hash = TestForks::get_branch_hash(mock_hash(2))
+                .expect("block 2 branch hash must exist");
+ 
+            StorageValueRef::persistent(&block_key(TAG, mock_hash(3))).clear();
+ 
+            set_block(5);
+            TestForks::start(None, None, || {});
+ 
+            let b3 = resolve_branch(3).expect("block 3 routing must be rebuilt");
+ 
+            let parent_key = b3.parent
+                .expect("rebuilt synthetic branch must carry a parent key");
+            assert_eq!(parent_key, b2_branch_hash,
+                "synthetic branch parent must point to block 2's branch");
+ 
+            // Navigating to the parent must load block 2's branch.
+            let parent_branch = TestForks::get_branch(&parent_key)
+                .expect("parent branch must be loadable");
+            let b2 = resolve_branch(2).expect("block 2 must still be intact");
+            assert_eq!(parent_branch.genesis, b2.genesis);
+        });
+    }
+ 
+    // -------------------------------------------------------------------------
+    // ``````````````````` TS 14 - REPEATED START IDEMPOTENCY ``````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: calling start() twice at the same block does not corrupt HEAD,
+    /// duplicate branches, or alter existing routing.
+    ///
+    /// Scenario: start(N=3) called twice in succession.
+    #[test]
+    fn repeated_start_at_same_block_is_idempotent() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 4);
+ 
+            set_block(2); 
+            TestForks::start(None, None, || {});
+            set_block(3); 
+            TestForks::start(None, None, || {});
+ 
+            let head_first = read_head();
+            let b2_first = resolve_branch(2).expect("block 2 must resolve");
+ 
+            set_block(3);
+            TestForks::start(None, None, || {});
+ 
+            assert_eq!(read_head(), head_first, "HEAD must not change after repeated start");
+ 
+            let b2_second = resolve_branch(2).expect("block 2 must still resolve");
+            assert_eq!(b2_first.genesis, b2_second.genesis,
+                "repeated start must not alter branch genesis");
+            assert_eq!(b2_first.head, b2_second.head,
+                "repeated start must not alter branch head");
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ````````````````````` TS 15 - FORK GRAPH NAVIGATION `````````````````````
+    // -------------------------------------------------------------------------
+    // Verifies all ForkAction variants against a graph with a canonical root
+    // and a fork branch created by injecting competing hashes at block 3.
+    //
+    // Graph after setup:
+    //
+    //   [canonical]
+    //   root  counter=[]  head=3  parent=None
+    //     ^
+    //     | fork_root.parent points here (set by forward rebuild recovery)
+    //     |
+    //   [fork]
+    //   fork_root  counter=[]  head=2  parent=Some(canonical_root_key)
+    //       |
+    //       +-- sibling  counter=[0]  head=3  parent=Some(fork_root_key)
+    #[test]
+    fn fork_action_handler_navigation_after_graph_built() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 6);
+ 
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+            set_block(4);
+            TestForks::start(None, None, || {});
+ 
+            // Create sibling fork at block 3 by injecting competing hashes.
+            let fork_hash_3 = BlakeTwo256::hash(b"nav_fork_3");
+            let fork_hash_2 = BlakeTwo256::hash(b"nav_fork_2");
+            frame_system::BlockHash::<Test>::insert(3, fork_hash_3);
+            frame_system::BlockHash::<Test>::insert(2, fork_hash_2);
+            set_block(4);
+            TestForks::start(None, None, || {});
+ 
+            // Load branches via routing chains
+            frame_system::BlockHash::<Test>::insert(3, mock_hash(3));
+            frame_system::BlockHash::<Test>::insert(2, mock_hash(2));
+ 
+            let root = resolve_branch(3)
+                .expect("canonical root must resolve via block 3 routing");
+            let sibling = TestForks::get_block_branch(fork_hash_3)
+                .expect("sibling must resolve via fork_hash_3 routing chain");
+            let fork_root_key = sibling.parent
+                .expect("sibling must carry a parent key");
+            let fork_root = TestForks::get_branch(&fork_root_key)
+                .expect("fork_root must be loadable via sibling.parent");
+ 
+            // Graph invariants
+            assert_eq!(root.head, 3);      
+            assert!(root.parent.is_none());
+            assert_eq!(fork_root.head, 2); 
+            assert!(fork_root.counter.is_empty());
+            assert_eq!(sibling.head, 3);   
+            assert_eq!(sibling.counter, vec![0u32]);
+            
+            // ----------------------- MoveToParentBranch ----------------------
+
+            // sibling[0] -> fork_root[]: parent pointer leads to fork_root.
+            let p = TestForks::transition(&sibling, ForkAction::MoveToParentBranch)
+                .expect("MoveToParentBranch from sibling must succeed");
+            assert!(p.counter.is_empty(), );
+            assert_eq!(p.head, fork_root.head);
+
+            // fork_root.parent was set by recovery to the canonical root.
+            let fork_root_parent = TestForks::transition(&fork_root, ForkAction::MoveToParentBranch)
+                .expect("MoveToParentBranch on fork_root must succeed");
+
+            // The parent must be the canonical root - same genesis, same counter shape.
+            assert_eq!(fork_root_parent.genesis, root.genesis);
+            assert!(fork_root_parent.counter.is_empty());
+            assert_eq!(fork_root_parent.head, root.head);
+            
+            // ------------------- MoveToParentBranchBack(n) -------------------
+ 
+            // n=0: no-op, returns self unchanged.
+            let b = TestForks::transition(&sibling, ForkAction::MoveToParentBranchBack(0))
+                .expect("MoveToParentBranchBack(0) must return self");
+            assert_eq!(b.counter, sibling.counter);
+            assert_eq!(b.head, sibling.head);
+ 
+            // n=1: sibling -> fork_root.
+            let b = TestForks::transition(&sibling, ForkAction::MoveToParentBranchBack(1))
+                .expect("MoveToParentBranchBack(1) must succeed");
+            assert!(b.counter.is_empty());
+ 
+            // n=2: sibling -> fork_root -> canonical_root (fork_root has parent set by recovery)
+            let b = TestForks::transition(&sibling, ForkAction::MoveToParentBranchBack(2))
+                .expect("MoveToParentBranchBack(2) must succeed - sibling has 2 levels of ancestry");
+            assert_eq!(
+                b.genesis, root.genesis,
+                "Back(2) from sibling must reach the canonical root"
+            );
+
+            // n=3: exceeds actual ancestry depth -> None
+            assert!(
+                TestForks::transition(&sibling, ForkAction::MoveToParentBranchBack(3)).is_none(),
+                "MoveToParentBranchBack(3) exceeds ancestry depth -> None"
+            );
+ 
+            // -------------------- MoveToChildBranch(index) -------------------
+ 
+            let child = TestForks::transition(&fork_root, ForkAction::MoveToChildBranch(0))
+                .expect("MoveToChildBranch(0) from fork_root must succeed");
+            assert_eq!(child.counter, vec![0u32]);
+ 
+            assert!(
+                TestForks::transition(&fork_root, ForkAction::MoveToChildBranch(1)).is_none(),
+                "MoveToChildBranch(1) where no child exists must return None"
+            );
+ 
+            // sibling has no children -> None.
+            assert!(
+                TestForks::transition(&sibling, ForkAction::MoveToChildBranch(0)).is_none(),
+                "MoveToChildBranch(0) from a leaf branch must return None"
+            );
+ 
+            // --------------------- MoveToNextChildBranch ---------------------
+ 
+            // fork_root -> sibling (child index 0).
+            let child = TestForks::transition(&fork_root, ForkAction::MoveToNextChildBranch)
+                .expect("MoveToNextChildBranch from fork_root must succeed");
+            assert_eq!(child.counter, vec![0u32]);
+ 
+            // sibling has no children -> None.
+            assert!(
+                TestForks::transition(&sibling, ForkAction::MoveToNextChildBranch).is_none(),
+                "MoveToNextChildBranch from leaf must return None"
+            );
+ 
+            // ------------------- MoveToSiblingBranch(index) ------------------
+ 
+            // fork_root (counter=[]) requesting index=0 -> sibling[0] (exists).
+            let sib = TestForks::transition(&fork_root, ForkAction::MoveToSiblingBranch(0))
+                .expect("MoveToSiblingBranch(0) from root must reach sibling[0]");
+            assert_eq!(sib.counter, vec![0u32]);
+ 
+            // sibling (counter=[0]) requesting index=0 -> same as self -> None.
+            assert!(
+                TestForks::transition(&sibling, ForkAction::MoveToSiblingBranch(0)).is_none(),
+                "MoveToSiblingBranch(same index) must return None"
+            );
+ 
+            // fork_root requesting index=1 -> slot [1] does not exist -> None.
+            assert!(
+                TestForks::transition(&fork_root, ForkAction::MoveToSiblingBranch(1)).is_none(),
+                "MoveToSiblingBranch to a non-existent slot must return None"
+            );
+ 
+            // -------------------- MoveToNextSiblingBranch --------------------
+ 
+            // fork_root (counter=[]): last=None -> next_index=0 -> sibling[0] exists.
+            let arrived = TestForks::transition(&fork_root, ForkAction::MoveToNextSiblingBranch)
+                .expect("MoveToNextSiblingBranch from fork_root must succeed");
+            assert_eq!(arrived.counter, vec![0u32]);
+ 
+            // sibling (counter=[0]): last=0 -> next_index=1 -> slot [1] does not exist -> None.
+            assert!(
+                TestForks::transition(&sibling, ForkAction::MoveToNextSiblingBranch).is_none(),
+                "MoveToNextSiblingBranch when next slot is empty must return None"
+            );
+ 
+            // ------------------ MoveToPreviousSiblingBranch ------------------
+ 
+            // sibling (counter=[0]): last=0 -> immediately returns None (no index -1).
+            assert!(
+                TestForks::transition(&sibling, ForkAction::MoveToPreviousSiblingBranch).is_none(),
+                "MoveToPreviousSiblingBranch at index 0 must return None"
+            );
+
+            // fork_root (counter=[]): counter.last() = None -> None.
+            assert!(
+                TestForks::transition(&fork_root, ForkAction::MoveToPreviousSiblingBranch).is_none(),
+                "MoveToPreviousSiblingBranch on a root (counter=[]) must return None"
+            );
+
+            // ------------------------ MoveToRootBranch ------------------------
+ 
+            // sibling -> fork_root -> canonical_root (parent=None) -> stops at canonical_root.
+            let root_b = TestForks::transition(&sibling, ForkAction::MoveToRootBranch)
+                .expect("MoveToRootBranch from sibling must succeed");
+            assert!(root_b.parent.is_none());
+            assert_eq!(root_b.genesis, root.genesis);
+
+            // fork_root also has a parent (canonical root), so MoveToRootBranch walks
+            // one more level and lands on the canonical root too.
+            let root_from_fork = TestForks::transition(&fork_root, ForkAction::MoveToRootBranch)
+                .expect("MoveToRootBranch from fork_root must succeed");
+            assert!(root_from_fork.parent.is_none());
+            assert_eq!(root_from_fork.genesis, root.genesis);
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // ```````````````````` TS 16 - SCOPE HANDLER OPERATIONS ```````````````````
+    // -------------------------------------------------------------------------
+
+    /// Behavior: gen_scope_item_key produces a stable, deterministic 32-byte key.
+    /// The same item always maps to the same key; different items produce different keys.
+    ///
+    /// Scenario: two distinct items encoded as byte slices.
+    #[test]
+    fn scope_handler_gen_scope_item_key_is_deterministic_and_distinct() {
+        let item_a: Vec<u8> = b"key_a".to_vec();
+        let item_b: Vec<u8> = b"key_b".to_vec();
+
+        let k1 = TestForks::gen_scope_item_key(&item_a);
+        let k2 = TestForks::gen_scope_item_key(&item_a);
+        let k3 = TestForks::gen_scope_item_key(&item_b);
+
+        // Deterministic
+        assert_eq!(k1, k2);
+
+        // Distinct
+        assert_ne!(k1, k3);
+    }
+
+    /// Behavior: scope_item_exists returns Err(forks_not_enabled) when called
+    /// before ForksHandler::start has built the fork graph.
+    ///
+    /// Scenario: no start() call, direct scope_item_exists at block 2.
+    #[test]
+    fn scope_handler_scope_item_exists_returns_err_when_fork_graph_not_initialized() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 4);
+            set_block(2);
+
+            let key = TestForks::gen_scope_item_key(&b"test_item".to_vec());
+            let result = TestForks::scope_item_exists(&key, None, None);
+
+            assert_eq!(result, Err(DispatchError::Other("forks-not-enabled")));
+        });
+    }
+
+    /// Behavior: scope_item_exists returns Ok(false) for a key not yet added
+    /// after the fork graph is initialized.
+    ///
+    /// Scenario: start() runs at block 2, key queried without prior add_to_scope.
+    #[test]
+    fn scope_handler_scope_item_exists_returns_false_for_absent_key() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 4);
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+
+            let key = TestForks::gen_scope_item_key(&b"absent".to_vec());
+            let result = TestForks::scope_item_exists(&key, None, None);
+
+            assert_eq!(result, Ok(false));
+        });
+    }
+
+    /// Behavior: add_to_scope writes the item into local_keys of the current branch.
+    /// scope_item_exists returns Ok(true) for the key on the same branch.
+    ///
+    /// Scenario: start() at block 2, add_to_scope at block 3, scope_item_exists at block 3.
+    #[test]
+    fn scope_handler_add_to_scope_makes_key_visible_in_local_scope() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+
+            // add_to_scope writes into branch at block 2 (block - 1 = 2).
+            let item = b"active_key".to_vec();
+            let key = TestForks::add_to_scope(item.clone(), None, None).unwrap();
+
+            // scope_item_exists at block 3 reads branch at block 2.
+            let exists = TestForks::scope_item_exists(&key, None, None).unwrap();
+
+            assert!(exists); 
+        });
+    }
+
+    /// Behavior: add_to_scope returns Err(forks_not_enabled) when the fork graph
+    /// has not been initialized.
+    ///
+    /// Scenario: no start() call before add_to_scope.
+    #[test]
+    fn scope_handler_add_to_scope_returns_err_when_fork_graph_not_initialized() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 4);
+            set_block(2);
+
+            let result = TestForks::add_to_scope(b"item".to_vec(), None, None);
+
+            assert_eq!(result, Err(DispatchError::Other("forks-not-enabled")));
+        });
+    }
+
+    /// Behavior: a key added to local_keys propagates into inherited_keys of the
+    /// next branch via accrete(), making it visible on the child branch.
+    ///
+    /// Scenario: add_to_scope at block 3, advance to block 4 (new branch created),
+    /// scope_item_exists at block 4 finds key in inherited scope.
+    #[test]
+    fn scope_handler_local_key_propagates_to_inherited_on_next_branch() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 6);
+
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+
+            let item = b"propagated_key".to_vec();
+            let key = TestForks::add_to_scope(item.clone(), None, None).unwrap();
+
+            // Advance to block 4 - accrete() promotes local_keys into inherited_keys.
+            set_block(4);
+            TestForks::start(None, None, || {});
+
+            let exists = TestForks::scope_item_exists(&key, None, None).unwrap();
+
+            assert!(exists);
+        });
+    }
+
+    /// Behavior: remove_from_scope removes a key from local_keys on the current branch.
+    /// scope_item_exists returns Ok(false) after removal.
+    ///
+    /// Scenario: add_to_scope then remove_from_scope on the same branch.
+    #[test]
+    fn scope_handler_remove_from_scope_removes_key_from_local_scope() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 5);
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+
+            let item = b"removable_key".to_vec();
+            let key = TestForks::add_to_scope(item.clone(), None, None).unwrap();
+
+            // Key exists before removal.
+            assert!(TestForks::scope_item_exists(&key, None, None).unwrap());
+
+            TestForks::remove_from_scope(&key, None, None).unwrap();
+
+            // Key is absent after removal.
+            let exists = TestForks::scope_item_exists(&key, None, None).unwrap();
+
+            assert!(!exists);
+        });
+    }
+
+    /// Behavior: remove_from_scope removes a key from inherited_keys when it
+    /// was promoted from a previous branch.
+    ///
+    /// Scenario: add_to_scope at block 3, advance to block 4 (key becomes inherited),
+    /// remove_from_scope at block 4.
+    #[test]
+    fn scope_handler_remove_from_scope_removes_key_from_inherited_scope() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 6);
+
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+
+            let item = b"inherited_key".to_vec();
+            let key = TestForks::add_to_scope(item.clone(), None, None).unwrap();
+
+            set_block(4);
+            TestForks::start(None, None, || {});
+
+            assert!(TestForks::scope_item_exists(&key, None, None).unwrap());
+
+            TestForks::remove_from_scope(&key, None, None).unwrap();
+
+            let exists = TestForks::scope_item_exists(&key, None, None).unwrap();
+
+            assert!(!exists);
+        });
+    }
+
+    /// Behavior: remove_from_scope is a no-op for a key that does not exist
+    /// in either local or inherited scope. Returns Ok(()).
+    ///
+    /// Scenario: remove_from_scope called with a key that was never added.
+    #[test]
+    fn scope_handler_remove_from_scope_is_noop_for_absent_key() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 4);
+            set_block(2);
+            TestForks::start(None, None, || {});
+            set_block(3);
+            TestForks::start(None, None, || {});
+
+            let key = TestForks::gen_scope_item_key(&b"never_added".to_vec());
+            let result = TestForks::remove_from_scope(&key, None, None);
+
+            assert_eq!(result, Ok(()));
+        });
+    }
+
+    /// Behavior: remove_from_scope returns Err(forks_not_enabled) when the
+    /// fork graph has not been initialized.
+    ///
+    /// Scenario: no start() call before remove_from_scope.
+    #[test]
+    fn scope_handler_remove_from_scope_returns_err_when_fork_graph_not_initialized() {
+        new_ocw_ext().execute_with(|| {
+            register_block_hashes(0, 4);
+            set_block(2);
+
+            let key = TestForks::gen_scope_item_key(&b"item".to_vec());
+            let result = TestForks::remove_from_scope(&key, None, None);
+
+            assert_eq!(result, Err(DispatchError::Other("forks-not-enabled")));
+        });
+    }
+}

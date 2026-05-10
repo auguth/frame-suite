@@ -2038,3 +2038,1988 @@ impl FixedComplexOp for FixedI128 {
 //     // Reciprocal square root (1/sqrt(x))
 //     // fn fixed_rsqrt(f: &Self) -> Self;
 // }
+
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Module import ---
+    use super::*;
+
+    // --- Substrate crates ---
+    use sp_runtime::traits::{Bounded, One, Saturating, Zero};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` FIXED_SQRT `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    #[test]
+    fn fixed_sqrt_perfect_cases() {
+        // case 1: sqrt(4) -> 2
+        let x: FixedU64 = 4.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_integer(2);
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(36) -> 6
+        let x: FixedU64 = 36.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_integer(6);
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(81) -> 9
+        let x: FixedU64 = 81.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_integer(9);
+        assert_eq!(result, expected);
+
+        // case 4: sqrt(1) -> 1
+        let x: FixedU64 = 1.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_integer(1);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_sqrt_negative_perfect_cases() {
+        // case 1: sqrt(-1) -> None
+        let x: FixedI64 = (-1).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+
+        // case 2: sqrt(-16) -> None
+        let x: FixedI64 = (-16).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+
+        // case 3: sqrt(-9) -> None
+        let x: FixedI64 = (-9).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+
+        // case 4: sqrt(-100) -> None
+        let x: FixedI64 = (-100).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+
+        // case 5: sqrt(-4) -> None
+        let x: FixedI64 = (-4).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn fixed_sqrt_large_numbers() {
+        // case 1: sqrt(10000) -> 100
+        let x: FixedU64 = 10000.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_integer(100);
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(1000000) -> 1000
+        let x: FixedU64 = 1000000.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_integer(1000);
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(u32::MAX) -> 65535.999992370
+        let x: FixedU64 = (u32::MAX as u64).into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::from_inner(65535999992370);
+        assert_eq!(result, expected);
+
+        // case 4: sqrt(u64::MAX) -> 135818.791312945
+        let x: FixedU64 = (u64::MAX).into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::from_inner(135818791312945);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_sqrt_non_perfect_cases() {
+        // case 1: sqrt(2) ~= 1.414213562
+        let x: FixedU64 = 2.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::from_inner(1414213562);
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(5) -> 2.236067977
+        let x: FixedU64 = 5.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::from_inner(2236067977);
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(10) -> 3.162277660
+        let x: FixedU64 = 10.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected: FixedU64 = FixedU64::from_inner(3162277660);
+        assert_eq!(result, expected);
+
+        // case 4: sqrt(125) -> 11.180339887
+        let x: FixedU64 = 125.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected: FixedU64 = FixedU64::from_inner(11180339887);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_sqrt_negative_non_perfect_squares() {
+        // case 1: sqrt(-2) -> None
+        let x: FixedI64 = (-2).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+
+        // case 2: sqrt(-35) -> None
+        let x: FixedI64 = (-35).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+
+        // case 3: sqrt(-50) -> None
+        let x: FixedI64 = (-50).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn fixed_sqrt_fractional_cases() {
+        // case 1: sqrt(0.25) -> 0.5
+        let x = FixedU64::saturating_from_rational(1, 4);
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_rational(1, 2);
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(0.01) -> 0.1
+        let x = FixedU64::saturating_from_rational(1, 100);
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::saturating_from_rational(1, 10);
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(0.5) -> 0.707106781
+        let x = FixedU64::saturating_from_rational(1, 2);
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::from_inner(707106781);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_sqrt_edge_cases() {
+        // case 1: sqrt(0) -> 0
+        let x: FixedU64 = 0.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::zero();
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(1) -> 1
+        let x: FixedU64 = 1.into();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedU64::one();
+        assert_eq!(result, expected);
+
+        // case 3
+        // sqrt(i64::MIN) -> saturating_abs gives i64::MAX
+        let x: FixedI64 = (i64::MIN).into();
+        let result = fixed_sqrt(&x);
+        assert!(result.is_none());
+
+        // case 4
+        // sqrt(i64::MAX) -> 96038.388349944
+        let x  = FixedI64::max_value();
+        let result = fixed_sqrt(&x).unwrap();
+        let expected = FixedI64::from_inner(96038388349944);
+        assert_eq!(result, expected);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````````` COMPLEX_SQRT ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn complex_sqrt_perfect_cases() {
+        // case 1: sqrt(4) -> 2
+        let x: FixedU64 = 4.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected: Complex<FixedU64> = Complex {
+            real: 2.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(36) -> 6
+        let x: FixedU64 = 36.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected: Complex<FixedU64> = Complex {
+            real: 6.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(81) -> 9
+        let x: FixedU64 = 81.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected: Complex<FixedU64> = Complex {
+            real: 9.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 4: sqrt(1) -> 1
+        let x: FixedU64 = 1.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 1.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn complex_sqrt_negative_perfect_cases() {
+        // case 1: sqrt(-1) -> 1i (imaginary)
+        let x: FixedI64 = (-1).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: 1.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 2:sqrt(-16) -> 4i (imaginary)
+        let x: FixedI64 = (-16).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: 4.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(-9) -> 3i (imaginary)
+        let x: FixedI64 = (-9).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: 3.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 4: sqrt(-100) -> 10i (imaginary)
+        let x: FixedI64 = (-100).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: 10.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 5: sqrt(-4) -> 2i (imaginary)
+        let x: FixedI64 = (-4).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: 2.into(),
+        };
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn complex_sqrt_large_numbers() {
+        // case 1: sqrt(10000) -> 100
+        let x: FixedU64 = 10000.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 100.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(1000000) -> 1000
+        let x: FixedU64 = 1000000.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 1000.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(u32::MAX) -> 65535.999992370
+        let x: FixedU64 = (u32::MAX as u64).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedU64::from_inner(65535999992370),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 4: sqrt(u64::MAX) -> 135818.791312945
+        let x: FixedU64 = (u64::MAX).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedU64::from_inner(135818791312945),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn complex_sqrt_non_perfect_cases() {
+        // case 1: sqrt(2) ~= 1.414213562
+        let x: FixedU64 = 2.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedU64::from_inner(1414213562),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(5) -> 2.236067977
+        let x: FixedU64 = 5.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedU64::from_inner(2236067977),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(10) -> 3.162277660
+        let x: FixedU64 = 10.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected: Complex<FixedU64> = Complex {
+            real: FixedU64::from_inner(3162277660),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 4: sqrt(125) -> 11.180339887
+        let x: FixedU64 = 125.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected: Complex<FixedU64> = Complex {
+            real: FixedU64::from_inner(11180339887),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn complex_sqrt_negative_non_perfect_squares() {
+        // case 1: sqrt(-2) -> 1.414213562i
+        let x: FixedI64 = (-2).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: FixedI64::from_inner(1414213562),
+        };
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(-35) -> 5.916079783i (imaginary)
+        let x: FixedI64 = (-35).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: FixedI64::from_inner(5916079783),
+        };
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(-50) -> 7.071067811i
+        let x: FixedI64 = (-50).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: FixedI64::from_inner(7071067811),
+        };
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn complex_sqrt_fractional_cases() {
+        // case 1: sqrt(0.25) -> 0.5
+        let x = FixedU64::saturating_from_rational(1, 4);
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedU64::saturating_from_rational(1, 2),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(0.01) -> 0.1
+        let x = FixedU64::saturating_from_rational(1, 100);
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedU64::saturating_from_rational(1, 10),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 3: sqrt(0.5) -> 0.707106781
+        let x = FixedU64::saturating_from_rational(1, 2);
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedU64::from_inner(707106781),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn complex_sqrt_edge_cases() {
+        // case 1: sqrt(0) -> 0
+        let x: FixedU64 = 0.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 2: sqrt(1) -> 1
+        let x: FixedU64 = 1.into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 1.into(),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 3
+        // sqrt(i64::MAX) -> 96038.388349944
+        let x  = FixedI64::max_value();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: FixedI64::from_inner(96038388349944),
+            imgn: 0.into(),
+        };
+        assert_eq!(result, expected);
+
+        // case 4
+        // sqrt(i64::MIN) -> saturating_abs gives i64::MAX
+        let x: FixedI64 = (i64::MIN).into();
+        let result = complex_sqrt(&x).unwrap();
+        let expected = Complex {
+            real: 0.into(),
+            imgn: FixedI64::from_inner(96038388349944),
+        };
+        assert_eq!(result, expected);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` FIXED_EXP ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn fixed_exp_normal_cases() {
+        // case 1: exp(0) -> 1
+        let x: FixedU64 = 0.into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = 1.into();
+        assert_eq!(result, expected);
+
+        // case 2: exp(1) -> 2.718281828
+        let x: FixedU64 = 1.into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(2718281828);
+        assert_eq!(result, expected);
+
+        // case 3: exp(2) -> 7.389056096
+        let x: FixedU64 = 2.into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(7389056096);
+        assert_eq!(result, expected);
+
+        // case 4: exp(3) -> 20.085536911
+        let x: FixedU64 = 3.into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(20085536911);
+        assert_eq!(result, expected);
+
+        // case 5: exp(5) -> 148.413158957
+        let x: FixedU64 = 5.into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(148413158957);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_exp_positive_fractional_edge_cases() {
+        // case 1: exp(0.5) -> 1.648721267
+        let x = FixedU64::saturating_from_rational(1, 2);
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(1648721267);
+        assert_eq!(result, expected);
+
+        // case 2: exp(0.1) -> 1.105170915
+        let x = FixedU64::saturating_from_rational(1, 10);
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(1105170915);
+        assert_eq!(result, expected);
+
+        // case 3: exp(0.001) -> 1.001000500
+        let x = FixedU64::saturating_from_rational(1, 1000);
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(1001000500);
+        assert_eq!(result, expected);
+
+        // case 4: exp(2.5) -> 12.182493928
+        let x = FixedU64::saturating_from_rational(5, 2);
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(12182493928);
+        assert_eq!(result, expected);
+
+        // case 5: exp(1.5) -> 4.481689059
+        let x = FixedU64::saturating_from_rational(3, 2);
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedU64::from_inner(4481689059);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_exp_negative_edge_cases() {
+        // case 1: exp(-1) -> 0.367879441
+        let x: FixedI64 = (-1).into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedI64::from_inner(367879441);
+        assert_eq!(result, expected);
+
+        // case 2: exp(-2) -> 0.135335383
+        let x: FixedI64 = (-2).into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedI64::from_inner(135335283);
+        assert_eq!(result, expected);
+
+        // case 3: exp(-0.5) -> 0.606530659
+        let x = FixedI64::saturating_from_rational(-1, 2);
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedI64::from_inner(606530659);
+        assert_eq!(result, expected);
+
+        // case 4: exp(-15) -> 0.000000305
+        let x: FixedI64 = (-15).into();
+        let result = fixed_exp(&x).unwrap();
+        let expected = FixedI64::from_inner(000000305);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_exp_mathematical_constants() {
+        // case 1:
+        // exp(ln(2)) should be close to 2
+        // ln(2) ~= 0.693147181
+        let ln2 = FixedU64::from_inner(693147181);
+        let result = fixed_exp(&ln2).unwrap();
+        let expected: FixedU64 = 2.into();
+
+        // Allow small tolerance due to precision
+        let diff = if result > expected {
+            result.saturating_sub(expected)
+        } else {
+            expected.saturating_sub(result)
+        };
+        let tolerance = FixedU64::from_inner(1_000_000); // 0.001
+        assert!(diff < tolerance);
+
+        // case 2:
+        // exp(ln(10)) should be close to 10
+        // ln(10) ~= 2.302585093
+        let ln10 = FixedU64::from_inner(2302585093);
+        let result = fixed_exp(&ln10).unwrap();
+        let expected: FixedU64 = 10.into();
+
+        let diff = if result > expected {
+            result.saturating_sub(expected)
+        } else {
+            expected.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` FIXED_LN ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn fixed_ln_at_one() {
+        // case 1: ln(1) = 0 (real part), 0 (imaginary)
+        let x: FixedU64 = 1.into();
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedU64::from_inner(0);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_ln_at_zero() {
+        // case 1: ln(0) -> None
+        let x: FixedU64 = 0.into();
+        let result = fixed_ln(&x);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn fixed_ln_positive_integers() {
+        // case 1: ln(2) ~= 0.693147172
+        let x: FixedU64 = 2.into();
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedU64::from_inner(693147172);
+        assert_eq!(result, expected);
+
+        // case 2: ln(3) ~= 1.098612248
+        let x: FixedU64 = 3.into();
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedU64::from_inner(1098612248);
+        assert_eq!(result, expected);
+
+        // case 3: ln(10) ~= 2.302585040
+        let x: FixedU64 = 10.into();
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedU64::from_inner(2302585040);
+        assert_eq!(result, expected);
+
+        // case 4: ln(100) ~= 4.605170180
+        let x: FixedU64 = 100.into();
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedU64::from_inner(4605170080);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_ln_fractional_values() {
+        // case 1: ln(0.5) ~= -0.693147174
+        let x = FixedI64::saturating_from_rational(1, 2);
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedI64::from_inner(-693147174);
+        assert_eq!(result, expected);
+
+        // case 2: ln(0.1) ~= -2.302585064
+        let x = FixedI64::saturating_from_rational(1, 10);
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedI64::from_inner(-2302585064);
+        assert_eq!(result, expected);
+
+        // case 3: ln(1.5) ~= 0.405465100
+        let x = FixedU64::saturating_from_rational(3, 2);
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedU64::from_inner(405465100);
+        assert_eq!(result, expected);
+
+        // case 4: ln(2.5) ~= 0.916290712
+        let x = FixedU64::saturating_from_rational(5, 2);
+        let result = fixed_ln(&x).unwrap();
+        let expected = FixedU64::from_inner(916290712);
+        assert_eq!(result, expected);
+
+        // case 5: ln(0.5) -> None
+        let x = FixedU64::saturating_from_rational(1, 2);
+        let result = fixed_ln(&x);
+        assert!(result.is_none());
+
+        // case 6: ln(0.1) -> None
+        let x = FixedU64::saturating_from_rational(1, 10);
+        let result = fixed_ln(&x);
+        assert!(result.is_none());
+
+    }
+
+    #[test]
+    fn fixed_ln_negative_values() {
+        // case 1: ln(-1) -> None
+        let x: FixedI64 = (-1).into();
+        let result = fixed_ln(&x);
+        assert!(result.is_none());
+
+        // case 2: ln(-2) ~= 0.6931471872 
+        let x: FixedI64 = (-2).into();
+        let result = fixed_ln(&x);
+        assert!(result.is_none());
+
+        // case 3: ln(-10) ~= 2.302585040 
+        let x: FixedI64 = (-10).into();
+        let result = fixed_ln(&x);
+        assert!(result.is_none());
+
+        // case 4: ln(-0.5) ~= -0.693147174
+        let x = FixedI64::saturating_from_rational(-1, 2);
+        let result = fixed_ln(&x);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn fixed_ln_mathematical_constants() {
+        // case 1: ln(e) should be ~= 1
+        // e ~= 2.718281828
+        let e = FixedU64::from_inner(2718281828);
+        let result = fixed_ln(&e).unwrap();
+        let expected = FixedU64::from_inner(1000000000);
+
+        let tolerance = FixedU64::from_inner(1_000_000); // 0.001
+        let diff = if result > expected {
+            result.saturating_sub(expected)
+        } else {
+            expected.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+    }
+
+    #[test]
+    fn fixed_ln_inverse_of_exp() {
+        // case 1: x = 1
+        let x: FixedU64 = 1.into();
+        let exp_x = fixed_exp(&x).unwrap();
+        let result = fixed_ln(&exp_x).unwrap();
+
+        let tolerance = FixedU64::from_inner(1_000_000); // 0.001
+        let diff = if result > x {
+            result.saturating_sub(x)
+        } else {
+            x.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+
+        // case 2: x = 2
+        let x: FixedU64 = 2.into();
+        let exp_x = fixed_exp(&x).unwrap();
+        let result = fixed_ln(&exp_x).unwrap();
+
+        let diff = if result > x {
+            result.saturating_sub(x)
+        } else {
+            x.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+    }
+
+    #[test]
+    fn fixed_ln_properties_verification() {
+        // case 1: ln(a*b) = ln(a) + ln(b)
+        // ln(2*3) = ln(6) should equal ln(2) + ln(3)
+        let x: FixedU64 = 6.into();
+        let ln_6 = fixed_ln(&x).unwrap();
+
+        let two: FixedU64 = 2.into();
+        let three: FixedU64 = 3.into();
+        let ln_2 = fixed_ln(&two).unwrap();
+        let ln_3 = fixed_ln(&three).unwrap();
+        let sum = ln_2.saturating_add(ln_3);
+
+        let tolerance = FixedU64::from_inner(1_000_000); // 0.001
+        let diff = if ln_6 > sum {
+            ln_6.saturating_sub(sum)
+        } else {
+            sum.saturating_sub(ln_6)
+        };
+        assert!(diff < tolerance);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` FIXED_POW ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn fixed_pow_edge_cases() {
+        // case 1: x = 1, p = 0
+        let x: FixedU64 = 1.into();
+        let p: FixedU64 = 0.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedU64 = 1.into();
+        assert_eq!(result, expected);
+
+        // case 2: x = 0, p = 1
+        let x: FixedU64 = 0.into();
+        let p: FixedU64 = 1.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedU64 = 0.into();
+        assert_eq!(result, expected);
+
+        // case 3: x = 1, p = 1
+        let x: FixedU64 = 1.into();
+        let p: FixedU64 = 1.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedU64 = 1.into();
+        assert_eq!(result, expected);
+
+        // case 4: pow(0, -1) = 1 / 0 -> None
+        let x: FixedI64 = 0.into();
+        let p: FixedI64 = (-1).into();
+        let result = fixed_pow(&x, &p);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn fixed_pow_normal_cases() {
+        // case 1: x = 2, p = 3
+        let x: FixedU64 = 2.into();
+        let p: FixedU64 = 3.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedU64 = 8.into();
+        assert_eq!(result, expected);
+
+        // case 2: x = 4, p = 5
+        let x: FixedU64 = 4.into();
+        let p: FixedU64 = 5.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedU64 = 1024.into();
+        assert_eq!(result, expected);
+
+        // case 3: x = 8, p = 6
+        let x: FixedU64 = 8.into();
+        let p: FixedU64 = 6.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedU64 = 262144.into();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_pow_fractional_exponents() {
+        let tolerance: FixedU64 = FixedU64::from_inner(1_000_000); // 0.001
+
+        // case 1: pow(4, 0.5) = 2
+        let x: FixedU64 = 4.into();
+        let p = FixedU64::saturating_from_rational(1, 2);
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedU64 = 2.into();
+        let diff = if result > expected {
+            result.saturating_sub(expected)
+        } else {
+            expected.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+
+        // case 2: pow(9, 0.25) = sqrt(3) ~= 1.7320508
+        let x: FixedU64 = 9.into();
+        let p = FixedU64::saturating_from_rational(1, 4);
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected = FixedU64::saturating_from_rational(1732051, 1_000_000); // ~= sqrt(3)
+        let diff = if result > expected {
+            result.saturating_sub(expected)
+        } else {
+            expected.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+
+        // case 3: pow(12, 0.35) ~= 2.386876
+        let x: FixedU64 = 12.into();
+        let p = FixedU64::saturating_from_rational(35, 100); // 0.35
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected = FixedU64::saturating_from_rational(2_386_876, 1_000_000);
+
+        let diff = if result > expected {
+            result.saturating_sub(expected)
+        } else {
+            expected.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+    }
+
+    #[test]
+    fn fixed_pow_fractional_base_integer_exp() {
+        let tolerance = FixedU64::from_inner(1_000_000);
+
+        // case 1: pow(1.5, 2) = 2.25
+        let x = FixedU64::saturating_from_rational(3, 2);
+        let p: FixedU64 = 2.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected = FixedU64::saturating_from_rational(9, 4);
+
+        let diff = if result > expected {
+            result.saturating_sub(expected)
+        } else {
+            expected.saturating_sub(result)
+        };
+        assert!(diff < tolerance);
+
+        // case 2: pow(3.5, 4) = 150.0625
+        let x = FixedU64::saturating_from_rational(7, 2); // 3.5
+        let p: FixedU64 = 4.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected = FixedU64::from_inner(150062500000);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_pow_negative_base_integer_exp() {
+        // case 1: pow(-2, 3) = -8
+        let x: FixedI64 = (-2).into();
+        let p: FixedI64 = 3.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedI64 = (-8).into();
+        assert_eq!(result, expected);
+
+        // case 2: pow(-6, 5) = -7776
+        let x: FixedI64 = (-6).into();
+        let p: FixedI64 = 5.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedI64 = (-7776).into();
+        assert_eq!(result, expected);
+
+        // case 3: pow(-4, 2) = 16
+        let x: FixedI64 = (-4).into();
+        let p: FixedI64 = 2.into();
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected: FixedI64 = (16).into();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_pow_negative_base_fractional_exp() {
+        // case 1: pow(-4, 1/2) -> None
+        let x: FixedI64 = (-4).into();
+        let p = FixedI64::saturating_from_rational(1, 2);
+        let result = fixed_pow(&x, &p);
+        assert!(result.is_none());
+
+        // case 2: pow(-8, 1/3) -> None
+        let x: FixedI64 = (-8).into();
+        let p = FixedI64::saturating_from_rational(1, 3);
+
+        let result = fixed_pow(&x, &p);
+        assert!(result.is_none())
+    }
+
+    #[test]
+    fn fixed_pow_large_integer_overflow_saturates() {
+        // 2^128 overflows FixedU64
+        let x: FixedU64 = 2.into();
+        let p: FixedU64 = 128.into();
+
+        let result = fixed_pow(&x, &p).unwrap();
+        let expected = u64::MAX.into();
+        assert_eq!(result, expected);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````` FIXED_SQRT_NEWTON ``````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn fixed_sqrt_newton_standard_cases() {
+        // case 1: x = 81 -> 9
+        let x: FixedU64 = (81).into();
+        let result = fixed_sqrt_newton(&x);
+        let expected = 9.into();
+        assert_eq!(result, expected);
+
+        // case 2: x = 49 -> 7
+        let x: FixedU64 = (49).into();
+        let result = fixed_sqrt_newton(&x);
+        let expected = 7.into();
+        assert_eq!(result, expected);
+
+        // case 3: x = 10 -> 3.162277660
+        let x: FixedU64 = 10.into();
+        let result = fixed_sqrt_newton(&x);
+        let expected: FixedU64 = FixedU64::from_inner(3162277660);
+        assert_eq!(result, expected);
+
+        // case 4: x = 7 -> 2.2645751311
+        let x: FixedU64 = 7.into();
+        let result = fixed_sqrt_newton(&x);
+        let expected: FixedU64 = FixedU64::from_inner(2645751311);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn fixed_sqrt_newton_edge_cases() {
+        // case 1: x = 0 -> 0
+        let x: FixedU64 = (0).into();
+        let result = fixed_sqrt_newton(&x);
+        let expected = 0.into();
+        assert_eq!(result, expected);
+
+        // case 2: x < 0 : -9 -> 0
+        let x: FixedI64 = (-9).into();
+        let result = fixed_sqrt_newton(&x);
+        let expected = 0.into();
+        assert_eq!(result, expected);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` FIXED_PI ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn fixed_pi_value_check() {
+        // fixed_pi() -> 3.141592920
+        let actual: FixedU64 = fixed_pi();
+        let expected = FixedU64::from_inner(3141592920);
+        assert_eq!(actual, expected);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````` RANGE_REDUCES_SQRT `````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn range_reduce_sqrt_already_in_range() {
+        // case 1: y = 1 (already at target, no reduction needed)
+        let y: FixedU64 = 1.into();
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert_eq!(reduced, y);
+        assert_eq!(k, 0);
+
+        // case 2: y = 1.5 (within [0.5, 1.5], no reduction)
+        let y = FixedU64::saturating_from_rational(3, 2);
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert_eq!(reduced, y);
+        assert_eq!(k, 0);
+
+        // case 3: y = 0.5 (at lower bound, no reduction)
+        let y = FixedU64::saturating_from_rational(1, 2);
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert_eq!(reduced, y);
+        assert_eq!(k, 0);
+
+        // case 4: y = 0.75 (within range)
+        let y = FixedU64::saturating_from_rational(3, 4);
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert_eq!(reduced, y);
+        assert_eq!(k, 0);
+    }
+
+    #[test]
+    fn range_reduce_sqrt_needs_reduction_above_range() {
+        // Reduced value should be in range [0.5, 1.5]
+        let half = FixedU64::saturating_from_rational(1, 2);
+        let one_half = FixedU64::saturating_from_rational(3, 2);
+
+        // case 1: y = 4 (needs reduction)
+        // sqrt(4) = 2, sqrt(2) = 1.414 (within range)
+        let y: FixedU64 = 4.into();
+        let (reduced, k) = range_reduce_sqrt(y);
+        // 2 reductions needed
+        assert_eq!(k, 2);
+        assert!(reduced >= half && reduced <= one_half);
+
+        // case 2: y = 16 (needs multiple reductions)
+        // sqrt(16) = 4, sqrt(4) = 2, sqrt(2) = 1.414
+        let y: FixedU64 = 16.into();
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert_eq!(k, 3); // 3 reductions needed
+        assert!(reduced >= half && reduced <= one_half);
+
+        // case 3: y = 100 (large value)
+        let y: FixedU64 = 100.into();
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert!(k > 0);
+        assert!(reduced >= half && reduced <= one_half);
+    }
+
+    #[test]
+    fn range_reduce_sqrt_needs_reduction_below_range() {
+        let half = FixedU64::saturating_from_rational(1, 2);
+        let one_half = FixedU64::saturating_from_rational(3, 2);
+
+        // case 1: y = 0.25 (below range, needs reduction)
+        // sqrt(0.25) = 0.5 (now in range)
+        let y = FixedU64::saturating_from_rational(1, 4);
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert_eq!(k, 1);
+        assert!(reduced >= half && reduced <= one_half);
+
+        // case 2: y = 0.01 (very small, needs multiple reductions)
+        let y = FixedU64::saturating_from_rational(1, 100);
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert!(k > 0);
+        assert_eq!(k, 3);
+        assert!(reduced >= half && reduced <= one_half);
+
+        // case 3: y = 0.0001 (very small, needs multiple reductions)
+        let y = FixedU64::saturating_from_rational(1, 10000);
+        let (reduced, k) = range_reduce_sqrt(y);
+        assert!(k > 0);
+        assert_eq!(k, 4);
+        assert!(reduced >= half && reduced <= one_half);
+    }
+
+    #[test]
+    fn range_reduce_sqrt_edge_cases() {
+        // case 1: y = 0 (zero input)
+        let y: FixedU64 = 0.into();
+        let (reduced, k) = range_reduce_sqrt(y);
+
+        // sqrt(0) = 0, which is outside [0.5, 1.5]
+        // But the function should handle this gracefully
+        assert_eq!(reduced, y);
+        assert_eq!(k, 0);
+
+        // case 2: y very close to 1 (minimal difference)
+        let y = FixedU64::from_inner(1000000001); // 1.000000001
+        let (reduced, k) = range_reduce_sqrt(y);
+
+        // Should not need reduction (within tolerance)
+        assert_eq!(k, 0);
+        assert_eq!(reduced, y);
+
+        // case 3: y = u32::MAX (very large value)
+        let y: FixedU64 = (u32::MAX as u64).into();
+        let (reduced, k) = range_reduce_sqrt(y);
+
+        // Should reduce many times
+        assert!(k > 0);
+        let half = FixedU64::saturating_from_rational(1, 2);
+        let one_half = FixedU64::saturating_from_rational(3, 2);
+        assert!(reduced >= half && reduced <= one_half);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````````` LN_NEAR_ONE `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn ln_near_one_at_one() {
+        // case 1: y = 1, ln(1) = 0
+        let y: FixedU64 = 1.into();
+        let result = ln_near_one(y);
+        let expected: FixedU64 = 0.into();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn ln_near_one_slightly_above_one() {
+        // case 1: y = 1.1, ln(1.1) ~= 0.095310176
+        let y = FixedU64::saturating_from_rational(11, 10);
+        let result = ln_near_one(y);
+        let expected = FixedU64::from_inner(95310176);
+        assert_eq!(result, expected);
+
+        // case 2: y = 1.2, ln(1.2) ~= 0.182321552
+        let y = FixedU64::saturating_from_rational(6, 5);
+        let result = ln_near_one(y);
+        let expected = FixedU64::from_inner(182321552);
+        assert_eq!(result, expected);
+
+        // case 3: y = 1.5, ln(1.5) ~= 0.405465100
+        let y = FixedU64::saturating_from_rational(3, 2);
+        let result = ln_near_one(y);
+        let expected = FixedU64::from_inner(405465100);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn ln_near_one_slightly_below_one() {
+        // case 1: y = 0.9, ln(0.9) ~= -0.105360510
+        let y = FixedU64::saturating_from_rational(9, 10);
+        let _result = ln_near_one(y);
+        // Result will be negative (but FixedU64 is unsigned, so this might underflow)
+        // For signed types:
+        let y_signed = FixedI64::saturating_from_rational(9, 10);
+        let result_signed = ln_near_one(y_signed);
+        let expected = FixedI64::from_inner(-105360510);
+        assert_eq!(result_signed, expected);
+
+        // case 2: y = 0.8, ln(0.8) ~= -0.223143548
+        let y = FixedI64::saturating_from_rational(4, 5);
+        let result = ln_near_one(y);
+        let expected = FixedI64::from_inner(-223143548);
+        assert_eq!(result, expected);
+
+        // case 3: y = 0.5, ln(0.5) ~= -0.693147174
+        let y = FixedI64::saturating_from_rational(1, 2);
+        let result = ln_near_one(y);
+        let expected = FixedI64::from_inner(-693147174);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn ln_near_one_very_close_to_one() {
+        // case 1: y = 1.01, ln(1.01) ~= 0.009950330
+        let y = FixedU64::saturating_from_rational(101, 100);
+        let result = ln_near_one(y);
+        let expected = FixedU64::from_inner(9950330);
+        assert_eq!(result, expected);
+
+        // case 2: y = 1.001, ln(1.001) ~= 0.000999500
+        let y = FixedU64::saturating_from_rational(1001, 1000);
+        let result = ln_near_one(y);
+        let expected = FixedU64::from_inner(999500);
+        assert_eq!(result, expected);
+
+        // case 3: y = 0.99, ln(0.99) ~= -0.010050334
+        let y = FixedI64::saturating_from_rational(99, 100);
+        let result = ln_near_one(y);
+        let expected = FixedI64::from_inner(-10050334);
+        assert_eq!(result, expected);
+
+        // case 4: y = 0.999, ln(0.999) ~= -0.001000500
+        let y = FixedI64::saturating_from_rational(999, 1000);
+        let result = ln_near_one(y);
+        let expected = FixedI64::from_inner(-1000500);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn ln_near_one_edge_cases() {
+        // case 1: Very small positive deviation
+        // y = 1.0001, ln(1.0001) ~= 0.000099994
+        let y = FixedU64::saturating_from_rational(10001, 10000);
+        let result = ln_near_one(y);
+        let expected = FixedU64::from_inner(99994);
+        assert_eq!(result, expected);
+
+        // case 2: Very small negative deviation
+        // y = 0.9999, ln(0.9999) ~= -0.000100004
+        let y = FixedI64::saturating_from_rational(9999, 10000);
+        let result = ln_near_one(y);
+        let expected = FixedI64::from_inner(-100004);
+        assert_eq!(result, expected);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````` DYNAMIC_MAX_ITERATIONS ```````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    #[test]
+    fn dynamic_max_iterations_zero_input() {
+        // case 1: x = 0, should return minimum of 1 iteration
+        let x: FixedU64 = 0.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn dynamic_max_iterations_one_input() {
+        // case 1: x = 1, int_part = 1
+        // iterations = 1 * DECIMAL_PLACES + 1 = 1 * 9 + 1 = 10
+        let x: FixedU64 = 1.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 10); // 1 * 9 + 1
+    }
+
+    #[test]
+    fn dynamic_max_iterations_small_integers() {
+        // case 1: x = 2, int_part = 2
+        // iterations = 2 * 9 + 1 = 19
+        let x: FixedU64 = 2.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 19);
+
+        // case 2: x = 5, int_part = 5
+        // iterations = 5 * 9 + 1 = 46
+        let x: FixedU64 = 5.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 46);
+
+        // case 3: x = 10, int_part = 10
+        // iterations = 10 * 9 + 1 = 91
+        let x: FixedU64 = 10.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 91);
+    }
+
+    #[test]
+    fn dynamic_max_iterations_fractional_values() {
+        // case 1: x = 0.5, int_part = 0
+        // iterations = 0 * 9 + 1 = 1
+        let x = FixedU64::saturating_from_rational(1, 2);
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 1);
+
+        // case 2: x = 0.9, int_part = 0
+        // iterations = 0 * 99 + 1 = 1
+        let x = FixedU64::saturating_from_rational(9, 10);
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 1);
+
+        // case 3: x = 1.5, int_part = 1
+        // iterations = 1 * 9 + 1 = 10
+        let x = FixedU64::saturating_from_rational(3, 2);
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 10);
+
+        // case 4: x = 2.7, int_part = 2
+        // iterations = 2 * 9 + 1 = 19
+        let x = FixedU64::saturating_from_rational(27, 10);
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 19);
+    }
+
+    #[test]
+    fn dynamic_max_iterations_negative_values() {
+        // case 1: x = -1, abs = 1, int_part = 1
+        // iterations = 1 * 9 + 1 = 10
+        let x: FixedI64 = (-1).into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 10);
+
+        // case 2: x = -5, abs = 5, int_part = 5
+        // iterations = 5 * 9 + 1 = 46
+        let x: FixedI64 = (-5).into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 46);
+
+        // case 3: x = -10, abs = 10, int_part = 10
+        // iterations = 10 * 9 + 1 = 91
+        let x: FixedI64 = (-10).into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 91);
+
+        // case 4: x = -0.5, abs = 0.5, int_part = 0
+        // iterations = 0 * 9 + 1 = 1
+        let x = FixedI64::saturating_from_rational(-1, 2);
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn dynamic_max_iterations_large_values() {
+        // case 1: x = 100, int_part = 100
+        // iterations = 100 * 9 + 1 = 901
+        let x: FixedU64 = 100.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 901);
+
+        // case 2: x = 1000, int_part = 1000
+        // iterations = 1000 * 9 + 1 = 9001
+        let x: FixedU64 = 1000.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 9001);
+
+        // case 3: x = 10000, int_part = 10000
+        // iterations = 10000 * 9 + 1 = 90001
+        let x: FixedU64 = 10000.into();
+        let result = dynamic_max_iterations(&x);
+        assert_eq!(result, 90001);
+    }
+
+    #[test]
+    fn dynamic_max_iterations_saturation_check() {
+        // case 1: Overflow values
+        // This depends on the max value of the fixed-point type
+        let x: FixedU64 = (u32::MAX as u64).into();
+        let result = dynamic_max_iterations(&x);
+
+        // Should return a valid value without panicking
+        assert!(result >= 1);
+
+        // Result should be reasonable (not u32::MAX due to saturation)
+        // int_part = u32::MAX, iterations = u32::MAX * 5 + 1
+        // This will saturate to u32::MAX
+        assert_eq!(result, u32::MAX);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````````` TO_U32_FLOOR ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn to_u32_floor_zero_input() {
+        // case 1: x = 0 -> 0
+        let x: FixedU64 = 0.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+
+        // case 2: x = 0 (signed)
+        let x: FixedI64 = 0.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn to_u32_floor_positive_integers() {
+        // case 1: x = 1 -> 1
+        let x: FixedU64 = 1.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 1);
+
+        // case 2: x = 10 -> 10
+        let x: FixedU64 = 10.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 10);
+
+        // case 3: x = 100 -> 100
+        let x: FixedU64 = 100.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 100);
+
+        // case 4: x = 1000 -> 1000
+        let x: FixedU64 = 1000.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 1000);
+
+        // case 5: x = 42 -> 42
+        let x: FixedU64 = 42.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 42);
+    }
+
+    #[test]
+    fn to_u32_floor_fractional_values() {
+        // case 1: x = 1.5 -> 1 (floor)
+        let x = FixedU64::saturating_from_rational(3, 2);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 1);
+
+        // case 2: x = 2.7 -> 2 (floor)
+        let x = FixedU64::saturating_from_rational(27, 10);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 2);
+
+        // case 3: x = 9.999 -> 9 (floor)
+        let x = FixedU64::saturating_from_rational(9999, 1000);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 9);
+
+        // case 4: x = 100.1 -> 100 (floor)
+        let x = FixedU64::saturating_from_rational(1001, 10);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 100);
+
+        // case 5: x = 0.5 -> 0 (floor)
+        let x = FixedU64::saturating_from_rational(1, 2);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+
+        // case 6: x = 0.9 -> 0 (floor)
+        let x = FixedU64::saturating_from_rational(9, 10);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn to_u32_floor_negative_values() {
+        // case 1: x = -1 -> 0 (clamped)
+        let x: FixedI64 = (-1).into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+
+        // case 2: x = -10 -> 0 (clamped)
+        let x: FixedI64 = (-10).into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+
+        // case 3: x = -0.5 -> 0 (clamped)
+        let x = FixedI64::saturating_from_rational(-1, 2);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+
+        // case 4: x = -100.5 -> 0 (clamped)
+        let x = FixedI64::saturating_from_rational(-201, 2);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+
+        // case 5: x = i64::MIN -> 0 (clamped)
+        let x: FixedI64 = i64::MIN.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn to_u32_floor_boundary_values() {
+        // case 1: x = u32::MAX (exactly at boundary)
+        let x: FixedU64 = (u32::MAX as u64).into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, u32::MAX);
+
+        // case 2: x = u32::MAX + 1 (overflow, should saturate)
+        let x: FixedU64 = ((u32::MAX as u64) + 1).into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, u32::MAX);
+
+        // case 3: x = u32::MAX + 100 (overflow, should saturate)
+        let x: FixedU64 = ((u32::MAX as u64) + 100).into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, u32::MAX);
+    }
+
+    #[test]
+    fn to_u32_floor_large_values() {
+        // case 1: x = 1000000 -> 1000000
+        let x: FixedU64 = 1000000.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 1000000);
+
+        // case 2: x = 10000000 -> 10000000
+        let x: FixedU64 = 10000000.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 10000000);
+
+        // case 3: x = u64::MAX (overflow, should saturate)
+        let x: FixedU64 = u64::MAX.into();
+        let result = to_u32_floor(&x);
+        assert_eq!(result, u32::MAX);
+    }
+
+    #[test]
+    fn to_u32_floor_from_inner_representation() {
+        // case 1: FixedU64 with DIV = 1_000_000_000
+        // inner = 5_000_000_000 represents 5.0
+        let x = FixedU64::from_inner(5_000_000_000);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 5);
+
+        // case 2: inner = 5_500_000_000 represents 5.5
+        let x = FixedU64::from_inner(5_500_000_000);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 5);
+
+        // case 3: inner = 999_999_999 represents 0.999999999
+        let x = FixedU64::from_inner(999_999_999);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 0);
+
+        // case 4: inner = 1_000_000_000 represents 1.0
+        let x = FixedU64::from_inner(1_000_000_000);
+        let result = to_u32_floor(&x);
+        assert_eq!(result, 1);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````` FIXED_SIGNED_CAST - FixedI64 ````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //
+    // FixedI64 is an identity implementation: Signed = Self.
+    // Every conversion is a no-op - the value passes through unchanged.
+ 
+    #[test]
+    fn fixed_signed_cast_i64_checked_into() {
+        // Any FixedI64 value should always yield Some(itself).
+        let x = FixedI64::saturating_from_integer(5);
+        assert_eq!(FixedI64::checked_into(x), Some(x));
+ 
+        let x = FixedI64::saturating_from_integer(-7);
+        assert_eq!(FixedI64::checked_into(x), Some(x));
+ 
+        let x = FixedI64::zero();
+        assert_eq!(FixedI64::checked_into(x), Some(x));
+ 
+        let x = FixedI64::max_value();
+        assert_eq!(FixedI64::checked_into(x), Some(x));
+ 
+        let x = FixedI64::min_value();
+        assert_eq!(FixedI64::checked_into(x), Some(x));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i64_saturated_into() {
+        // Identity: saturated_into on a signed type is always a no-op.
+        let x = FixedI64::saturating_from_integer(42);
+        assert_eq!(FixedI64::saturated_into(x), x);
+ 
+        let x = FixedI64::saturating_from_integer(-42);
+        assert_eq!(FixedI64::saturated_into(x), x);
+ 
+        let x = FixedI64::max_value();
+        assert_eq!(FixedI64::saturated_into(x), x);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i64_checked_from() {
+        // Identity: checked_from on a signed type always yields Some(itself).
+        let x = FixedI64::saturating_from_integer(3);
+        assert_eq!(FixedI64::checked_from(x), Some(x));
+ 
+        let x = FixedI64::saturating_from_integer(-3);
+        assert_eq!(FixedI64::checked_from(x), Some(x));
+ 
+        let x = FixedI64::min_value();
+        assert_eq!(FixedI64::checked_from(x), Some(x));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i64_saturated_from() {
+        // Identity: saturated_from on a signed type is always a no-op.
+        let x = FixedI64::saturating_from_integer(10);
+        assert_eq!(FixedI64::saturated_from(x), x);
+ 
+        let x = FixedI64::saturating_from_integer(-10);
+        assert_eq!(FixedI64::saturated_from(x), x);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i64_saturating_closure() {
+        // saturating wraps a signed closure - on FixedI64 it is a pure pass-through.
+        let x = FixedI64::saturating_from_integer(4);
+        let result = FixedI64::saturating(x, |v| v.saturating_add(FixedI64::saturating_from_integer(1)));
+        assert_eq!(result, FixedI64::saturating_from_integer(5));
+ 
+        // Closure that negates: result is negative but still representable.
+        let x = FixedI64::saturating_from_integer(3);
+        let result = FixedI64::saturating(x, |v| v.saturating_mul(FixedI64::saturating_from_integer(-1)));
+        assert_eq!(result, FixedI64::saturating_from_integer(-3));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i64_checked_closure() {
+        // checked wraps a signed closure - returns Some for in-range results,
+        // None when the result saturates to min_value() or max_value().
+        let x = FixedI64::saturating_from_integer(7);
+        let result = FixedI64::checked(x, |v| {
+            v.unwrap_or(FixedI64::zero()).saturating_add(FixedI64::saturating_from_integer(1))
+        });
+        assert_eq!(result, Some(FixedI64::saturating_from_integer(8)));
+    }
+
+    #[test]
+    fn fixed_signed_cast_i64_checked_closure_overflow_is_none() {
+        // Closure overflows to max_value via saturating arithmetic - checked returns None.
+        let x = FixedI64::max_value();
+        let result = FixedI64::checked(x, |v| {
+            v.unwrap_or(FixedI64::zero()).saturating_add(FixedI64::one())
+        });
+        assert_eq!(result, None);
+    }
+ 
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````` FIXED_SIGNED_CAST - FixedI128 ```````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //
+    // FixedI128 is also an identity implementation: Signed = Self.
+ 
+    #[test]
+    fn fixed_signed_cast_i128_checked_into() {
+        let x = FixedI128::saturating_from_integer(100);
+        assert_eq!(FixedI128::checked_into(x), Some(x));
+ 
+        let x = FixedI128::saturating_from_integer(-100);
+        assert_eq!(FixedI128::checked_into(x), Some(x));
+ 
+        let x = FixedI128::zero();
+        assert_eq!(FixedI128::checked_into(x), Some(x));
+ 
+        let x = FixedI128::max_value();
+        assert_eq!(FixedI128::checked_into(x), Some(x));
+ 
+        let x = FixedI128::min_value();
+        assert_eq!(FixedI128::checked_into(x), Some(x));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i128_saturated_into() {
+        let x = FixedI128::saturating_from_integer(999);
+        assert_eq!(FixedI128::saturated_into(x), x);
+ 
+        let x = FixedI128::saturating_from_integer(-999);
+        assert_eq!(FixedI128::saturated_into(x), x);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i128_checked_from() {
+        let x = FixedI128::saturating_from_integer(50);
+        assert_eq!(FixedI128::checked_from(x), Some(x));
+ 
+        let x = FixedI128::saturating_from_integer(-50);
+        assert_eq!(FixedI128::checked_from(x), Some(x));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i128_saturated_from() {
+        let x = FixedI128::saturating_from_integer(77);
+        assert_eq!(FixedI128::saturated_from(x), x);
+ 
+        let x = FixedI128::saturating_from_integer(-77);
+        assert_eq!(FixedI128::saturated_from(x), x);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i128_saturating_closure() {
+        let x = FixedI128::saturating_from_integer(10);
+        let result = FixedI128::saturating(x, |v| v.saturating_add(FixedI128::saturating_from_integer(5)));
+        assert_eq!(result, FixedI128::saturating_from_integer(15));
+ 
+        let x = FixedI128::saturating_from_integer(-10);
+        let result = FixedI128::saturating(x, |v| v.saturating_mul(FixedI128::saturating_from_integer(2)));
+        assert_eq!(result, FixedI128::saturating_from_integer(-20));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i128_checked_closure() {
+        let x = FixedI128::saturating_from_integer(3);
+        let result = FixedI128::checked(x, |v| {
+            v.unwrap_or(FixedI128::zero()).saturating_add(FixedI128::saturating_from_integer(2))
+        });
+        assert_eq!(result, Some(FixedI128::saturating_from_integer(5)));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_i128_checked_closure_overflow_is_none() {
+        // Closure overflows to max_value via saturating arithmetic - checked returns None.
+        let x = FixedI128::max_value();
+        let result = FixedI128::checked(x, |v| {
+            v.unwrap_or(FixedI128::zero()).saturating_add(FixedI128::one())
+        });
+        assert_eq!(result, None);
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````` FIXED_SIGNED_CAST - FixedU64 ````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //
+    // FixedU64 bridges to FixedI128. u64 inner always fits in i128,
+    // so checked_into / saturated_into are always infallible.
+    // The reverse direction can fail when the signed result is negative
+    // or exceeds u64::MAX.
+ 
+    #[test]
+    fn fixed_signed_cast_u64_checked_into_always_some() {
+        // u64 inner always representable in i128.
+        let x = FixedU64::saturating_from_integer(0);
+        assert!(FixedU64::checked_into(x).is_some());
+ 
+        let x = FixedU64::saturating_from_integer(1);
+        let signed = FixedU64::checked_into(x).unwrap();
+        // The signed inner should equal the unsigned inner cast to i128.
+        assert_eq!(signed.into_inner(), x.into_inner() as i128);
+ 
+        let x = FixedU64::max_value();
+        assert!(FixedU64::checked_into(x).is_some());
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_saturated_into_round_trip() {
+        // saturated_into then checked_from should recover the original value
+        // for any representable FixedU64.
+        let values = [
+            FixedU64::saturating_from_integer(0),
+            FixedU64::saturating_from_integer(1),
+            FixedU64::saturating_from_integer(1000),
+            FixedU64::saturating_from_rational(3, 2), // 1.5
+            FixedU64::max_value(),
+        ];
+        for x in values {
+            let signed = FixedU64::saturated_into(x);
+            let back = FixedU64::checked_from(signed).unwrap();
+            assert_eq!(back, x, "round-trip failed for {x:?}");
+        }
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_checked_from_negative_is_none() {
+        // Negative FixedI128 values cannot be represented as FixedU64.
+        let neg = FixedI128::saturating_from_integer(-1);
+        assert_eq!(FixedU64::checked_from(neg), None);
+ 
+        let neg = FixedI128::saturating_from_integer(-100);
+        assert_eq!(FixedU64::checked_from(neg), None);
+ 
+        // Minimum i128 value - strongly negative.
+        let neg = FixedI128::min_value();
+        assert_eq!(FixedU64::checked_from(neg), None);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_checked_from_above_u64_max_is_none() {
+        // FixedI128 inner > u64::MAX cannot fit in FixedU64.
+        // Construct an i128 inner that represents a value just above u64::MAX.
+        // FixedU64::DIV = 10^9; FixedI128::DIV = 10^18.
+        // We need inner_i128 > u64::MAX (as a raw inner value of FixedI128).
+        // u64::MAX as i128 = 18_446_744_073_709_551_615.
+        let too_large = FixedI128::from_inner(u64::MAX as i128 + 1);
+        assert_eq!(FixedU64::checked_from(too_large), None);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_checked_from_zero_is_some() {
+        let zero = FixedI128::zero();
+        assert_eq!(FixedU64::checked_from(zero), Some(FixedU64::zero()));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_saturated_from_negative_clamps_to_zero() {
+        // Negative values saturate to zero (the unsigned floor).
+        let neg = FixedI128::saturating_from_integer(-5);
+        assert_eq!(FixedU64::saturated_from(neg), FixedU64::zero());
+ 
+        let neg = FixedI128::min_value();
+        assert_eq!(FixedU64::saturated_from(neg), FixedU64::zero());
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_saturated_from_above_max_clamps_to_max() {
+        // Values above u64::MAX saturate to u64::MAX.
+        let too_large = FixedI128::from_inner(u64::MAX as i128 + 1);
+        assert_eq!(FixedU64::saturated_from(too_large), FixedU64::from_inner(u64::MAX));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_saturating_closure_with_positive_result() {
+        // Closure doubles the value - result stays within FixedU64 range.
+        let x = FixedU64::saturating_from_integer(3);
+        let result = FixedU64::saturating(x, |v| v.saturating_add(v));
+        assert_eq!(result, FixedU64::saturating_from_integer(6));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_saturating_closure_negative_result_clamps() {
+        // Closure produces a negative signed result - saturated_from clamps to 0.
+        let x = FixedU64::saturating_from_integer(2);
+        let result = FixedU64::saturating(x, |v| v.saturating_mul(FixedI128::saturating_from_integer(-1)));
+        assert_eq!(result, FixedU64::zero());
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_checked_closure_negative_result_is_none() {
+        // Closure produces a negative signed result - checked_from returns None.
+        let x = FixedU64::saturating_from_integer(5);
+        let result = FixedU64::checked(x, |v| {
+        // saturating_mul by the fixed-point -1.0 correctly negates because
+        // fixed-point multiplication divides by DIV, cancelling the scale difference.
+        // (Unlike saturating_add, which operates on raw inner values and would be wrong
+        // with a FixedI128 integer constant - see the checked_closure_valid test.)
+            v.unwrap().saturating_mul(FixedI128::saturating_from_integer(-1))
+        });
+        assert_eq!(result, None);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u64_checked_closure_valid_result_is_some() {
+        // Closure adds one unit in FixedU64 scale.
+        // The bridge casts raw inner bits into FixedI128, so arithmetic inside
+        // the closure must use FixedU64::DIV (10^9) as "one unit", not
+        // FixedI128::saturating_from_integer(1) which uses FixedI128::DIV (10^18).
+        let x = FixedU64::saturating_from_integer(10);
+        let one_unit = FixedI128::from_inner(FixedU64::DIV as i128); // = 1 in FixedU64 scale
+        let result = FixedU64::checked(x, |v| {
+            v.unwrap().saturating_add(one_unit)
+        });
+        assert_eq!(result, Some(FixedU64::saturating_from_integer(11)));
+    }
+ 
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````` FIXED_SIGNED_CAST - FixedU128 ```````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //
+    // FixedU128 bridges to FixedI128. Unlike FixedU64, the inner u128 value
+    // can exceed i128::MAX, making checked_into fallible for large values.
+ 
+    #[test]
+    fn fixed_signed_cast_u128_checked_into_small_values_are_some() {
+        let x = FixedU128::saturating_from_integer(0);
+        assert!(FixedU128::checked_into(x).is_some());
+ 
+        let x = FixedU128::saturating_from_integer(1);
+        let signed = FixedU128::checked_into(x).unwrap();
+        assert_eq!(signed.into_inner(), x.into_inner() as i128);
+ 
+        let x = FixedU128::saturating_from_integer(1_000_000);
+        assert!(FixedU128::checked_into(x).is_some());
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_checked_into_above_i128_max_is_none() {
+        // Inner value just above i128::MAX is unrepresentable in FixedI128.
+        let too_large = FixedU128::from_inner(i128::MAX as u128 + 1);
+        assert_eq!(FixedU128::checked_into(too_large), None);
+ 
+        // Maximum FixedU128 value is definitely unrepresentable.
+        assert_eq!(FixedU128::checked_into(FixedU128::max_value()), None);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_saturated_into_large_clamps_to_i128_max() {
+        // Values above i128::MAX saturate to i128::MAX in the signed workspace.
+        let too_large = FixedU128::from_inner(i128::MAX as u128 + 1);
+        let signed = FixedU128::saturated_into(too_large);
+        assert_eq!(signed, FixedI128::from_inner(i128::MAX));
+ 
+        let signed_max = FixedU128::saturated_into(FixedU128::max_value());
+        assert_eq!(signed_max, FixedI128::from_inner(i128::MAX));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_saturated_into_small_values_exact() {
+        let x = FixedU128::saturating_from_integer(42);
+        let signed = FixedU128::saturated_into(x);
+        assert_eq!(signed.into_inner(), x.into_inner() as i128);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_checked_from_negative_is_none() {
+        let neg = FixedI128::saturating_from_integer(-1);
+        assert_eq!(FixedU128::checked_from(neg), None);
+ 
+        let neg = FixedI128::min_value();
+        assert_eq!(FixedU128::checked_from(neg), None);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_checked_from_non_negative_is_some() {
+        let zero = FixedI128::zero();
+        assert_eq!(FixedU128::checked_from(zero), Some(FixedU128::zero()));
+ 
+        let pos = FixedI128::saturating_from_integer(100);
+        let result = FixedU128::checked_from(pos).unwrap();
+        assert_eq!(result.into_inner(), pos.into_inner() as u128);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_saturated_from_negative_clamps_to_zero() {
+        let neg = FixedI128::saturating_from_integer(-99);
+        assert_eq!(FixedU128::saturated_from(neg), FixedU128::zero());
+ 
+        let neg = FixedI128::min_value();
+        assert_eq!(FixedU128::saturated_from(neg), FixedU128::zero());
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_saturated_from_non_negative_exact() {
+        let pos = FixedI128::saturating_from_integer(500);
+        let result = FixedU128::saturated_from(pos);
+        assert_eq!(result.into_inner(), pos.into_inner() as u128);
+ 
+        let zero = FixedI128::zero();
+        assert_eq!(FixedU128::saturated_from(zero), FixedU128::zero());
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_round_trip_for_representable_values() {
+        let values = [
+            FixedU128::saturating_from_integer(0),
+            FixedU128::saturating_from_integer(1),
+            FixedU128::saturating_from_integer(1_000_000),
+            FixedU128::saturating_from_rational(7, 3),
+        ];
+        for x in values {
+            let signed = FixedU128::saturated_into(x);
+            let back = FixedU128::checked_from(signed).unwrap();
+            assert_eq!(back, x, "round-trip failed for {x:?}");
+        }
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_saturating_closure_valid() {
+        let x = FixedU128::saturating_from_integer(4);
+        let result = FixedU128::saturating(x, |v| v.saturating_add(FixedI128::saturating_from_integer(6)));
+        assert_eq!(result, FixedU128::saturating_from_integer(10));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_saturating_closure_negative_clamps_to_zero() {
+        let x = FixedU128::saturating_from_integer(3);
+        let result = FixedU128::saturating(x, |v| v.saturating_mul(FixedI128::saturating_from_integer(-2)));
+        assert_eq!(result, FixedU128::zero());
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_checked_closure_negative_is_none() {
+        let x = FixedU128::saturating_from_integer(5);
+        let result = FixedU128::checked(x, |v| {
+            v.unwrap_or(FixedI128::zero())
+                .saturating_mul(FixedI128::saturating_from_integer(-1))
+        });
+        assert_eq!(result, None);
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_checked_closure_valid_is_some() {
+        let x = FixedU128::saturating_from_integer(20);
+        let result = FixedU128::checked(x, |v| {
+            v.unwrap_or(FixedI128::zero())
+                .saturating_add(FixedI128::saturating_from_integer(5))
+        });
+        assert_eq!(result, Some(FixedU128::saturating_from_integer(25)));
+    }
+ 
+    #[test]
+    fn fixed_signed_cast_u128_checked_into_none_propagated_through_closure() {
+        // When checked_into returns None, the closure receives None.
+        // The closure must handle this case - here it falls back to zero.
+        let too_large = FixedU128::from_inner(i128::MAX as u128 + 1);
+        let result = FixedU128::checked(too_large, |v| {
+            v.unwrap_or(FixedI128::zero()) // None -> zero -> not representable? No: zero is fine.
+        });
+        // zero is representable as FixedU128, so we get Some(0).
+        assert_eq!(result, Some(FixedU128::zero()));
+    }
+ 
+}
