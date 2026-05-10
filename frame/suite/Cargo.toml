@@ -1,0 +1,50 @@
+[package]
+name = "frame-suite"
+version = "0.1.1"
+description = "Core traits, semantic abstractions, and foundational interfaces for the FRAME Suite runtime architecture"
+readme = "README.md"
+keywords = ["substrate", "frame", "blockchain", "runtime", "polkadot"]
+documentation = "https://auguth.github.io/frame-suite/rust-doc/frame_suite/index.html"
+
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+
+[dependencies]
+sp-std.workspace = true
+once_cell = { workspace = true, optional = true }
+frame-support.workspace = true
+frame-system.workspace = true
+sp-arithmetic.workspace = true
+sp-runtime.workspace = true
+codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+serde = { optional = true, features = [
+    "derive",
+], workspace = true, default-features = true }
+sp-core.workspace = true
+log.workspace = true
+pallet-timestamp.workspace = true
+rand.workspace = true
+
+[dev-dependencies]
+sp-io.workspace = true
+
+[features]
+default = ["std"]
+std = [
+    "frame-support/std",
+    "frame-system/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "sp-arithmetic/std",
+    "codec/std",
+    "scale-info/std",
+    "once_cell",
+    "serde",
+]
+
+[lints]
+workspace = true
