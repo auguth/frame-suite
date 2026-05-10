@@ -231,3 +231,98 @@ plugin_model!(
         result
     }
 );
+
+// ===============================================================================
+// ````````````````````````` PENALTY MODELS PLUGIN TESTS `````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+        
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use super::*;
+
+    // --- FRAME Suite ---
+    use frame_suite::plugin_test;
+
+    // --- Substrate primitives ---
+    use sp_runtime::{AccountId32, Perbill};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` CONSTANTS ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    const fn account_frm_seed(seed: u8) -> AccountId32 {
+        let mut data = [0u8; 32];
+        data[31] = seed;
+        AccountId32::new(data)
+    }
+
+    const ALICE: AccountId32 = account_frm_seed(1);
+    const BOB: AccountId32 = account_frm_seed(2);
+    const CHARLIE: AccountId32 = account_frm_seed(3);
+    const ALAN: AccountId32 = account_frm_seed(4);
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````` THRESHOLD-PENALTY ``````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: ThresholdPenalty,
+        input: Vec<(AccountId32, Perbill)>,
+        context: ThresholdPenaltyConfig<Perbill>,
+        value: ThresholdPenaltyConfig {
+            threshold: Perbill::from_percent(70)
+        },
+        cases: {
+            (threshold_penalty_above_threshold,
+                vec![(ALICE, Perbill::from_percent(71)), (ALICE, Perbill::from_percent(80)), (ALICE, Perbill::from_percent(92))],
+                vec![(ALICE, Perbill::from_percent(70)), (ALICE, Perbill::from_percent(70)), (ALICE, Perbill::from_percent(70))]
+            ),
+            (threshold_penalty_below_threshold,
+                vec![(ALICE, Perbill::from_percent(69)), (ALICE, Perbill::from_percent(50)), (ALICE, Perbill::from_percent(25))],
+                vec![(ALICE, Perbill::from_percent(69)), (ALICE, Perbill::from_percent(50)), (ALICE, Perbill::from_percent(25))]
+            ),
+            (threshold_penalty_equal_to_threshold,
+                vec![(ALICE, Perbill::from_percent(70))],
+                vec![(ALICE, Perbill::from_percent(70))]
+            ),
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` CAPPED-PENALTY ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: CappedPenalty,
+        input: Vec<(AccountId32, Perbill)>,
+        context: CappedPenaltyConfig<Perbill>,
+        value: CappedPenaltyConfig {
+            floor: Perbill::from_percent(25),
+            cap: Perbill::from_percent(75),
+        },
+        cases: {
+            (capped_penalty_above_cap,
+                vec![(ALICE, Perbill::from_percent(76)), (BOB, Perbill::from_percent(80)), (ALAN, Perbill::from_percent(92))],
+                vec![(ALICE, Perbill::from_percent(75)), (BOB, Perbill::from_percent(75)), (ALAN, Perbill::from_percent(75))]
+            ),
+            (capped_penalty_below_floor,
+                vec![(ALICE, Perbill::from_percent(24)), (BOB, Perbill::from_percent(17)), (ALAN, Perbill::from_percent(6))],
+                vec![(ALICE, Perbill::from_percent(25)), (BOB, Perbill::from_percent(25)), (ALAN, Perbill::from_percent(25))]
+            ),
+            (capped_penalty_inbetween_cap_and_floor,
+                vec![(ALICE, Perbill::from_percent(26)), (BOB, Perbill::from_percent(52)), (CHARLIE, Perbill::from_percent(34)), (ALAN, Perbill::from_percent(74))],
+                vec![(ALICE, Perbill::from_percent(26)), (BOB, Perbill::from_percent(52)), (CHARLIE, Perbill::from_percent(34)), (ALAN, Perbill::from_percent(74))]
+            ),
+            (capped_penalty_equal_to_cap_and_floor,
+                vec![(ALICE, Perbill::from_percent(25)), (ALICE, Perbill::from_percent(75))],
+                vec![(ALICE, Perbill::from_percent(25)), (ALICE, Perbill::from_percent(75))]
+            ),
+        }
+    }
+}

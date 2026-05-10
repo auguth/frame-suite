@@ -859,3 +859,532 @@ pub mod fair {
         }
     }
 }
+
+// ===============================================================================
+// ```````````````````````` ELECTION MODELS PLUGIN TESTS `````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::elections::{
+        fair,
+        flat::{self},
+    };
+
+    // --- FRAME Suite ---
+    use frame_suite::plugin_test;
+
+    // --- Substrate primitives ---
+    use sp_runtime::AccountId32;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` CONSTANTS ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    const fn account_frm_seed(seed: u8) -> AccountId32 {
+        let mut data = [0u8; 32];
+        data[31] = seed;
+        AccountId32::new(data)
+    }
+
+    const ALICE: AccountId32 = account_frm_seed(1);
+    const BOB: AccountId32 = account_frm_seed(2);
+    const CHARLIE: AccountId32 = account_frm_seed(3);
+    const ALAN: AccountId32 = account_frm_seed(4);
+    const MIKE: AccountId32 = account_frm_seed(5);
+    const CAROL: AccountId32 = account_frm_seed(6);
+    const DAVE: AccountId32 = account_frm_seed(7);
+    const FRANK: AccountId32 = account_frm_seed(8);
+    const GRACE: AccountId32 = account_frm_seed(9);
+    const IVAN: AccountId32 = account_frm_seed(10);
+    const EVE: AccountId32 = account_frm_seed(11);
+    const WADE: AccountId32 = account_frm_seed(12);
+    const NIX: AccountId32 = account_frm_seed(13);
+    const LAYA: AccountId32 = account_frm_seed(14);
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````` FLAT-ELECTION MODELS ````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+       
+    // ----------------------------------- TOP-DOWN ----------------------------------
+
+    plugin_test! {
+        model: flat::TopDownFlatModel,
+        input: Vec<(AccountId32, u64)>,
+        output: Vec<AccountId32>,
+        cases : {
+            (top_down_model_basic_flat_election,
+            vec![(ALICE, 180), (BOB, 170), (CHARLIE, 200), (ALAN, 210), (MIKE, 90)],
+            vec![ALAN, CHARLIE, ALICE, BOB, MIKE]
+            ),
+            (top_down_model_equal_weights,
+            // All candidates have equal weight - order preserved from input
+            vec![(ALICE, 100), (BOB, 100), (CHARLIE, 100), (ALAN, 100)],
+            vec![ALICE, BOB, CHARLIE, ALAN]
+            ),
+            (top_down_model_multiple_ties,
+            // Multiple groups of tied weights
+            vec![(ALICE, 200), (BOB, 100), (CHARLIE, 200), (ALAN, 100), (MIKE, 300)],
+            vec![MIKE, ALICE, CHARLIE, BOB, ALAN]
+            ),
+        }
+    }
+
+    // ---------------------------------- THRESHOLD ----------------------------------
+
+    plugin_test! {
+        model: flat::ThresholdFlatModel,
+        input: Vec<(AccountId32, u64)>,
+        output: Vec<AccountId32>,
+        context: flat::ThresholdFlatModelConfig<u64>,
+        value: flat::ThresholdFlatModelConfig {
+            threshold: 200
+        },
+        cases : {
+            (threshold_model_basic_flat_election,
+            vec![(ALICE, 180), (BOB, 230), (CHARLIE, 200), (ALAN, 270), (MIKE, 90)],
+            vec![BOB, CHARLIE, ALAN]
+            ),
+            (threshold_model_exact_threshold,
+            // Candidate exactly at threshold should be included
+            vec![(ALICE, 200), (BOB, 200), (CHARLIE, 170)],
+            vec![ALICE, BOB]
+            ),
+            (threshold_model_preserves_order,
+            // Verify input order is preserved for qualifying candidates
+            vec![(MIKE, 250), (ALICE, 300), (BOB, 280), (CHARLIE, 190), (ALAN, 260)],
+            vec![MIKE, ALICE, BOB, ALAN]
+            ),
+        }
+    }
+
+    plugin_test! {
+        model: flat::ThresholdFlatModel,
+        input: Vec<(AccountId32, u64)>,
+        output: Vec<AccountId32>,
+        context: flat::ThresholdFlatModelConfig<u64>,
+        value: flat::ThresholdFlatModelConfig {
+            threshold: 1000
+        },
+        cases : {
+            (threshold_model_high_threshold,
+            // high threshold, only top candidates qualify
+            vec![(ALICE, 500), (BOB, 1200), (CHARLIE, 900), (ALAN, 1500)],
+            vec![BOB, ALAN]
+            ),
+            (threshold_model_none_qualify_high_threshold,
+            // no candidates qualify
+            vec![(ALICE, 500), (BOB, 800), (CHARLIE, 900)],
+            vec![]
+            )
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````` FAIR-ELECTION MODELS ````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // ----------------------------------- TOP-DOWN ----------------------------------
+
+    plugin_test! {
+        model: fair::TopDownFairModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, u64)>)>,
+        output: Vec<AccountId32>,
+        cases : {
+            (top_down_model_basic_fair_election,
+            // ALICE : 110, BOB : 170, CHARLIE: 180, ALAN: 60
+            vec![(ALICE, vec![(CAROL, 50), (DAVE, 60)]), (BOB, vec![(FRANK, 50), (GRACE, 120)]), (CHARLIE, vec![(MIKE, 80), (IVAN, 100)]), (ALAN, vec![(EVE, 60)])],
+            vec![CHARLIE, BOB, ALICE, ALAN]
+            ),
+            (top_down_model_equal_total_backing,
+            // All candidates have equal total backing - preserves input order
+            // ALICE: 100, BOB: 100, CHARLIE: 100
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 50)]),
+                (BOB, vec![(FRANK, 60), (GRACE, 40)]),
+                (CHARLIE, vec![(MIKE, 30), (IVAN, 70)])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            ),
+            (top_down_model_no_backers,
+            // candidates with no backers (total = 0)
+            vec![
+                (ALICE, vec![]),
+                (BOB, vec![]),
+                (CHARLIE, vec![])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            ),
+            (top_down_model_mixed_fair_election,
+            vec![
+                (ALICE, vec![(IVAN, 200)]), (NIX, vec![(FRANK, 300)]), (MIKE, vec![(GRACE, 200)]), (BOB, vec![]), (CHARLIE, vec![]),
+                (DAVE, vec![]), (LAYA, vec![]), (ALAN, vec![(CAROL, 150)])
+            ],
+            vec![NIX, ALICE, MIKE, ALAN, BOB, CHARLIE, DAVE, LAYA]
+            )
+        }
+    }
+
+    // ----------------------------------- BALANCED ----------------------------------
+
+    plugin_test! {
+        model: fair::BalancedModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, usize)>)>,
+        output: Vec<AccountId32>,
+        cases : {
+            (balanced_model_basic_fair_election,
+            // ALICE : total=120 (3 backer), avg=40, score=140
+            // BOB : total=170 (2 backer), avg=85, score=255
+            // CHARLIE: total=180 (2 backer), avg=90, score=270
+            // ALAN: total=60 (1 backer), avg=60, score=120
+            vec![(ALICE, vec![(CAROL, 50), (DAVE, 50), (EVE, 20)]), (BOB, vec![(FRANK, 50), (GRACE, 120)]), (CHARLIE, vec![(MIKE, 80), (IVAN, 100)]), (ALAN, vec![(EVE, 60)])],
+            vec![CHARLIE, BOB, ALICE, ALAN]
+            ),
+            (balanced_model_single_backer_advantage,
+            // Single large backer vs many small backers
+            // ALICE: total=100 (1 backer), avg=100, score=200
+            // BOB: total=100 (5 backers), avg=20, score=120
+            // ALICE wins due to higher average
+            vec![
+                (ALICE, vec![(CAROL, 100)]),
+                (BOB, vec![(DAVE, 20), (FRANK, 20), (GRACE, 20), (MIKE, 20), (IVAN, 20)])
+            ],
+            vec![ALICE, BOB]
+            ),
+            (balanced_model_many_small_backers,
+            // Candidate with many small backers vs few large backers
+            // ALICE: total=500 (10 backers), avg=50, score=550
+            // BOB: total=500 (2 backers), avg=250, score=750
+            // BOB wins due to higher average
+            vec![
+                (ALICE, vec![
+                    (CAROL, 50), (DAVE, 50), (FRANK, 50), (GRACE, 50), (MIKE, 50),
+                    (IVAN, 50), (EVE, 50), (WADE, 50), (ALAN, 50), (CHARLIE, 50)
+                ]),
+                (BOB, vec![(CAROL, 250), (DAVE, 250)])
+            ],
+            vec![BOB, ALICE]
+            ),
+            (balanced_model_equal_combined_score,
+            // Equal combined scores - preserves input order
+            // ALICE: total=100, avg=50, score=150
+            // BOB: total=120, avg=30, score=150
+            // CHARLIE: total=90, avg=60, score=150
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 50)]),
+                (BOB, vec![(FRANK, 30), (GRACE, 30), (MIKE, 30), (IVAN, 30)]),
+                (CHARLIE, vec![(EVE, 30), (WADE, 60)])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            ),
+            (balanced_model_no_backers,
+            // Edge case: candidates with no backers
+            // score = 0 + 0 = 0 for all
+            vec![
+                (ALICE, vec![]),
+                (BOB, vec![]),
+                (CHARLIE, vec![])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            ),
+        }
+    }
+
+    // ----------------------------------- PHRAGMEN ----------------------------------
+
+    plugin_test! {
+        model: fair::PhragmenModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, usize)>)>,
+        output: Vec<AccountId32>,
+        context: fair::PhragmenModelConfig<usize>,
+        value: fair::PhragmenModelConfig {
+            weighted: false,
+            scale: None
+        },
+        cases: {
+            (phragmen_sequential_true_fair_election,
+            // ALICE: 110 (CAROL:50, DAVE:60) - max_load=60
+            // BOB: 170 (FRANK:50, GRACE:120) - max_load=120
+            // CHARLIE: 180 (MIKE:80, IVAN:100) - max_load=100
+            // ALAN: 60 (EVE:60) - max_load=60
+            // Round 1: ALICE wins (60, first encountered)
+            // Round 2: ALAN wins (60, loads updated: CAROL=50, DAVE=60)
+            // Round 3: CHARLIE wins (100 < 120)
+            // Round 4: BOB remains
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 60)]),
+                (BOB, vec![(FRANK, 50), (GRACE, 120)]),
+                (CHARLIE, vec![(MIKE, 80), (IVAN, 100)]),
+                (ALAN, vec![(EVE, 60)])
+            ],
+            vec![ALICE, ALAN, CHARLIE, BOB]
+            ),
+            (phragmen_whale_monopoly_prevention,
+            // Real-world: Company board election with 3 seats
+            // BigCorp (10,000 shares) tries to control all 3 seats
+            // Small shareholders (100 shares each) band together for 1 candidate
+            //
+            // Candidates:
+            // - ALICE, BOB, CHARLIE: backed by BigCorp (10,000 each)
+            // - DAVE: backed by 10 small shareholders (100 each, total 1,000)
+            //
+            // TopDown would give: [ALICE, BOB, CHARLIE] - BigCorp controls 100%
+            // Phragmen gives: [DAVE, ALICE, BOB] - Small shareholders get 33% representation
+            //
+            // Round 1: DAVE wins (max_load = 100 vs 10,000)
+            // Round 2: ALICE wins (BigCorp load still 0, max_load = 10,000)
+            // Round 3: BOB wins (BigCorp now at 10,000, max_load = 20,000)
+            vec![
+                (ALICE, vec![(WADE, 10000)]),
+                (BOB, vec![(WADE, 10000)]),
+                (CHARLIE, vec![(WADE, 10000)]),
+                (DAVE, vec![
+                    (CAROL, 100), (DAVE, 100), (FRANK, 100), (GRACE, 100),
+                    (IVAN, 100), (EVE, 100), (MIKE, 100), (ALAN, 100)
+                ])
+            ],
+            vec![DAVE, ALICE, BOB, CHARLIE]
+            ),
+            (phragmen_single_backer_multiple_candidates,
+            // CAROL backs all three candidates
+            // ALICE: CAROL:100 - max_load=100
+            // BOB: CAROL:50 - max_load=50
+            // CHARLIE: CAROL:75 - max_load=75
+            // Round 1: BOB wins (50)
+            // Round 2: CHARLIE wins (50+75=125 vs 50+100=150)
+            // Round 3: ALICE (150)
+            vec![
+                (ALICE, vec![(CAROL, 100)]),
+                (BOB, vec![(CAROL, 50)]),
+                (CHARLIE, vec![(CAROL, 75)])
+            ],
+            vec![BOB, CHARLIE, ALICE]
+            ),
+            (phragmen_equal_contributions_fair_election,
+            // All candidates have same total backing and max_load
+            // Tie-breaking by input order
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 50)]),
+                (BOB, vec![(FRANK, 50), (GRACE, 50)]),
+                (CHARLIE, vec![(MIKE, 50), (IVAN, 50)])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            ),
+            (phragmen_no_backers_fair_election,
+            // All candidates have zero backing
+            vec![
+                (ALICE, vec![]),
+                (BOB, vec![]),
+                (CHARLIE, vec![])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            ),
+            (phragmen_overlapping_backers_fair_election,
+            // CAROL backs ALICE(60) and BOB(40)
+            // DAVE backs only ALICE(80)
+            // ALICE: max(CAROL:60, DAVE:80) = 80
+            // BOB: CAROL:40 = 40
+            // Round 1: BOB wins (40)
+            // Round 2: ALICE (CAROL now at 40, so max(40+60=100, 0+80=80) = 100)
+            vec![
+                (ALICE, vec![(CAROL, 60), (DAVE, 80)]),
+                (BOB, vec![(CAROL, 40)])
+            ],
+            vec![BOB, ALICE]
+            ),
+        }
+    }
+
+    plugin_test! {
+        model: fair::PhragmenModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, usize)>)>,
+        output: Vec<AccountId32>,
+        context: fair::PhragmenModelConfig<usize>,
+        value: fair::PhragmenModelConfig {
+            weighted: true,
+            scale: Some(2)  // Double all contributions
+        },
+        cases: {
+            (phragmen_weighted_scaled_fair_election,
+            // All contributions doubled:
+            // ALICE: CAROL:100, DAVE:120 - max_load=120
+            // BOB: FRANK:100, GRACE:240 - max_load=240
+            // CHARLIE: MIKE:160, IVAN:200 - max_load=200
+            // ALAN: EVE:120 - max_load=120
+            // Round 1: ALICE wins (120, first encountered)
+            // Round 2: ALAN wins (120, loads: CAROL=100, DAVE=120)
+            // Round 3: CHARLIE wins (200 < 240)
+            // Round 4: BOB
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 60)]),
+                (BOB, vec![(FRANK, 50), (GRACE, 120)]),
+                (CHARLIE, vec![(MIKE, 80), (IVAN, 100)]),
+                (ALAN, vec![(EVE, 60)])
+            ],
+            vec![ALICE, ALAN, CHARLIE, BOB]
+            )
+        }
+    }
+    plugin_test! {
+        model: fair::PhragmenModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, usize)>)>,
+        output: Vec<AccountId32>,
+        context: fair::PhragmenModelConfig<usize>,
+        value: fair::PhragmenModelConfig {
+            weighted: true,
+            scale: Some(10)  // 10x multiplier
+        },
+        cases: {
+            (phragmen_large_scale_fair_election,
+            // All contributions multiplied by 10
+            // ALICE: max(CAROL:500, DAVE:600) = 600
+            // BOB: max(FRANK:500, GRACE:1200) = 1200
+            // CHARLIE: max(MIKE:800, IVAN:1000) = 1000
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 60)]),
+                (BOB, vec![(FRANK, 50), (GRACE, 120)]),
+                (CHARLIE, vec![(MIKE, 80), (IVAN, 100)])
+            ],
+            vec![ALICE, CHARLIE, BOB]
+            )
+        }
+    }
+
+    // --------------------------------- MAX-MIN LOAD --------------------------------
+
+    plugin_test! {
+        model: fair::MaxMinLoadModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, u64)>)>,
+        output: Vec<AccountId32>,
+        cases: {
+            (max_min_load_basic,
+            // ALICE: max_load=60, BOB: max_load=120, CHARLIE: max_load=100, ALAN: max_load=60
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 60)]),
+                (BOB, vec![(FRANK, 50), (GRACE, 120)]),
+                (CHARLIE, vec![(MIKE, 80), (IVAN, 100)]),
+                (ALAN, vec![(EVE, 60)])
+            ],
+            vec![ALICE, ALAN, CHARLIE, BOB]
+            ),
+            (max_min_load_single_backer,
+            // CAROL backs all - load accumulates
+            vec![
+                (ALICE, vec![(CAROL, 100)]),
+                (BOB, vec![(CAROL, 50)]),
+                (CHARLIE, vec![(CAROL, 75)])
+            ],
+            vec![BOB, CHARLIE, ALICE]
+            ),
+            (max_min_load_overlapping_backers,
+            // Demonstrates load balancing across shared backers
+            vec![
+                (ALICE, vec![(CAROL, 60), (DAVE, 80)]),
+                (BOB, vec![(CAROL, 40)])
+            ],
+            vec![BOB, ALICE]
+            ),
+            (max_min_load_no_backers,
+            vec![
+                (ALICE, vec![]),
+                (BOB, vec![]),
+                (CHARLIE, vec![])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            )
+        }
+    }
+
+    // ---------------------------------- THRESHOLD ----------------------------------
+
+    plugin_test! {
+        model: fair::ThresholdFairModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, u64)>)>,
+        output: Vec<AccountId32>,
+        context: fair::ThresholdFairModelConfig<u64>,
+        value: fair::ThresholdFairModelConfig {
+            threshold: 100
+        },
+        cases: {
+            (threshold_model_basic_fair_election,
+            // Basic case: filter candidates by total backing >= threshold
+            // ALICE: 80 (below), BOB: 110 (above), CHARLIE: 130 (above), ALAN: 40 (below)
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 30)]),
+                (BOB, vec![(FRANK, 50), (GRACE, 60)]),
+                (CHARLIE, vec![(MIKE, 80), (IVAN, 50)]),
+                (ALAN, vec![(EVE, 40)])
+            ],
+            vec![BOB, CHARLIE]
+            ),
+            (threshold_model_all_qualify,
+            // All candidates meet threshold
+            // ALICE: 150, BOB: 200, CHARLIE: 180
+            vec![
+                (ALICE, vec![(CAROL, 80), (DAVE, 70)]),
+                (BOB, vec![(FRANK, 100), (GRACE, 100)]),
+                (CHARLIE, vec![(MIKE, 90), (IVAN, 90)])
+            ],
+            vec![ALICE, BOB, CHARLIE]
+            ),
+            (threshold_model_none_qualify,
+            // No candidates meet threshold
+            // ALICE: 90, BOB: 80, CHARLIE: 70
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 40)]),
+                (BOB, vec![(FRANK, 40), (GRACE, 40)]),
+                (CHARLIE, vec![(MIKE, 30), (IVAN, 40)])
+            ],
+            vec![]
+            ),
+            (threshold_model_no_backers,
+            // Edge case: candidates with no backers (total = 0)
+            vec![
+                (ALICE, vec![]),
+                (BOB, vec![]),
+                (CHARLIE, vec![])
+            ],
+            vec![]
+            ),
+        }
+    }
+
+    plugin_test! {
+        model: fair::ThresholdFairModel,
+        input: Vec<(AccountId32, Vec<(AccountId32, u64)>)>,
+        output: Vec<AccountId32>,
+        context: fair::ThresholdFairModelConfig<u64>,
+        value: fair::ThresholdFairModelConfig {
+            threshold: 0
+        },
+        cases: {
+            (threshold_model_zero_threshold_all_qualify,
+            // Zero threshold - all candidates qualify, even with zero backing
+            vec![
+                (ALICE, vec![(CAROL, 50), (DAVE, 30)]),
+                (BOB, vec![]),
+                (CHARLIE, vec![(MIKE, 80)]),
+                (ALAN, vec![])
+            ],
+            vec![ALICE, BOB, CHARLIE, ALAN]
+            ),
+
+            (threshold_model_zero_threshold_preserves_order,
+            // Verify all candidates preserved in input order
+            vec![
+                (CHARLIE, vec![(MIKE, 100)]),
+                (ALICE, vec![(CAROL, 50)]),
+                (BOB, vec![(DAVE, 75)]),
+                (ALAN, vec![])
+            ],
+            vec![CHARLIE, ALICE, BOB, ALAN]
+            ),
+        }
+    }
+}

@@ -584,3 +584,385 @@ plugin_model! {
         }
     }
 }
+
+// ===============================================================================
+// ```````````````````````` INFLUENCE MODELS PLUGIN TESTS ````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use super::*;
+
+    // --- FRAME Suite ---
+    use frame_suite::plugin_test;
+
+    // --- Substrate primitives ---
+    use sp_runtime::{FixedI128, FixedU128};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````` LINEAR-INFLUENCE ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: LinearModel,
+        input: u64,
+        cases: {
+            (linear_model_unsigned_zero, 0, 0),
+            (linear_model_unsigned_single_digit, 6, 6),
+            (linear_model_unsigned_double_digit, 42, 42),
+            (linear_model_unsigned_large_value, 1000, 1000),
+            (linear_model_unsigned_max_u64, u64::MAX, u64::MAX)
+
+        }
+    }
+
+    plugin_test! {
+        model: LinearModel,
+        input: i64,
+        cases: {
+            (linear_model_signed_negative_value, -55, -55),
+            (linear_model_signed_positive_value, 100, 100),
+            (linear_model_signed_min, i64::MIN, i64::MIN),
+            (linear_model_signed_max, i64::MAX, i64::MAX)
+
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````` QUADRATIC-INFLUENCE `````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: QuadraticModel,
+        input: u64,
+        cases: {
+            (quadratic_model_unsigned_one, 1, 1),
+            (quadratic_model_unsigned_zero, 0, 0),
+            (quadratic_model_unsigned_perfect_sqr_single, 9, 3),
+            (quadratic_model_unsigned_perfect_sqr_double, 81, 9),
+            (quadratic_model_unsigned_perfect_sqr_triple, 225, 15),
+            (quadratic_model_unsigned_imperfect_sqr_single, 5, 2),
+            (quadratic_model_unsigned_imperfect_sqr_double, 61, 7),
+            (quadratic_model_unsigned_imperfect_sqr_triple, 230, 15),
+            // sqrt(10_000) = 100
+            (quadratic_model_unsigned_perfect_large, 10_000, 100),
+            // sqrt(u64::MAX) ~= 4_294_967_295 (2^32 - 1)
+            (quadratic_model_unsigned_max, u64::MAX, 4_294_967_295),
+
+        }
+    }
+
+    plugin_test! {
+        model: QuadraticModel,
+        input: i64,
+        cases: {
+            (quadratic_model_signed_negative_one, -1, 0),
+            (quadratic_model_signed_negative_sigle, -4, 0),
+            (quadratic_model_signed_negative_double, -64, 0),
+            (quadratic_model_signed_positive_sigle, 4, 2),
+            (quadratic_model_signed_positive_double, 64, 8),
+            (quadratic_model_signed_max, i64::MAX, 3_037_000_499),
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````` LOGARITHMIC-INFLUENCE ````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: LogarithmicModel,
+        input: u64,
+        cases: {
+            (logarithmic_model_unsigned_one, 1, 0),
+            (logarithmic_model_unsigned_small_value, 3, 1),
+            (logarithmic_model_unsigned_single_digit, 9, 2),
+            (logarithmic_model_unsigned_double_digit, 10, 2),
+            (logarithmic_model_unsigned_large_value, 1_000_000, 13),
+            (logarithmic_model_unsigned_max, u64::MAX, 44),
+            // ln(2) ~= 0.693 -> truncates to 0 for integer output
+            (logarithmic_model_unsigned_two_truncates_to_zero, 2, 0),
+            // ln(e) = 1 -> 1
+            (logarithmic_model_unsigned_e_approx, 3, 1),
+        }
+    }
+
+    plugin_test! {
+        model: LogarithmicModel,
+        input: i64,
+        cases: {
+            (log_signed_negative, -10, 0),
+            (log_signed_zero, 0, 0),
+            (log_signed_one, 1, 0),
+            (log_signed_two, 2, 0),
+            (log_signed_three, 3, 1),
+            (log_signed_small, 9, 2),
+            (log_signed_ten, 10, 2),
+            (log_signed_large, 1_000_000, 13),
+            (log_signed_min, i64::MIN, 0),
+            (log_signed_max, i64::MAX, 43),
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````` THRESHOLD-INFLUENCE `````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: ThresholdModel,
+        input: u64,
+        output: u64,
+        context: ThresholdModelConfig<u64>,
+        value: ThresholdModelConfig {
+            threshold : 100
+        },
+        cases: {
+            (threshold_model_unsigned_below_threshold, 99, 0),
+            (threshold_model_unsigned_above_threshold, 105, 105),
+            (threshold_model_unsigned_equal_to_threshold, 100, 100),
+        }
+    }
+
+    plugin_test! {
+        model: ThresholdModel,
+        input: i64,
+        output: i64,
+        context: ThresholdModelConfig<i64>,
+        value: ThresholdModelConfig {
+            threshold : -50
+        },
+        cases: {
+            (threshold_model_signed_below_negative_threshold, -51, 0),
+            (threshold_model_signed_above_negative_threshold, -25, -25),
+            (threshold_model_signed_equal_to_negative_threshold, -50, -50),
+            (threshold_model_signed_positive_input, 1, 1),
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````` SIGMOID-INFLUENCE ``````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // Wide curve: L=100, alpha=0.1 @ x=20, beta=0.9 @ x=80.
+    // k ~= 0.073, x0 = 50 (symmetric since alpha = 1 - beta).
+    plugin_test! {
+        model: SigmoidModel,
+        input: u64,
+        output: u64,
+        context: SigmoidModelConfig<FixedU128>,
+        value: SigmoidModelConfig {
+            max_output: FixedU128::from_inner(100_000_000_000_000_000_000), // 100.0
+            start_frac: FixedU128::from_inner(100_000_000_000_000_000),     // 0.1
+            end_frac:   FixedU128::from_inner(900_000_000_000_000_000),     // 0.9
+            start_x:    FixedU128::from_inner(20_000_000_000_000_000_000),  // 20.0
+            end_x:      FixedU128::from_inner(80_000_000_000_000_000_000),  // 80.0
+        },
+        cases: {
+            // deep in the lower tail -- sigmoid never reaches 0, f(0) ~= 2.5 -> 2
+            (sigmoid_model_zero_input,  0,   2),
+            // x_alpha is a definition point, output is exactly alpha * L = 10
+            (sigmoid_model_at_start,   20,  10),
+            // fixed-point rounding shifts x0 slightly, so f(50) = 49.999... -> 49
+            (sigmoid_model_midpoint,   50,  49),
+            // same rounding at x_beta: f(80) = 89.999... -> 89 instead of 90
+            (sigmoid_model_at_end,     80,  89),
+            // deep in the upper tail, f(100) ~= 97.5 -> 97
+            (sigmoid_model_high_input, 100, 97),
+        }
+    }
+
+    // Steep curve: L=200, alpha=0.1 @ x=45, beta=0.9 @ x=55.
+    // k ~= 0.439, x0 = 50 (symmetric). Growth happens over just 10 units.
+    plugin_test! {
+        model: SigmoidModel,
+        input: i64,
+        output: i64,
+        context: SigmoidModelConfig<FixedI128>,
+        value: SigmoidModelConfig {
+            max_output: FixedI128::from_inner(200_000_000_000_000_000_000), // 200.0
+            start_frac: FixedI128::from_inner(100_000_000_000_000_000),     // 0.1
+            end_frac:   FixedI128::from_inner(900_000_000_000_000_000),     // 0.9
+            start_x:    FixedI128::from_inner(45_000_000_000_000_000_000),  // 45.0
+            end_x:      FixedI128::from_inner(55_000_000_000_000_000_000),  // 55.0
+        },
+        cases: {
+            // x=40 is 5 below x_alpha, still in the tail -- f(40) ~= 2.4 -> 2,
+            // not 20; alpha*L is only guaranteed at x_alpha itself, not before it
+            (sigmoid_steep_below_start, 40,   2),
+            // x_alpha is a definition point, output is exactly alpha * L = 20
+            (sigmoid_steep_at_start,    45,  20),
+            // fixed-point rounding: f(50) = 99.999... -> 99 instead of 100
+            (sigmoid_steep_midpoint,    50,  99),
+            // same rounding at x_beta: f(55) = 179.999... -> 179 instead of 180
+            (sigmoid_steep_at_end,      55, 179),
+            // x=60 is 5 above x_beta, deep in the upper tail -- f(60) ~= 197.6 -> 197
+            (sigmoid_steep_above_end,   60, 197),
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````` EXPONENTIAL-INFLUENCE ````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: ExponentialModel,
+        input: u64,
+        output: u64,
+        context: ExponentialModelConfig<FixedU128>,
+        value: ExponentialModelConfig {
+            growth_rate: FixedU128::saturating_from_integer(1) // 1.0
+        },
+        cases: {
+            (exponential_model_unsigned_zero_input, 0, 1),       // e^(1.0 * 0) = e^0 = 1
+            (exponential_model_unsigned_one_input, 1, 2),        // e^(1.0 * 1) = e^1 ~= 2.718 -> 2
+            (exponential_model_unsigned_two_input, 2, 7),        // e^(1.0 * 2) = e^2 ~= 7.389 -> 7
+            (exponential_model_unsigned_three_input, 3, 20),     // e^(1.0 * 3) = e^3 ~= 20.085 -> 20
+            (exponential_model_unsigned_five_input, 5, 148),     // e^(1.0 * 5) = e^5 ~= 148.413 -> 148
+        }
+    }
+
+    plugin_test! {
+        model: ExponentialModel,
+        input: i64,
+        output: i64,
+        context: ExponentialModelConfig<FixedI128>,
+        value: ExponentialModelConfig {
+            growth_rate: FixedI128::saturating_from_integer(1) // 1.0
+        },
+        cases: {
+            (exponential_model_signed_zero, 0, 1),         // e^0 = 1
+            (exponential_model_signed_positive, 1, 2),     // e^1 ~= 2.718 -> 2
+            (exponential_model_signed_negative, -1, 0),    // e^(-1) ~= 0.367 -> 0
+            (exponential_model_signed_negative_two, -2, 0),      // e^(-2) ~= 0.135 -> truncates to 0 
+            (exponential_model_signed_large_negative, -5, 0),    // e^(-5) ~= 0.0067 -> 0
+            (exponential_model_signed_two, 2, 7),                // e^2 ~= 7.389 -> 7 
+        }
+    }
+
+    //------ ExponentialModel with smaller growth rate
+    plugin_test! {
+        model: ExponentialModel,
+        input: u64,
+        output: u64,
+        context: ExponentialModelConfig<FixedU128>,
+        value: ExponentialModelConfig {
+            growth_rate: FixedU128::saturating_from_rational(1, 2) // 0.5
+        },
+        cases: {
+            (exponential_model_small_rate_zero, 0, 1),      // e^(0.5 * 0) = 1
+            (exponential_model_small_rate_one, 1, 1),       // e^(0.5 * 1) ~= 1.648 -> 1
+            (exponential_model_small_rate_two, 2, 2),       // e^(0.5 * 2) = e^1 ~= 2.718 -> 2
+            (exponential_model_small_rate_four, 4, 7),      // e^(0.5 * 4) = e^2 ~= 7.389 -> 7
+            (exponential_model_small_rate_ten, 10, 148),    // e^(0.5 * 10) = e^5 ~= 148.413 -> 148
+        }
+    }
+
+    //------ ExponentialModel with high growth rate
+    plugin_test! {
+        model: ExponentialModel,
+        input: u64,
+        output: u64,
+        context: ExponentialModelConfig<FixedU128>,
+        value: ExponentialModelConfig {
+            growth_rate: FixedU128::saturating_from_integer(2) // 2.0
+        },
+        cases: {
+            (exponential_model_high_rate_zero, 0, 1),       // e^(2.0 * 0) = 1
+            (exponential_model_high_rate_one, 1, 7),        // e^(2.0 * 1) = e^2 ~= 7.389 -> 7
+            (exponential_model_high_rate_two, 2, 54),       // e^(2.0 * 2) = e^4 ~= 54.598 -> 54
+            (exponential_model_high_rate_three, 3, 403),    // e^(2.0 * 3) = e^6 ~= 403.428 -> 403
+        }
+    }
+
+    // --- ExponentialModel: k = 0 -> e^0 = 1 for all inputs ---
+    plugin_test! {
+        model: ExponentialModel,
+        input: u64,
+        output: u64,
+        context: ExponentialModelConfig<FixedU128>,
+        value: ExponentialModelConfig {
+            growth_rate: FixedU128::zero()
+        },
+        cases: {
+            (exponential_model_zero_rate_zero_input, 0, 1),
+            (exponential_model_zero_rate_large_input, 1_000_000, 1),
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````` BINARY-INFLUENCE ``````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: BinaryModel,
+        input: u64,
+        output: u64,
+        context: BinaryModelConfig<u64>,
+        value: BinaryModelConfig {
+            pass_threshold: 100,
+            pass_value: 1,
+            fail_value: 0
+        },
+        cases: {
+            (binary_model_unsigned_above_threshold, 101, 1),
+            (binary_model_unsigned_below_threshold, 99, 0),
+            (binary_model_unsigned_equal_to_threshold, 100, 1),
+        }
+    }
+
+    plugin_test! {
+        model: BinaryModel,
+        input: i64,
+        output: i64,
+        context: BinaryModelConfig<i64>,
+        value: BinaryModelConfig {
+            pass_threshold: 50,
+            pass_value: 1,
+            fail_value: -1
+        },
+        cases: {
+            (binary_model_signed_abv_threshold, 51, 1),
+            (binary_model_signed_blw_threshold, 49, -1),
+            (binary_model_signed_eql_to_threshold, 50, 1),
+        }
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````` CAPPED-LINEAR-INFLUENCE `````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    plugin_test! {
+        model: CappedLinearModel,
+        input: u64,
+        output: u64,
+        context: CappedLinearModelConfig<u64>,
+        value: CappedLinearModelConfig {
+            max_influence: 100
+        },
+        cases: {
+            (capped_linear_unsigned_model_above_cap, 150, 100),
+            (capped_linear_unsigned_model_below_cap, 99, 99),
+            (capped_linear_unsigned_model_equal_to_cap, 100, 100),
+        }
+    }
+
+    plugin_test! {
+        model: CappedLinearModel,
+        input: i64,
+        output: i64,
+        context: CappedLinearModelConfig<i64>,
+        value: CappedLinearModelConfig {
+            max_influence: -50
+        },
+        cases: {
+            (capped_linear_model_signed_above_negative_cap, -75, -75),
+            (capped_linear_model_signed_below_negative_cap, -35, -50),
+            (capped_linear_model_signed_equal_to_negative_cap, -50, -50),
+        }
+    }
+}
