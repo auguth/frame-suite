@@ -171,5 +171,5 @@ impl pallet_xp::Config for Runtime {
     type LockReason = RuntimeFreezeReason;
     type Extensions = Ignore<Xp>;
     type EmitEvents = ConstBool<false>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_xp::weights::SubstrateWeight<Self>;
 }

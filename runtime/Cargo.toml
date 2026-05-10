@@ -101,6 +101,7 @@ runtime-benchmarks = [
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-transaction-payment/runtime-benchmarks",
+	"pallet-xp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
 
@@ -115,6 +116,7 @@ try-runtime = [
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
+	"pallet-xp/try-runtime",
 	"sp-runtime/try-runtime",
 ]
 
