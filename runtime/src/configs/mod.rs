@@ -193,7 +193,7 @@ impl pallet_commitment::Config for Runtime {
     type BalanceFamily<'a> = ShareBalanceFamily<'a>;
     type BalanceContext = MyBalanceContext<Commitment>;
     type EmitEvents = ConstBool<true>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_commitment::weights::SubstrateWeight<Runtime>;
 }
 
 plugin_context!(

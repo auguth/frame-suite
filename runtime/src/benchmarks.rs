@@ -31,4 +31,5 @@ frame_benchmarking::define_benchmarks!(
 	[pallet_timestamp, Timestamp]
 	[pallet_sudo, Sudo]
 	[pallet_xp, Xp]
+    [pallet_commitment, Commitment]
 );
