@@ -224,4 +224,7 @@ mod runtime {
 
     #[runtime::pallet_index(7)]
     pub type Xp = pallet_xp;
+
+    #[runtime::pallet_index(8)]
+    pub type Commitment = pallet_commitment;
 }

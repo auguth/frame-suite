@@ -12,6 +12,7 @@ members = [
 	"frame/suite",
     "frame/plugins",
     "pallets/xp",
+    "pallets/commitment",
 ]
 resolver = "2"
 
@@ -59,7 +60,7 @@ frame-suite-runtime = { path = "./runtime", default-features = false }
 frame-suite = { path = "./frame/suite", version = "0.1.1", default-features = false }
 frame-plugins = { path = "./frame/plugins", version = "0.1.1", default-features = false }
 pallet-xp = { path = "./pallets/xp", version = "0.1.1", default-features = false }
-
+pallet-commitment = { path = "./pallets/commitment", version = "0.1.1", default-features = false }
 
 # --- Substrate/Polkadot Core ---
 codec = { version = "3.7.4", default-features = false, package = "parity-scale-codec" }

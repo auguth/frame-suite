@@ -17,6 +17,7 @@ codec = { features = ["derive"], workspace = true }
 frame-benchmarking = { optional = true, workspace = true }
 frame-executive.workspace = true
 frame-metadata-hash-extension.workspace = true
+frame-plugins.workspace = true
 frame-suite.workspace = true
 frame-support = { features = ["experimental"], workspace = true }
 frame-system-benchmarking = { optional = true, workspace = true }
@@ -25,6 +26,7 @@ frame-system.workspace = true
 frame-try-runtime = { optional = true, workspace = true }
 pallet-aura.workspace = true
 pallet-balances.workspace = true
+pallet-commitment.workspace = true
 pallet-grandpa.workspace = true
 pallet-sudo.workspace = true
 pallet-timestamp.workspace = true
@@ -58,6 +60,7 @@ std = [
 	"frame-benchmarking?/std",
 	"frame-executive/std",
 	"frame-metadata-hash-extension/std",
+	"frame-plugins/std",
 	"frame-suite/std",
 	"frame-support/std",
 	"frame-system-benchmarking?/std",
@@ -66,6 +69,7 @@ std = [
 	"frame-try-runtime?/std",
 	"pallet-aura/std",
 	"pallet-balances/std",
+	"pallet-commitment/std",
 	"pallet-grandpa/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",

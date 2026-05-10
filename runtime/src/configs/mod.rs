@@ -35,19 +35,23 @@ use frame_support::{
 use frame_system::limits::{BlockLength, BlockWeights};
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_runtime::{traits::One, Perbill};
+use sp_runtime::{traits::One, Perbill, FixedU64};
 use sp_version::RuntimeVersion;
+use core::marker::PhantomData;
 
 // Local dependencies
 use frame_suite::{
-    Ignore
+    plugin_context, Disposition, Ignore
+};
+use frame_plugins::{
+    balances::{ShareBalanceFamily, ShareBalanceContext},
 };
 
 // Local module imports
 use super::{
 	AccountId, Aura, Balance, Balances, Block, BlockNumber, Hash, Nonce, PalletInfo, Runtime,
 	RuntimeCall, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask,
-	System, EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION, Xp
+	System, EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION, Xp, Commitment
 };
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -173,3 +177,40 @@ impl pallet_xp::Config for Runtime {
     type EmitEvents = ConstBool<false>;
     type WeightInfo = pallet_xp::weights::SubstrateWeight<Self>;
 }
+
+impl pallet_commitment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Shares = u64;
+    type Asset = pallet_xp::Pallet<Self>;
+    type Position = Disposition;
+    type MaxIndexEntries = ConstU32<200>;
+    type Bias = FixedU64;
+    type MaxCommits = ConstU32<30>;
+    type AssetHold = RuntimeHoldReason;
+    type AssetFreeze = RuntimeFreezeReason;
+    type Commission = Perbill;
+    type Time = u32;
+    type BalanceFamily<'a> = ShareBalanceFamily<'a>;
+    type BalanceContext = MyBalanceContext<Commitment>;
+    type EmitEvents = ConstBool<true>;
+    type WeightInfo = ();
+}
+
+plugin_context!(
+    name: pub MyBalanceContext,
+    context: ShareBalanceContext<T>,
+    marker: [T,],
+    value: ShareBalanceContext(PhantomData)
+);
+macro_rules! const_assert_size_eq {
+    ($a:ty, $b:ty) => {
+        const _: () = {
+            let _ = [0u8; core::mem::size_of::<$a>()];
+            let _ = [0u8; core::mem::size_of::<$b>()];
+            let _ = [0u8; core::mem::size_of::<$a>() - core::mem::size_of::<$b>()];
+        };
+    };
+}
+
+// Usage (inside runtime):
+const_assert_size_eq!(AccountId, Hash);
