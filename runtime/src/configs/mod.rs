@@ -233,7 +233,7 @@ impl pallet_authors::Config for Runtime {
     type FlatElectionModel = TopDownFlatModel;
     type FairElectionContext = ();
     type FairElectionModel = TopDownFairModel;
-	type WeightInfo = ();
+	type WeightInfo = pallet_authors::weights::SubstrateWeight<Runtime>;
     type ActivityProvider = NoActivity;
     type EmitEvents = ConstBool<true>;
 }

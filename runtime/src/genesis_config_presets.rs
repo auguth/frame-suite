@@ -28,6 +28,40 @@ use sp_keyring::Sr25519Keyring;
 
 const SEED: u32 = 1;
 
+fn generate_genesis_author_acc(prefix: &'static str, count: u32) -> Vec<GenesisAcc<AccountId, AccountId>> {
+    let mut gen_accounts = Vec::default();
+    for i in 0..count {
+        let acc = account(prefix, i, SEED);
+        let prefix_id = match prefix {
+            "validator" => "validator_id",
+            _ => panic!("prefix mismatch"),
+        };
+        let acc_id = account(prefix_id, i, SEED);
+        gen_accounts.push(GenesisAcc {
+            owner: acc,
+            id: acc_id,
+        });
+    }
+    gen_accounts
+}
+
+fn generate_genesis_funder_acc(prefix: &'static str, count: u32) -> Vec<GenesisAcc<AccountId, AccountId>> {
+    let mut gen_accounts = Vec::default();
+    for i in 0..count {
+        let acc = account(prefix, i, SEED);
+        let prefix_id = match prefix {
+            "backer" => "backer_id",
+            _ => panic!("prefix mismatch"),
+        };
+        let acc_id = account(prefix_id, i, SEED);
+        gen_accounts.push(GenesisAcc {
+            owner: acc,
+            id: acc_id,
+        });
+    }
+    gen_accounts
+}
+
 // Returns the genesis config presets populated with given parameters.
 fn testnet_genesis(
     initial_authorities: Vec<(AuraId, GrandpaId)>,
@@ -60,7 +94,9 @@ fn testnet_genesis(
             id: account("mike_id", 0, SEED),
         },
     ];
-
+    genesis_accounts.extend(generate_genesis_author_acc("validator", 250));
+    genesis_accounts.extend(generate_genesis_funder_acc("backer", 250));
+	
     build_struct_json_patch!(RuntimeGenesisConfig {
         balances: BalancesConfig {
             balances: endowed_accounts

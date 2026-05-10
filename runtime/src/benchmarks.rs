@@ -32,4 +32,5 @@ frame_benchmarking::define_benchmarks!(
 	[pallet_sudo, Sudo]
 	[pallet_xp, Xp]
     [pallet_commitment, Commitment]
+    [pallet_authors, Authors]
 );
