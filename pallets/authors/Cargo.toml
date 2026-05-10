@@ -26,6 +26,11 @@ sp-runtime.workspace = true
 scale-info.workspace = true
 derive_more.workspace = true
 
+[dev-dependencies]
+pallet-xp.workspace = true
+pallet-commitment.workspace = true
+sp-io.workspace = true
+
 
 [features]
 default = ["std"]
@@ -38,6 +43,9 @@ std = [
     "sp-core/std",
     "sp-std/std",
     "sp-runtime/std",
+    "pallet-xp/std",
+    "pallet-commitment/std",
+    "sp-io/std",
 ]
 
 dev = []

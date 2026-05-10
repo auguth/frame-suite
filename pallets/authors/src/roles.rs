@@ -2168,3 +2168,3463 @@ impl<T: Config> RoleProbation<Author<T>> for Pallet<T> {
         }
     }
 }
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::mock::*;
+    use crate::{
+        types::{AuthorStatus, Funder},
+        Event::*,
+    };
+
+    // --- FRAME Suite ---
+    use frame_suite::{commitment::*, roles::*};
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_ok,
+        traits::{
+            fungible::InspectFreeze,
+            tokens::{Fortitude, Precision},
+        },
+    };
+
+    // --- Substrate primitives ---
+    use sp_runtime::{DispatchError, Perbill};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` ROLE MANAGER `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn enroll_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            assert_err!(Pallet::role_exists(&ALICE), Error::AuthorNotFound);
+            // enroll author
+            let collateral_locked = Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+            assert_ok!(CommitAdapter::commit_exists(&ALICE, &COLLATERAL.into()));
+            assert_eq!(
+                AuthorAsset::balance_frozen(&COLLATERAL.into(), &ALICE),
+                collateral_locked
+            );
+            // author enrolled
+            assert_ok!(Pallet::role_exists(&ALICE));
+            let author_digest = gen_author_digest(&ALICE).unwrap();
+            assert_eq!(AuthorsDigest::get(author_digest), Some(ALICE));
+            System::assert_last_event(Event::AuthorEnlisted { author: ALICE, collateral: collateral_locked }.into());
+        })
+    }
+
+    #[test]
+    fn role_exists_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+            assert_ok!(Pallet::role_exists(&ALICE));
+        })
+    }
+
+    #[test]
+    fn role_exists_err_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+            // BOB is not enrolled
+            assert_err!(Pallet::role_exists(&BOB), Error::AuthorNotFound);
+        })
+    }
+
+    #[test]
+    fn get_meta_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+            let author_digest = gen_author_digest(&ALICE).unwrap();
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.digest, author_digest);
+            assert_eq!(meta.since, 6);
+            assert_eq!(meta.status, AuthorStatus::Probation);
+            assert_eq!(meta.status_since, 6);
+            assert_eq!(meta.risk_until, 6);
+            assert_eq!(meta.max_fund, None);
+            assert_eq!(meta.min_fund, None);
+        })
+    }
+
+    #[test]
+    fn get_meta_err_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+            // BOB is not enrolled
+            assert_err!(Pallet::get_meta(&BOB), Error::AuthorNotFound);
+        })
+    }
+
+    #[test]
+    fn can_enroll_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            assert_ok!(Pallet::can_enroll(&ALICE, LARGE_VALUE));
+        })
+    }
+
+    #[test]
+    fn can_enroll_err_already_enrolled() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+            assert_err!(
+                Pallet::can_enroll(&ALICE, LARGE_VALUE),
+                Error::AlreadyEnrolled
+            );
+        })
+    }
+
+    #[test]
+    fn can_enroll_err_inadequate_collateral() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            assert_err!(
+                Pallet::can_enroll(&ALICE, SMALL_VALUE),
+                Error::InadequateCollateral
+            );
+        })
+    }
+
+    #[test]
+    fn can_enroll_err_inadequate_funds() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, MIN_VALUE, MIN_VALUE).unwrap();
+            assert_err!(
+                Pallet::can_enroll(&ALICE, LARGE_VALUE),
+                Error::InadequateFunds
+            );
+        })
+    }
+
+    #[should_panic]
+    #[test]
+    fn can_enroll_panic_author_resigned_with_penalty() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::penalize(&ALICE, Perbill::from_percent(5)).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned
+            });
+
+            // should, panic
+            Pallet::can_enroll(&ALICE, STANDARD_VALUE).unwrap();
+        })
+    }
+
+    #[test]
+    fn can_enroll_err_author_has_rewards() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::reward(&ALICE, 5, Precision::BestEffort).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned
+            });
+
+            // since, rewards are scheduled
+            assert_err!(
+                Pallet::can_enroll(&ALICE, STANDARD_VALUE),
+                Error::AuthorHasRewards
+            );
+        })
+    }
+
+    #[test]
+    fn can_resign_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active
+            });
+
+            // Set author as in-active
+            set_activity_state(false);
+
+            assert_ok! {
+                Pallet::can_resign(&ALICE)
+            };
+        })
+    }
+
+    #[test]
+    fn can_resign_err_author_in_probation() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            assert_err! {
+                Pallet::can_resign(
+                &ALICE,
+            ), Error::AuthorInProbation
+            };
+        })
+    }
+
+    #[test]
+    fn can_resign_err_redundant_resignation() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned
+            });
+
+            assert_err! {
+                Pallet::can_resign(&ALICE),
+                Error::RedundantResignation
+            };
+        })
+    }
+
+    #[test]
+    fn can_resign_err_author_has_penalties() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::penalize(&ALICE, Perbill::from_percent(5)).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active
+            });
+
+            set_activity_state(false);
+            // since, penalties are scheduled
+            assert_err!(Pallet::can_resign(&ALICE), Error::AuthorHasPenalties);
+        })
+    }
+
+    #[test]
+    fn can_resign_err_author_is_active() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active
+            });
+
+            // Set author as active
+            set_activity_state(true);
+
+            assert_err! {
+                Pallet::can_resign(&ALICE),
+                DispatchError::Other("AuthorIsActive")
+            };
+        })
+    }
+
+    #[test]
+    fn get_collateral_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            let actual_collateral = Pallet::get_collateral(&ALICE).unwrap();
+
+            assert_eq!(actual_collateral, LARGE_VALUE);
+        })
+    }
+
+    #[test]
+    fn total_collateral_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            let total_collateral = Pallet::total_collateral();
+            assert_eq!(total_collateral, 100); // collateral of ALICE
+
+            System::set_block_number(10);
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let total_collateral = Pallet::total_collateral();
+            assert_eq!(total_collateral, 150); // collateral of ALICE + BOB
+        })
+    }
+
+    #[test]
+    fn enroll_since_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            assert_eq!(Pallet::enroll_since(&ALICE), Ok(6));
+        })
+    }
+
+    #[test]
+    fn get_status_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            assert_eq!(Pallet::get_status(&ALICE), Ok(AuthorStatus::Probation));
+        })
+    }
+
+    #[test]
+    fn status_since_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            assert_eq!(Pallet::status_since(&ALICE), Ok(6));
+        })
+    }
+
+    #[test]
+    fn set_status_success_from_probation() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            let current_status = Pallet::get_status(&ALICE).unwrap();
+
+            assert_eq!(current_status, AuthorStatus::Probation);
+
+            // updating the status of author from AuthorStatus::Probation -> AuthorStatus::Probation is no-op
+            assert_ok! {
+                    Pallet::set_status(
+                    &ALICE,
+                    AuthorStatus::Probation
+            )};
+
+            // updating the status of author from AuthorStatus::Probation -> AuthorStatus::Resigned
+            // will cause error as the author still under probation period
+            assert_err! {
+                Pallet::set_status(
+                    &ALICE,
+                    AuthorStatus::Resigned
+                ),
+                Error::AuthorInProbation
+            };
+
+            System::set_block_number(14);
+            // updating the status of author from AuthorStatus::Probation -> AuthorStatus::Active
+            // will cause error as block number still not exceeds the probation period
+            assert_err! {
+                Pallet::set_status(
+                &ALICE,
+                AuthorStatus::Active
+            ), Error::AuthorInProbation
+            };
+
+            System::set_block_number(20);
+            // update the status of author: AuthorStatus::Probation -> AuthorStatus::Active
+            assert_ok!(Pallet::set_status(&ALICE, AuthorStatus::Active));
+
+            let current_status = Pallet::get_status(&ALICE).unwrap();
+
+            assert_eq!(current_status, AuthorStatus::Active);
+
+            System::assert_last_event(Event::AuthorStatus {
+                 author: ALICE, 
+                 status: AuthorStatus::Active 
+                }
+                .into()
+            );
+        })
+    }
+
+    #[test]
+    fn set_status_success_from_active() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(20);
+            // update the status of author: AuthorStatus::Probation -> AuthorStatus::Active
+            assert_ok!(Pallet::set_status(&ALICE, AuthorStatus::Active));
+
+            let current_status = Pallet::get_status(&ALICE).unwrap();
+            assert_eq!(current_status, AuthorStatus::Active);
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let risk = &mut info.risk_until;
+                *risk = 32
+            });
+            // since the risk_until is high, update the status of author
+            // AuthorStatus::Active -> AuthorStatus::Probation
+            assert_ok!(Pallet::set_status(&ALICE, AuthorStatus::Probation));
+
+            System::set_block_number(42);
+            // after the probation period, update the status of author
+            // AuthorStatus::Probation -> AuthorStatus::Active
+            assert_ok!(Pallet::set_status(&ALICE, AuthorStatus::Active));
+            let current_status = Pallet::get_status(&ALICE).unwrap();
+            assert_eq!(current_status, AuthorStatus::Active);
+
+            System::set_block_number(45);
+            // update the status of author
+            // AuthorStatus::Active -> AuthorStatus::Resign
+            assert_ok!(Pallet::set_status(&ALICE, AuthorStatus::Resigned));
+            let current_status = Pallet::get_status(&ALICE).unwrap();
+            assert_eq!(current_status, AuthorStatus::Resigned);
+        })
+    }
+
+    #[test]
+    fn set_status_success_from_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned
+            });
+
+            let current_status = Pallet::get_status(&ALICE).unwrap();
+
+            assert_eq!(current_status, AuthorStatus::Resigned);
+
+            // updating the status of author from AuthorStatus::Resigned -> AuthorStatus::Probation
+            // will cause error as resigned authors can be reactivated only through enrollment
+            assert_err! {
+                Pallet::set_status(
+                &ALICE,
+                AuthorStatus::Probation
+            ), Error::AuthorResigned
+            };
+
+            // updating the status of author from AuthorStatus::Resigned -> AuthorStatus::Active
+            // also will cause error as resigned authors can be reactivated only through enrollment
+            assert_err! {
+                Pallet::set_status(
+                &ALICE,
+                AuthorStatus::Active
+            ), Error::AuthorResigned
+            };
+
+            // updating the status of author from AuthorStatus::Resigned -> AuthorStatus::Active is no-op
+            assert_ok! {
+                    Pallet::set_status(
+                    &ALICE,
+                    AuthorStatus::Resigned
+            )};
+        })
+    }
+
+    #[test]
+    fn resign_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active
+            });
+
+            let current_collateral = Pallet::get_collateral(&ALICE).unwrap();
+            assert_eq!(current_collateral, LARGE_VALUE);
+
+            let author_bal = get_user_balance(&ALICE);
+            assert_eq!(author_bal, 100);
+
+            // Set author as in-active
+            set_activity_state(false);
+            assert_ok!(Pallet::resign(&ALICE));
+
+            assert_eq!(Pallet::get_status(&ALICE), Ok(AuthorStatus::Resigned));
+
+            let author_bal = get_user_balance(&ALICE);
+            assert_eq!(author_bal, 200); // existing balance + collateral
+            System::assert_last_event(Event::AuthorResigned { author: ALICE, released: 100 }.into());
+        })
+    }
+
+    #[test]
+    fn add_collateral_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+            let current_collateral = Pallet::get_collateral(&ALICE).unwrap();
+            assert_eq!(current_collateral, 50);
+
+            assert_ok!(Pallet::add_collateral(
+                &ALICE,
+                STANDARD_VALUE,
+                Fortitude::Force
+            ));
+            // collateral increaced by 50
+            let current_collateral = Pallet::get_collateral(&ALICE).unwrap();
+            assert_eq!(current_collateral, 100);
+            System::assert_last_event(Event::AuthorCollateralRaised { author: ALICE, raised: STANDARD_VALUE }.into());
+        })
+    }
+
+    #[test]
+    fn is_available_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_ok!(Pallet::is_available(&ALICE));
+        })
+    }
+
+    #[test]
+    fn is_available_err_author_needs_more_collateral() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                25,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::set_hold(&ALICE, 15, Precision::Exact, Fortitude::Force).unwrap();
+
+            assert_err!(
+                Pallet::is_available(&ALICE),
+                Error::AuthorNeedsMoreCollateral
+            );
+        })
+    }
+
+    #[test]
+    fn is_available_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned
+            });
+
+            assert_err!(Pallet::is_available(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn on_enroll_emit_event_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let collateral = LARGE_VALUE;
+            Pallet::on_enroll(&ALICE, collateral);
+
+            System::assert_last_event(
+                Event::AuthorEnlisted {
+                    author: ALICE,
+                    collateral,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_resign_emit_event_suucess() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let released = LARGE_VALUE;
+            Pallet::on_resign(&ALICE, released);
+
+            System::assert_last_event(
+                Event::AuthorResigned {
+                    author: ALICE,
+                    released,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_add_collateral_emit_event_suucess() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let raised = LARGE_VALUE;
+            Pallet::on_add_collateral(&ALICE, raised);
+
+            System::assert_last_event(
+                Event::AuthorCollateralRaised {
+                    author: ALICE,
+                    raised,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_status_update_emit_event_suucess() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let status = AuthorStatus::Active;
+            Pallet::on_status_update(&ALICE, &status);
+
+            System::assert_last_event(
+                Event::AuthorStatus {
+                    author: ALICE,
+                    status,
+                }
+                .into(),
+            );
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````````` FUND ROLES ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn has_funds_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            assert_ok!(Pallet::has_funds(&ALICE));
+        })
+    }
+
+    #[test]
+    fn has_funds_err_fund_does_not_exist() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_err!(Pallet::has_funds(&ALICE), Error::FundDoesNotExist);
+        })
+    }
+
+    #[test]
+    fn can_fund_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_ok!(Pallet::can_fund(
+                &Funder::Direct(BOB),
+                &ALICE,
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force
+            ));
+        })
+    }
+
+    #[test]
+    fn can_fund_err_below_minimum_fund() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_err!(
+                Pallet::can_fund(
+                    &Funder::Direct(BOB),
+                    &ALICE,
+                    MIN_VALUE,
+                    Precision::Exact,
+                    Fortitude::Force
+                ),
+                Error::BelowMinimumFund
+            );
+        })
+    }
+
+    #[test]
+    fn can_fund_err_above_maximum_exposure() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_err!(
+                Pallet::can_fund(
+                    &Funder::Direct(BOB),
+                    &ALICE,
+                    1100, // 1100 which is higher than the
+                    // max_exposure which is set to be 1000 in mock.rs
+                    Precision::Exact,
+                    Fortitude::Force
+                ),
+                Error::AboveMaximumExposure
+            );
+        })
+    }
+
+    #[test]
+    fn can_fund_err_fund_to_another_digest() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            assert_err!(
+                Pallet::can_fund(
+                    &Funder::Direct(CHARLIE),
+                    &BOB,
+                    LARGE_VALUE,
+                    Precision::Exact,
+                    Fortitude::Force
+                ),
+                Error::FundedToAnotherDigest
+            );
+        })
+    }
+
+    #[test]
+    fn can_draw_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            assert_ok!(Pallet::can_draw(&Funder::Direct(BOB), &ALICE,));
+        })
+    }
+
+    #[test]
+    fn can_draw_err_fund_to_another_digest() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            assert_err!(
+                Pallet::can_draw(&Funder::Direct(CHARLIE), &BOB),
+                Error::FundedToAnotherDigest
+            );
+        })
+    }
+
+    #[test]
+    fn max_exposure_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let max_exposure = Pallet::max_exposure(
+                &Funder::Direct(BOB),
+                &ALICE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            assert_eq!(MaxExposure::get(), max_exposure);
+        })
+    }
+
+    #[test]
+    fn min_fund_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let min_fund = Pallet::min_fund(
+                &Funder::Direct(BOB),
+                &ALICE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            assert_eq!(MinFund::get(), min_fund);
+        })
+    }
+
+    #[test]
+    fn backed_value_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let current_backed_val = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(current_backed_val, 50);
+
+            // CHARLIE backed ALICE with 25 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let current_backed_val = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(current_backed_val, 75); // BOB + CHARLIE = 50 + 25 -> 75
+        })
+    }
+
+    #[test]
+    fn total_backing_sucess() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::enroll(&MIKE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let current_total_backed_val = Pallet::total_backing();
+            assert_eq!(current_total_backed_val, 50);
+
+            // CHARLIE backed MIKE with 100 units
+            Pallet::fund(
+                &MIKE,
+                &Funder::Direct(CHARLIE),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            // BOB increase the backing by 25 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let current_total_backed_val = Pallet::total_backing();
+            assert_eq!(current_total_backed_val, 175); // ALICE + MIKE = (50 + 25) + 100  -> 175
+        })
+    }
+
+    #[test]
+    fn backers_of_success_for_direct() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::enroll(&MIKE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            // CHARLIE backed ALICE with 100 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            // MIKE backed ALICE with 25 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let actual_backers_of = Pallet::backers_of(&ALICE).unwrap();
+            let expected_backers_of = vec![
+                (Funder::Direct(BOB), 50),
+                (Funder::Direct(MIKE), 25),
+                (Funder::Direct(CHARLIE), 100),
+            ];
+            assert_eq!(actual_backers_of, expected_backers_of);
+        })
+    }
+
+    #[test]
+    fn backers_of_success_for_index() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            prepare_and_initiate_index(MIKE, FUNDING.into(), &entries, INDEX_DIGEST).unwrap();
+
+            let by = Funder::Index {
+                digest: INDEX_DIGEST,
+                backer: MIKE,
+            };
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let backers_of_alice = Pallet::backers_of(&ALICE).unwrap();
+            let expected_backers_of_alice = vec![(by.clone(), 60), (Funder::Direct(CHARLIE), 50)];
+            assert_eq!(backers_of_alice, expected_backers_of_alice);
+
+            let backers_of_bob = Pallet::backers_of(&BOB).unwrap();
+            let expected_backers_of_bob = vec![(by, 40), (Funder::Direct(ALAN), 100)];
+            assert_eq!(backers_of_bob, expected_backers_of_bob);
+        })
+    }
+
+    #[test]
+    fn backers_of_success_for_pool() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            prepare_and_initiate_pool(
+                MIKE,
+                FUNDING.into(),
+                &entries,
+                INDEX_DIGEST,
+                POOL_DIGEST,
+                Perbill::from_percent(5),
+            )
+            .unwrap();
+
+            let by = Funder::Pool {
+                digest: POOL_DIGEST,
+                backer: MIKE,
+            };
+
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let backers_of_alice = Pallet::backers_of(&ALICE).unwrap();
+            let expected_backers_of_alice = vec![(by.clone(), 60), (Funder::Direct(CHARLIE), 50)];
+            assert_eq!(backers_of_alice, expected_backers_of_alice);
+
+            let backers_of_bob = Pallet::backers_of(&BOB).unwrap();
+            let expected_backers_of_bob = vec![(by, 40), (Funder::Direct(ALAN), 100)];
+            assert_eq!(backers_of_bob, expected_backers_of_bob);
+        })
+    }
+
+    #[test]
+    fn backed_for_success_for_direct() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::enroll(&MIKE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let current_total_backed_val = Pallet::total_backing();
+            assert_eq!(current_total_backed_val, 50);
+
+            // CHARLIE backed MIKE with 100 units
+            Pallet::fund(
+                &MIKE,
+                &Funder::Direct(CHARLIE),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let bob_backed_for = Pallet::backed_for(&Funder::Direct(BOB)).unwrap();
+            let expected_author = vec![(ALICE, 50)];
+            assert_eq!(bob_backed_for, expected_author);
+
+            let charlie_backed_for = Pallet::backed_for(&Funder::Direct(CHARLIE)).unwrap();
+            let expected_author = vec![(MIKE, 100)];
+            assert_eq!(charlie_backed_for, expected_author);
+        })
+    }
+
+    #[test]
+    fn backed_for_success_for_index() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            prepare_and_initiate_index(MIKE, FUNDING.into(), &entries, INDEX_DIGEST).unwrap();
+
+            let by = Funder::Index {
+                digest: INDEX_DIGEST,
+                backer: MIKE,
+            };
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let backed_for = Pallet::backed_for(&by).unwrap();
+            let expected_backed_for = vec![(ALICE, 60), (BOB, 40)];
+            assert_eq!(backed_for, expected_backed_for);
+        })
+    }
+
+    #[test]
+    fn backed_for_success_for_pool() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            prepare_and_initiate_pool(
+                MIKE,
+                FUNDING.into(),
+                &entries,
+                INDEX_DIGEST,
+                POOL_DIGEST,
+                Perbill::from_percent(5),
+            )
+            .unwrap();
+
+            let by = Funder::Pool {
+                digest: POOL_DIGEST,
+                backer: MIKE,
+            };
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let backed_for = Pallet::backed_for(&by).unwrap();
+            let expected_backed_for = vec![(ALICE, 60), (BOB, 40)];
+            assert_eq!(backed_for, expected_backed_for);
+        })
+    }
+
+    #[test]
+    fn get_fund_success_for_direct() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::enroll(&MIKE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let current_total_backed_val = Pallet::total_backing();
+            assert_eq!(current_total_backed_val, 50);
+
+            // CHARLIE backed MIKE with 100 units
+            Pallet::fund(
+                &MIKE,
+                &Funder::Direct(CHARLIE),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            // BOB increase the backing by 25 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let bobs_fund_to_alice = Pallet::get_fund(&ALICE, &Funder::Direct(BOB)).unwrap();
+            assert_eq!(bobs_fund_to_alice, 75); // 50 + 25
+
+            let charlies_fund_to_mike = Pallet::get_fund(&MIKE, &Funder::Direct(CHARLIE)).unwrap();
+            assert_eq!(charlies_fund_to_mike, 100);
+        })
+    }
+
+    #[test]
+    fn get_fund_err_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::enroll(&ALAN, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            assert_err!(
+                Pallet::get_fund(&ALAN, &Funder::Direct(BOB)),
+                Error::FundedToAnotherDigest
+            );
+        })
+    }
+
+    #[test]
+    fn get_fund_success_for_index() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::enroll(&MIKE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let current_total_backed_val = Pallet::total_backing();
+            assert_eq!(current_total_backed_val, 50);
+
+            // CHARLIE backed MIKE with 100 units
+            Pallet::fund(
+                &MIKE,
+                &Funder::Direct(CHARLIE),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let mike_digest = gen_author_digest(&MIKE).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (mike_digest.clone(), 40)];
+
+            // ALAN initates a index with both authors as an entry and funds the index
+            prepare_and_initiate_index(ALAN, FUNDING.into(), &entries, INDEX_DIGEST).unwrap();
+
+            let by = Funder::Index {
+                digest: INDEX_DIGEST,
+                backer: ALAN,
+            };
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let bobs_fund_to_index_alice = Pallet::get_fund(&ALICE, &by).unwrap();
+            assert_eq!(bobs_fund_to_index_alice, 60);
+            let bobs_fund_to_index_bob = Pallet::get_fund(&MIKE, &by).unwrap();
+            assert_eq!(bobs_fund_to_index_bob, 40);
+        })
+    }
+
+    #[test]
+    fn get_fund_success_for_pool() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            prepare_and_initiate_pool(
+                MIKE,
+                FUNDING.into(),
+                &entries,
+                INDEX_DIGEST,
+                POOL_DIGEST,
+                Perbill::from_percent(5),
+            )
+            .unwrap();
+
+            let by = Funder::Pool {
+                digest: POOL_DIGEST,
+                backer: MIKE,
+            };
+
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let bobs_fund_to_index_alice = Pallet::get_fund(&ALICE, &by).unwrap();
+            assert_eq!(bobs_fund_to_index_alice, 60);
+            let bobs_fund_to_index_bob = Pallet::get_fund(&BOB, &by).unwrap();
+            assert_eq!(bobs_fund_to_index_bob, 40);
+        })
+    }
+
+    #[test]
+    fn fund_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            assert_ok!(Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            ));
+
+            let funds_backed = Pallet::get_fund(&ALICE, &Funder::Direct(BOB)).unwrap();
+            assert_eq!(funds_backed, STANDARD_VALUE);
+
+            // Raise backing by 25 units
+            assert_ok!(Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            ));
+
+            let funds_backed = Pallet::get_fund(&ALICE, &Funder::Direct(BOB)).unwrap();
+            assert_eq!(funds_backed, 75); // 50 + 25
+
+            let author_funders = AuthorFunders::get((ALICE, BOB)).unwrap();
+            assert_eq!(author_funders, Funder::Direct(BOB));
+            System::assert_last_event(Event::AuthorFunded { author: ALICE, backer: BOB, amount: SMALL_VALUE }.into());
+        })
+    }
+
+    #[test]
+    fn fund_success_for_index() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(8);
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            System::set_block_number(12);
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(15);
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 150);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 50);
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 100);
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            let alice_current_hold = Pallet::get_hold(&ALICE).unwrap();
+            assert_eq!(alice_current_hold, 100);
+            let bob_current_hold = Pallet::get_hold(&BOB).unwrap();
+            assert_eq!(bob_current_hold, 150);
+
+            prepare_and_initiate_index(MIKE, FUNDING.into(), &entries, INDEX_DIGEST).unwrap();
+
+            let by = Funder::Index {
+                digest: INDEX_DIGEST,
+                backer: MIKE,
+            };
+
+            assert_ok!(Pallet::fund(
+                &ALICE,
+                &by,
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            ));
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 250);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 110); // 50 (existing) + 60 (through index as ALICE share is 60 )
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 140); // 100 (existing) + 40 (through index as BOB share is 40 )
+
+            let author_funders = AuthorFunders::get((ALICE, MIKE)).unwrap();
+            assert_eq!(author_funders, by);
+
+            let alice_current_hold = Pallet::get_hold(&ALICE).unwrap();
+            assert_eq!(alice_current_hold, 160);
+            let bob_current_hold = Pallet::get_hold(&BOB).unwrap();
+            assert_eq!(bob_current_hold, 190);
+            System::assert_last_event(Event::IndexFunded { index: INDEX_DIGEST, backer: MIKE, amount: LARGE_VALUE }.into());
+        })
+    }
+
+    #[test]
+    fn fund_success_for_pool() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(8);
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            System::set_block_number(12);
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(15);
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 150);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 50);
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 100);
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            let alice_current_hold = Pallet::get_hold(&ALICE).unwrap();
+            assert_eq!(alice_current_hold, 100);
+            let bob_current_hold = Pallet::get_hold(&BOB).unwrap();
+            assert_eq!(bob_current_hold, 150);
+
+            prepare_and_initiate_pool(
+                ALAN,
+                FUNDING.into(),
+                &entries,
+                INDEX_DIGEST,
+                POOL_DIGEST,
+                Perbill::from_percent(5),
+            )
+            .unwrap();
+
+            let by = Funder::Pool {
+                digest: POOL_DIGEST,
+                backer: MIKE,
+            };
+
+            assert_ok!(Pallet::fund(
+                &ALICE,
+                &by,
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            ));
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 250);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 110); // 50 (existing) + 60 (through index as ALICE share is 60 )
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 140); // 100 (existing) + 40 (through index as BOB share is 40 )
+
+            let author_funders = AuthorFunders::get((ALICE, MIKE)).unwrap();
+            assert_eq!(author_funders, by);
+
+            let alice_current_hold = Pallet::get_hold(&ALICE).unwrap();
+            assert_eq!(alice_current_hold, 160);
+            let bob_current_hold = Pallet::get_hold(&BOB).unwrap();
+            assert_eq!(bob_current_hold, 190);
+            System::assert_last_event(Event::PoolFunded { pool: POOL_DIGEST, backer: MIKE, amount: LARGE_VALUE }.into());
+        })
+    }
+
+    #[test]
+    fn draw_success_for_direct() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            assert_ok!(Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            ));
+
+            let current_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(current_backed_value, STANDARD_VALUE);
+
+            let alice_backers = Pallet::backers_of(&ALICE).unwrap();
+            let expected_backers = vec![(Funder::Direct(BOB), STANDARD_VALUE)];
+            assert_eq!(alice_backers, expected_backers);
+
+            // withdraw the backed funds
+            assert_ok!(Pallet::draw(&ALICE, &Funder::Direct(BOB)));
+
+            let current_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(current_backed_value, 0);
+
+            let alice_backers = Pallet::backers_of(&ALICE).unwrap();
+            let expected_backers = vec![];
+            assert_eq!(alice_backers, expected_backers);
+            assert!(!AuthorFunders::contains_key((ALICE, BOB)));
+            System::assert_last_event(Event::AuthorDrawn { author: ALICE, backer: BOB, amount: STANDARD_VALUE }.into());
+        })
+    }
+
+    #[test]
+    fn draw_success_for_index() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(8);
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            System::set_block_number(12);
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(15);
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            prepare_and_initiate_index(MIKE, FUNDING.into(), &entries, INDEX_DIGEST).unwrap();
+
+            let by = Funder::Index {
+                digest: INDEX_DIGEST,
+                backer: MIKE,
+            };
+
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 250);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 110); // 50 (existing) + 60 (through index as ALICE share is 60 )
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 140); // 100 (existing) + 40 (through index as BOB share is 40 )
+
+            let author_funders = AuthorFunders::get((ALICE, MIKE)).unwrap();
+            assert_eq!(author_funders, by);
+
+            assert_ok!(Pallet::draw(&ALICE, &by));
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 150);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 50); // 50 (existing) - 60 (through index as ALICE share is 60 )
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 100); // 100 (existing) - 40 (through index as BOB share is 40 )
+
+            assert!(!AuthorFunders::contains_key((ALICE, MIKE)));
+
+            let mike_balance = get_user_balance(&MIKE);
+            assert_eq!(mike_balance, 200);
+            System::assert_last_event(Event::IndexDrawn { index: INDEX_DIGEST, backer: MIKE, amount: LARGE_VALUE }.into());
+        })
+    }
+
+    #[test]
+    fn draw_success_for_pool() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(8);
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            System::set_block_number(12);
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(15);
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                LARGE_VALUE,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_digest = gen_author_digest(&ALICE).unwrap();
+            let bob_digest = gen_author_digest(&BOB).unwrap();
+            let entries = vec![(alice_digest.clone(), 60), (bob_digest.clone(), 40)];
+
+            prepare_and_initiate_pool(
+                ALAN,
+                FUNDING.into(),
+                &entries,
+                INDEX_DIGEST,
+                POOL_DIGEST,
+                Perbill::from_percent(5),
+            )
+            .unwrap();
+
+            let by = Funder::Pool {
+                digest: POOL_DIGEST,
+                backer: MIKE,
+            };
+
+            Pallet::fund(&ALICE, &by, LARGE_VALUE, Precision::Exact, Fortitude::Force).unwrap();
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 250);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 110); // 50 (existing) + 60 (through pool as ALICE share is 60 )
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 140); // 100 (existing) + 40 (through pool as BOB share is 40 )
+
+            let author_funders = AuthorFunders::get((ALICE, MIKE)).unwrap();
+            assert_eq!(author_funders, by);
+            let author_funders = AuthorFunders::get((BOB, MIKE)).unwrap();
+            assert_eq!(author_funders, by);
+
+            assert_ok!(Pallet::draw(&ALICE, &by));
+
+            let total_backing = Pallet::total_backing();
+            assert_eq!(total_backing, 150);
+            let alice_backed_value = Pallet::backed_value(&ALICE).unwrap();
+            assert_eq!(alice_backed_value, 50); // 50 (existing) - 60 (through index as ALICE share is 60 )
+            let bob_backed_value = Pallet::backed_value(&BOB).unwrap();
+            assert_eq!(bob_backed_value, 100); // 100 (existing) - 40 (through index as BOB share is 40 )
+
+            assert!(!AuthorFunders::contains_key((ALICE, MIKE)));
+
+            let mike_balance = get_user_balance(&MIKE);
+            assert_eq!(mike_balance, 195); // 100 (existing) + 100 (backed) - 5 (commission)
+            let alan_balance = get_user_balance(&ALAN);
+            assert_eq!(alan_balance, 105); // 100 (existing) + 5 (commission)
+            System::assert_last_event(Event::PoolDrawn { pool: POOL_DIGEST, backer: MIKE, amount: 95 }.into());
+        })
+    }
+
+    #[test]
+    fn on_drawn_direct_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let draw_amount = STANDARD_VALUE;
+            let by = Funder::<Test>::Direct(ALICE);
+            Pallet::on_drawn(&ALAN, &by, draw_amount);
+
+            System::assert_last_event(
+                Event::AuthorDrawn {
+                    author: ALAN,
+                    backer: ALICE,
+                    amount: draw_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_drawn_index_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let draw_amount = STANDARD_VALUE;
+            let by = Funder::<Test>::Index {
+                digest: INDEX_DIGEST,
+                backer: ALICE,
+            };
+            Pallet::on_drawn(&ALAN, &by, draw_amount);
+
+            System::assert_last_event(
+                Event::IndexDrawn {
+                    index: INDEX_DIGEST,
+                    backer: ALICE,
+                    amount: draw_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_drawn_pool_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let draw_amount = STANDARD_VALUE;
+            let by = Funder::<Test>::Pool {
+                digest: POOL_DIGEST,
+                backer: ALICE,
+            };
+            Pallet::on_drawn(&ALAN, &by, draw_amount);
+
+            System::assert_last_event(
+                Event::PoolDrawn {
+                    pool: POOL_DIGEST,
+                    backer: ALICE,
+                    amount: draw_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_funded_direct_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let fund_amount = STANDARD_VALUE;
+            let by = Funder::<Test>::Direct(ALICE);
+            Pallet::on_funded(&ALAN, &by, fund_amount);
+
+            System::assert_last_event(
+                Event::AuthorFunded {
+                    author: ALAN,
+                    backer: ALICE,
+                    amount: fund_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_funded_index_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let draw_amount = STANDARD_VALUE;
+            let by = Funder::<Test>::Index {
+                digest: INDEX_DIGEST,
+                backer: ALICE,
+            };
+            Pallet::on_funded(&ALAN, &by, draw_amount);
+
+            System::assert_last_event(
+                Event::IndexFunded {
+                    index: INDEX_DIGEST,
+                    backer: ALICE,
+                    amount: draw_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_funded_pool_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let draw_amount = STANDARD_VALUE;
+            let by = Funder::<Test>::Pool {
+                digest: POOL_DIGEST,
+                backer: ALICE,
+            };
+            Pallet::on_funded(&ALAN, &by, draw_amount);
+
+            System::assert_last_event(
+                Event::PoolFunded {
+                    pool: POOL_DIGEST,
+                    backer: ALICE,
+                    amount: draw_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````` COMPENSATE ROLES ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn reward_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            let reward_block = Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+            // First reward is scheduled at block 12 (current block 10 + buffer 2)
+            assert_eq!(reward_block, 12);
+            let reward_scheduled = AuthorRewards::get((12, ALICE)).unwrap();
+            assert_eq!(reward_scheduled, 5);
+
+            // Scheduling a second reward at the same block results in automatic
+            // collision avoidance: the slot at block 12 is occupied, so the reward
+            // is deferred to the next available block
+            let reward_units = 10;
+            let reward_block = Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            // Second reward is scheduled at block 13 due to slot collision
+            assert_eq!(reward_block, 13);
+            let reward_scheduled = AuthorRewards::get((13, ALICE)).unwrap();
+            assert_eq!(reward_scheduled, 10);
+            System::assert_last_event(Event::AuthorRewardScheduled { author: ALICE, amount: reward_units, at: reward_block }.into());
+        })
+    }
+
+    #[test]
+    fn reward_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            let reward_unit = 5;
+            assert_err!(
+                Pallet::reward(&ALICE, reward_unit, Precision::BestEffort,),
+                Error::AuthorResigned
+            );
+        })
+    }
+
+    #[test]
+    fn reclaim_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            let reward_block = Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+            // First reward is scheduled at block 12 (current block 10 + buffer 2)
+            assert_eq!(reward_block, 12);
+            let reward_scheduled = AuthorRewards::get((12, ALICE)).unwrap();
+            assert_eq!(reward_scheduled, 5);
+
+            System::set_block_number(11);
+            assert_ok!(Pallet::reclaim(&ALICE, 12));
+            assert!(!AuthorRewards::contains_key((12, ALICE)));
+            System::assert_last_event(Event::AuthorRewardReclaimed { author: ALICE, amount: reward_units}.into());
+        })
+    }
+
+    #[test]
+    fn reclaim_err_finalized_obligations() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            let reward_block = Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+            assert_eq!(reward_block, 12);
+
+            System::set_block_number(12);
+            assert_err!(Pallet::reclaim(&ALICE, 12), Error::FinalizedObligations);
+        })
+    }
+
+    #[test]
+    fn reclaim_err_rewards_not_founds() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            assert_err!(Pallet::reclaim(&ALICE, 12), Error::RewardNotFound);
+        })
+    }
+
+    #[test]
+    fn penalize_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 6);
+
+            System::set_block_number(10);
+            let penalty_block = Pallet::penalize(&ALICE, Perbill::from_percent(5)).unwrap();
+            // First penalty is scheduled at block 14 (current block 10 + buffer 4)
+            assert_eq!(penalty_block, 14);
+            let penalty_scheduled = AuthorPenalties::get((14, ALICE)).unwrap();
+            assert_eq!(penalty_scheduled, Perbill::from_percent(5));
+            // Author's risk period was extended by the IncreaseProbationBy value (1 block)
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 11);
+
+            // Scheduling a second penalty at the same block results in automatic
+            // collision avoidance: the slot at block 14 is occupied, so the penalty
+            // is deferred to the next available block
+            let penalty_block = Pallet::penalize(&ALICE, Perbill::from_percent(10)).unwrap();
+            // Second penalty is scheduled at block 15 due to slot collision
+            assert_eq!(penalty_block, 15);
+            let penalty_scheduled = AuthorPenalties::get((15, ALICE)).unwrap();
+            assert_eq!(penalty_scheduled, Perbill::from_percent(10));
+            // Risk period is extended again (now 11 + 1 = 12)
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 12);
+            System::assert_last_event(Event::AuthorPenaltyScheduled { author: ALICE, factor: penalty_scheduled, at: 15 }.into());
+        })
+    }
+
+    #[test]
+    fn penalize_err_zero_penalty_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            assert_err!(
+                Pallet::penalize(&ALICE, Perbill::from_percent(0)),
+                Error::ZeroPenaltyFound
+            );
+        })
+    }
+
+    #[test]
+    fn penalize_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            System::set_block_number(10);
+            assert_err!(
+                Pallet::penalize(&ALICE, Perbill::from_percent(5)),
+                Error::AuthorResigned
+            );
+        })
+    }
+
+    #[test]
+    fn forgive_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let penalty_factor = Perbill::from_percent(5);
+            let penalty_block = Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            assert_eq!(penalty_block, 14);
+            let penalty_scheduled = AuthorPenalties::get((14, ALICE)).unwrap();
+            assert_eq!(penalty_scheduled, penalty_factor);
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 11);
+
+            assert_ok!(Pallet::forgive(&ALICE, 14));
+
+            assert!(!AuthorPenalties::contains_key((14, ALICE)));
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 10);
+            System::assert_last_event(Event::AuthorPenaltyForgiven { author: ALICE, factor: penalty_scheduled }.into());
+        })
+    }
+
+    #[test]
+    fn forgive_err_finalized_obligations() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let penalty_factor = Perbill::from_percent(5);
+            let penalty_block = Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            assert_eq!(penalty_block, 14);
+            let penalty_scheduled = AuthorPenalties::get((14, ALICE)).unwrap();
+            assert_eq!(penalty_scheduled, penalty_factor);
+
+            System::set_block_number(14);
+            assert_err!(Pallet::forgive(&ALICE, 14), Error::FinalizedObligations);
+        })
+    }
+
+    #[test]
+    fn forgive_err_rewards_not_founds() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            assert_err!(Pallet::forgive(&ALICE, 14), Error::PenaltyNotFound);
+        })
+    }
+
+    #[test]
+    fn has_reward_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            assert_ok!(Pallet::has_reward(&ALICE));
+        })
+    }
+
+    #[test]
+    fn has_reward_err_reward_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_err!(Pallet::has_reward(&ALICE), Error::RewardNotFound);
+        })
+    }
+
+    #[test]
+    fn has_penalty_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            Pallet::penalize(&ALICE, Perbill::from_percent(5)).unwrap();
+
+            assert_ok!(Pallet::has_penalty(&ALICE));
+        })
+    }
+
+    #[test]
+    fn has_penalty_penalty_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_err!(Pallet::has_penalty(&ALICE), Error::PenaltyNotFound);
+        })
+    }
+
+    #[test]
+    fn get_rewards_of_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            System::set_block_number(11);
+            let reward_units = 10;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            let reward_units = 8;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            let rewards_of = Pallet::get_rewards_of(&ALICE).unwrap();
+            let expected_rewards_of = vec![(12, 5), (13, 10), (14, 8)];
+            assert_eq!(rewards_of, expected_rewards_of);
+        })
+    }
+
+    #[test]
+    fn get_rewards_of_success_with_empty_vec_when_no_rewards() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let rewards_of = Pallet::get_rewards_of(&ALICE).unwrap();
+            assert_eq!(rewards_of, vec![]);
+        })
+    }
+
+    #[test]
+    fn get_penalties_of_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let penalty_factor = Perbill::from_percent(5);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            System::set_block_number(11);
+            let penalty_factor = Perbill::from_percent(10);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            System::set_block_number(12);
+            let penalty_factor = Perbill::from_percent(8);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            let penalties_of = Pallet::get_penalties_of(&ALICE).unwrap();
+            let expected_penalties_of = vec![
+                (14, Perbill::from_percent(5)),
+                (15, Perbill::from_percent(10)),
+                (16, Perbill::from_percent(8)),
+            ];
+            assert_eq!(penalties_of, expected_penalties_of);
+        })
+    }
+
+    #[test]
+    fn get_penalties_of_success_with_empty_vec_when_no_penalty() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let penalties_of = Pallet::get_penalties_of(&ALICE).unwrap();
+            assert_eq!(penalties_of, vec![]);
+        })
+    }
+
+    #[test]
+    fn get_rewards_on_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            System::set_block_number(11);
+            let reward_units = 10;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            let reward_on_12 = Pallet::get_rewards_on(12).unwrap();
+            let expected_reward_on_12 = vec![(ALICE, 5)];
+            assert_eq!(reward_on_12, expected_reward_on_12);
+
+            let reward_on_13 = Pallet::get_rewards_on(13).unwrap();
+            let expected_reward_on_13 = vec![(ALICE, 10)];
+            assert_eq!(reward_on_13, expected_reward_on_13);
+        })
+    }
+
+    #[test]
+    fn get_rewards_on_err_finalize_obligations() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            System::set_block_number(11);
+            let reward_units = 10;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            System::set_block_number(15);
+            assert_err!(Pallet::get_rewards_on(12), Error::FinalizedObligations);
+        })
+    }
+
+    #[test]
+    fn get_rewards_on_err_contains_no_rewards() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let reward_units = 5;
+            Pallet::reward(&ALICE, reward_units, Precision::BestEffort).unwrap();
+
+            let rewards_on = Pallet::get_rewards_on(13).unwrap();
+            assert_eq!(rewards_on, vec![]);
+        })
+    }
+
+    #[test]
+    fn get_penalties_on_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let penalty_factor = Perbill::from_percent(5);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            System::set_block_number(11);
+            let penalty_factor = Perbill::from_percent(10);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            let penalty_on_12 = Pallet::get_penalties_on(14).unwrap();
+            let expected_penalty_on_12 = vec![(ALICE, Perbill::from_percent(5))];
+            assert_eq!(penalty_on_12, expected_penalty_on_12);
+
+            let penalty_on_13 = Pallet::get_penalties_on(15).unwrap();
+            let expected_penalty_on_13 = vec![(ALICE, Perbill::from_percent(10))];
+            assert_eq!(penalty_on_13, expected_penalty_on_13);
+        })
+    }
+
+    #[test]
+    fn get_penalties_on_err_finalized_obligations() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let penalty_factor = Perbill::from_percent(5);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            System::set_block_number(11);
+            let penalty_factor = Perbill::from_percent(10);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            System::set_block_number(15);
+            assert_err!(Pallet::get_penalties_on(14), Error::FinalizedObligations);
+        })
+    }
+
+    #[test]
+    fn get_penalties_on_success_with_empty_vec_when_no_penalty() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            let penalty_factor = Perbill::from_percent(5);
+            Pallet::penalize(&ALICE, penalty_factor).unwrap();
+
+            let penalties_on = Pallet::get_penalties_on(15).unwrap();
+            assert_eq!(penalties_on, vec![]);
+        })
+    }
+
+    #[test]
+    fn get_hold_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let actual_hold = Pallet::get_hold(&ALICE).unwrap();
+            let expected_hold = 150; // 50(collateral) + 100 (funding)
+            assert_eq!(actual_hold, expected_hold);
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let actual_hold = Pallet::get_hold(&ALICE).unwrap();
+            let expected_hold = 175; // 50(collateral) + 100 (funding) + 25 (funding)
+            assert_eq!(actual_hold, expected_hold);
+        })
+    }
+
+    #[test]
+    fn set_hold_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let actual_hold = Pallet::get_hold(&ALICE).unwrap();
+            let expected_hold = 175; // 50(collateral) + 100 (funding) + 25 (funding)
+            assert_eq!(actual_hold, expected_hold);
+
+            let collateral_value = Pallet::get_collateral(&ALICE).unwrap();
+            let funding_value = Pallet::total_backing();
+            assert_eq!(collateral_value, 50);
+            assert_eq!(funding_value, 125);
+
+            assert_ok!(Pallet::set_hold(
+                &ALICE,
+                250,
+                Precision::Exact,
+                Fortitude::Force
+            ));
+
+            let actual_hold = Pallet::get_hold(&ALICE).unwrap();
+            let expected_hold = 250;
+            // hold value updated to set_hold value
+            assert_eq!(actual_hold, expected_hold);
+
+            // collateral and funding value are updated accordingly
+            let collateral_value = Pallet::get_collateral(&ALICE).unwrap();
+            let funding_value = Pallet::total_backing();
+            assert_eq!(collateral_value, 71);
+            assert_eq!(funding_value, 179);
+            System::assert_last_event(Event::AuthorTotalHold { author: ALICE, value: 250 }.into());
+        })
+    }
+
+    #[test]
+    fn on_reward_event_emmission_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let at = System::block_number();
+            let amount = LARGE_VALUE;
+            Pallet::on_reward(&ALICE, amount, at);
+
+            System::assert_last_event(
+                AuthorRewardScheduled {
+                    author: ALICE,
+                    amount,
+                    at,
+                }
+                .into(),
+            )
+        })
+    }
+
+    #[test]
+    fn on_reclaim_event_emmission_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let amount = LARGE_VALUE;
+            Pallet::on_reclaim(&ALICE, amount);
+
+            System::assert_last_event(
+                AuthorRewardReclaimed {
+                    author: ALICE,
+                    amount,
+                }
+                .into(),
+            )
+        })
+    }
+
+    #[test]
+    fn on_set_hold_event_emmission_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let value = LARGE_VALUE;
+            Pallet::on_set_hold(&ALICE, value);
+
+            System::assert_last_event(
+                AuthorTotalHold {
+                    author: ALICE,
+                    value,
+                }
+                .into(),
+            )
+        })
+    }
+
+    #[test]
+    fn on_forgive_event_emmission_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let factor = Perbill::from_percent(10);
+            Pallet::on_forgive(&ALICE, factor);
+
+            System::assert_last_event(
+                AuthorPenaltyForgiven {
+                    author: ALICE,
+                    factor,
+                }
+                .into(),
+            )
+        })
+    }
+
+    #[test]
+    fn on_penalize_event_emmission_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let at = System::block_number();
+            let factor = Perbill::from_percent(10);
+            Pallet::on_penalize(&ALICE, factor, at);
+
+            System::assert_last_event(
+                AuthorPenaltyScheduled {
+                    author: ALICE,
+                    factor,
+                    at,
+                }
+                .into(),
+            )
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````` ROLE PROBATION ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn is_on_probation_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_ok!(Pallet::is_on_probation(&ALICE));
+        })
+    }
+
+    #[test]
+    fn is_on_probation_err_author_is_active() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active;
+            });
+
+            assert_err!(Pallet::is_on_probation(&ALICE), Error::AuthorIsActive);
+        })
+    }
+
+    #[test]
+    fn is_on_probation_err_author_is_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            assert_err!(Pallet::is_on_probation(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn is_permanent_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active;
+            });
+
+            assert_ok!(Pallet::is_permanent(&ALICE));
+        })
+    }
+
+    #[test]
+    fn is_permanent_err_author_in_probation() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            assert_err!(Pallet::is_permanent(&ALICE), Error::AuthorInProbation);
+        })
+    }
+
+    #[test]
+    fn is_permanent_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            assert_err!(Pallet::is_permanent(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn can_be_permament_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(14);
+            assert_err!(Pallet::can_be_permanent(&ALICE), Error::AuthorInProbation);
+
+            System::set_block_number(16);
+            assert_ok!(Pallet::can_be_permanent(&ALICE));
+        })
+    }
+
+    #[test]
+    fn can_be_permament_err_author_is_active() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active;
+            });
+
+            System::set_block_number(16);
+            assert_err!(Pallet::can_be_permanent(&ALICE), Error::AuthorIsActive);
+        })
+    }
+
+    #[test]
+    fn can_be_permament_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            System::set_block_number(16);
+            assert_err!(Pallet::can_be_permanent(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn can_be_permament_err_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(16);
+            assert_err!(Pallet::can_be_permanent(&BOB), Error::AuthorNotFound);
+        })
+    }
+
+    #[test]
+    fn can_be_permament_err_author_is_unsafe() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let risk = &mut info.risk_until;
+                *risk = 18;
+            });
+
+            System::set_block_number(16);
+            assert_err!(Pallet::can_be_permanent(&ALICE), Error::AuthorIsUnsafe);
+        })
+    }
+
+    #[test]
+    fn risk_probation_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 6);
+
+            System::set_block_number(10);
+            Pallet::risk_probation(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 11);
+
+            Pallet::risk_probation(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 12);
+
+            System::set_block_number(15);
+            Pallet::risk_probation(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 16);
+            System::assert_last_event(Event::AuthorAtRisk { author: ALICE, status: AuthorStatus::Probation, until: meta.risk_until }.into());
+        })
+    }
+
+    #[test]
+    fn risk_probation_err_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            assert_err!(Pallet::risk_probation(&BOB), Error::AuthorNotFound);
+        })
+    }
+
+    #[test]
+    fn risk_probation_err_author_is_active() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active;
+            });
+
+            System::set_block_number(10);
+            assert_err!(Pallet::risk_probation(&ALICE), Error::AuthorIsActive);
+        })
+    }
+
+    #[test]
+    fn risk_probation_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            System::set_block_number(10);
+            assert_err!(Pallet::risk_probation(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn risk_permanence_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 6);
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active;
+            });
+
+            System::set_block_number(20);
+            Pallet::risk_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 21);
+
+            Pallet::risk_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 22);
+
+            System::set_block_number(25);
+            Pallet::risk_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 26);
+            System::assert_last_event(Event::AuthorAtRisk { author: ALICE, status: AuthorStatus::Active, until: meta.risk_until }.into());
+        })
+    }
+
+    #[test]
+    fn risk_permanence_success_revoking_permanence() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 6);
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                let risk_until = &mut info.risk_until;
+                *status = AuthorStatus::Active;
+                *risk_until = 31;
+            });
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.status, AuthorStatus::Active);
+            assert_eq!(meta.risk_until, 31);
+
+            System::set_block_number(20);
+            Pallet::risk_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.status, AuthorStatus::Active);
+            assert_eq!(meta.risk_until, 32);
+        })
+    }
+
+    #[test]
+    fn risk_permanence_err_author_in_probation() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            assert_err!(Pallet::risk_permanence(&ALICE), Error::AuthorInProbation);
+        })
+    }
+
+    #[test]
+    fn risk_permanence_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            System::set_block_number(35);
+            assert_err!(Pallet::risk_permanence(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn risk_permanence_err_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(10);
+            assert_err!(Pallet::risk_permanence(&BOB), Error::AuthorNotFound);
+        })
+    }
+
+    #[test]
+    fn secure_permanence_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 6);
+
+            System::set_block_number(10);
+            Pallet::risk_probation(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 11);
+
+            assert_ok!(Pallet::secure_permanence(&ALICE));
+            // risk is reduced when author under probation
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 10);
+
+            System::set_block_number(20);
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Active;
+            });
+
+            Pallet::risk_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 21);
+
+            assert_ok!(Pallet::secure_permanence(&ALICE));
+            // risk is reduced when author is Active
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 20);
+            System::assert_last_event(Event::AuthorAtRisk { author: ALICE, status: AuthorStatus::Probation, until: meta.risk_until }.into());
+        })
+    }
+
+    #[test]
+    fn secure_permanence_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            System::set_block_number(35);
+            assert_err!(Pallet::secure_permanence(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn set_permanence_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.status, AuthorStatus::Probation);
+
+            System::set_block_number(18);
+            assert_ok!(Pallet::set_permanence(&ALICE));
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.status, AuthorStatus::Active);
+            System::assert_last_event(Event::AuthorStatus { author: ALICE, status: AuthorStatus::Active }.into());
+        })
+    }
+
+    #[test]
+    fn set_permanence_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(18);
+            assert_err!(Pallet::set_permanence(&BOB), Error::AuthorNotFound);
+        })
+    }
+
+    #[test]
+    fn revoke_permanance_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(16);
+            Pallet::set_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.status, AuthorStatus::Active);
+
+            System::set_block_number(20);
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+            Pallet::risk_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.risk_until, 31);
+
+            assert_ok!(Pallet::revoke_permanence(&ALICE));
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.status, AuthorStatus::Probation);
+            System::assert_last_event(Event::AuthorStatus { author: ALICE, status: AuthorStatus::Probation }.into());
+        })
+    }
+
+    #[test]
+    fn revoke_permanance_err_author_not_found() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            System::set_block_number(16);
+            Pallet::set_permanence(&ALICE).unwrap();
+
+            let meta = Pallet::get_meta(&ALICE).unwrap();
+            assert_eq!(meta.status, AuthorStatus::Active);
+
+            assert_err!(Pallet::revoke_permanence(&BOB), Error::AuthorNotFound);
+        })
+    }
+
+    #[test]
+    fn can_revoke_permanence_success() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                let risk_until = &mut info.risk_until;
+                *status = AuthorStatus::Active;
+                *risk_until = 31;
+            });
+
+            System::set_block_number(20);
+            assert_ok!(Pallet::can_revoke_permanence(&ALICE));
+        })
+    }
+
+    #[test]
+    fn can_revoke_permanence_err_risk_within_threshold() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                let risk_until = &mut info.risk_until;
+                *status = AuthorStatus::Active;
+                *risk_until = 31;
+            });
+
+            System::set_block_number(21);
+            assert_err!(
+                Pallet::can_revoke_permanence(&ALICE),
+                Error::RiskWithinThreshold
+            );
+
+            System::set_block_number(25);
+            assert_err!(
+                Pallet::can_revoke_permanence(&ALICE),
+                Error::RiskWithinThreshold
+            );
+        })
+    }
+
+    #[test]
+    fn can_revoke_permanence_err_author_resigned() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Resigned;
+            });
+
+            System::set_block_number(21);
+            assert_err!(Pallet::can_revoke_permanence(&ALICE), Error::AuthorResigned);
+        })
+    }
+
+    #[test]
+    fn can_revoke_permanence_err_author_in_probation() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            System::set_block_number(6);
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            AuthorsMap::mutate(ALICE, |author| {
+                let info = author.as_mut().unwrap();
+                let status = &mut info.status;
+                *status = AuthorStatus::Probation;
+            });
+
+            System::set_block_number(21);
+            assert_err!(
+                Pallet::can_revoke_permanence(&ALICE),
+                Error::AuthorInProbation
+            );
+        })
+    }
+
+    #[test]
+    fn on_set_permance_event_emmisison_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::on_set_permance(&ALICE);
+
+            let status = AuthorStatus::Active;
+            System::assert_last_event(
+                Event::AuthorStatus {
+                    author: ALICE,
+                    status,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_revoke_permanence_event_emmisison_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::on_revoke_permanence(&ALICE);
+
+            let status = AuthorStatus::Probation;
+            System::assert_last_event(
+                Event::AuthorStatus {
+                    author: ALICE,
+                    status,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_risk_permanence_event_emmisison_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, STANDARD_HOLD).unwrap();
+            Pallet::enroll(&ALICE, 100, Fortitude::Force).unwrap();
+
+            Pallet::on_risk_permanence(&ALICE);
+
+            let status = AuthorStatus::Active;
+            System::assert_last_event(
+                Event::AuthorAtRisk {
+                    author: ALICE,
+                    status,
+                    until: 10,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_risk_probation_event_emmisison_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, STANDARD_HOLD).unwrap();
+            Pallet::enroll(&ALICE, 100, Fortitude::Force).unwrap();
+
+            Pallet::on_risk_probation(&ALICE);
+
+            let status = AuthorStatus::Probation;
+            System::assert_last_event(
+                Event::AuthorAtRisk {
+                    author: ALICE,
+                    status,
+                    until: 10,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn on_secure_permanence_event_emmisison_success() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, STANDARD_HOLD).unwrap();
+            Pallet::enroll(&ALICE, 100, Fortitude::Force).unwrap();
+
+            Pallet::on_secure_permanence(&ALICE);
+
+            let status = AuthorStatus::Probation;
+            System::assert_last_event(
+                Event::AuthorAtRisk {
+                    author: ALICE,
+                    status,
+                    until: 10,
+                }
+                .into(),
+            );
+        })
+    }
+}

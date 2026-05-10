@@ -567,3 +567,441 @@ impl<T: Config> ElectionManager<Author<T>> for FairElection<T> {
         }
     }
 }
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+#[cfg(test)]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::types::Funder;
+    use crate::{mock::*, Elected, RecentElectedOn};
+
+    // --- FRAME Suite ---
+    use frame_suite::{roles::*, ElectionManager, InspectWeight};
+
+    use frame_support::{assert_err, assert_ok};
+    // --- FRAME Support ---
+    use frame_support::traits::tokens::{Fortitude, Precision};
+    use sp_runtime::AccountId32;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` FLAT-ELECTION ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn weight_of_success_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(6);
+            // ALICE enrolls with a collateral of 100 units
+            Pallet::enroll(&ALICE, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            // BOB backed ALICE with 50 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(BOB),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            // CHARLIE backed ALICE with 100 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            // MIKE backed ALICE with 25 units
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let influence =
+                <FlatElection as InspectWeight<AccountId32, Vec<u64>>>::weight_of(&ALICE).unwrap();
+
+            assert_eq!(influence, vec![225]);
+        })
+    }
+
+    #[test]
+    fn reveal_success_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            RecentElectedOn::<Test>::put(10);
+            Elected::<Test>::insert((10, ALICE), ());
+            Elected::<Test>::insert((10, BOB), ());
+            Elected::<Test>::insert((10, MIKE), ());
+            Elected::<Test>::insert((10, NIX), ());
+            Elected::<Test>::insert((10, ALAN), ());
+            Elected::<Test>::insert((10, AMY), ());
+
+            let mut actual_elected =
+                <FlatElection as ElectionManager<AccountId32>>::reveal().unwrap();
+
+            let mut expected_elected = vec![ALICE, BOB, MIKE, NIX, ALAN, AMY];
+            actual_elected.sort();
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+        })
+    }
+
+    #[test]
+    fn reveal_returns_none_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(450);
+            RecentElectedOn::<Test>::put(450);
+            Elected::<Test>::insert((450, ALICE), ());
+            Elected::<Test>::insert((450, BOB), ());
+            Elected::<Test>::insert((450, MIKE), ());
+            Elected::<Test>::insert((450, NIX), ());
+            Elected::<Test>::insert((450, ALAN), ());
+            Elected::<Test>::insert((450, AMY), ());
+
+            System::set_block_number(900);
+            RecentElectedOn::<Test>::put(900);
+            assert!(<FlatElection as ElectionManager<AccountId32>>::reveal().is_none());
+        })
+    }
+
+    #[test]
+    fn remove_success_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            RecentElectedOn::<Test>::put(10);
+            Elected::<Test>::insert((10, ALICE), ());
+            Elected::<Test>::insert((10, BOB), ());
+            Elected::<Test>::insert((10, MIKE), ());
+            Elected::<Test>::insert((10, NIX), ());
+            Elected::<Test>::insert((10, ALAN), ());
+            Elected::<Test>::insert((10, AMY), ());
+
+            let mut actual_elected =
+                <FlatElection as ElectionManager<AccountId32>>::reveal().unwrap();
+            let mut expected_elected = vec![ALICE, BOB, MIKE, NIX, ALAN, AMY];
+            actual_elected.sort();
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+
+            <FlatElection as ElectionManager<AccountId32>>::remove(&NIX);
+
+            let mut actual_elected =
+                <FlatElection as ElectionManager<AccountId32>>::reveal().unwrap();
+            let mut expected_elected = vec![ALICE, BOB, MIKE, ALAN, AMY];
+            actual_elected.sort();
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+
+            <FlatElection as ElectionManager<AccountId32>>::remove(&AMY);
+
+            let mut actual_elected =
+                <FlatElection as ElectionManager<AccountId32>>::reveal().unwrap();
+            let mut expected_elected = vec![ALICE, BOB, MIKE, ALAN];
+            actual_elected.sort();
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+        })
+    }
+
+    #[test]
+    fn is_candidate_success_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            RecentElectedOn::<Test>::put(10);
+            Elected::<Test>::insert((10, ALICE), ());
+            Elected::<Test>::insert((10, BOB), ());
+            Elected::<Test>::insert((10, MIKE), ());
+            Elected::<Test>::insert((10, ALAN), ());
+            Elected::<Test>::insert((10, AMY), ());
+
+            assert_ok!(<FlatElection as ElectionManager<AccountId32>>::is_candidate(&ALICE));
+            assert_err!(
+                <FlatElection as ElectionManager<AccountId32>>::is_candidate(&NIX),
+                Error::AuthorNotElected
+            );
+        })
+    }
+
+    #[test]
+    fn store_success_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(25);
+            let mut elects = vec![ALICE, ALAN, NIX, AMY, MIKE, BOB];
+            assert!(<FlatElection as ElectionManager<AccountId32>>::reveal().is_none());
+            assert_ok!(<FlatElection as ElectionManager<AccountId32>>::store(
+                &elects
+            ));
+
+            let elected = <FlatElection as ElectionManager<AccountId32>>::reveal();
+            assert!(elected.is_some());
+            let mut elected = elected.unwrap();
+            elects.sort(); 
+            elected.sort();
+            assert_eq!(elects, elected);
+            assert_eq!(RecentElectedOn::<Test>::get(), 25);
+        })
+    }
+
+    #[test]
+    fn store_err_min_elected_not_reached_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let elects = vec![ALICE, ALAN, NIX, AMY, MIKE];
+            // Since, min_elected is set to 6
+            assert_err!(
+                <FlatElection as ElectionManager<AccountId32>>::store(&elects),
+                Error::MinElectedNotReached
+            );
+        })
+    }
+
+    #[test]
+    fn on_prepare_success_emits_event_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let elects = vec![ALICE, ALAN, NIX, AMY, MIKE, BOB];
+            <FlatElection as ElectionManager<AccountId32>>::on_prepare_success(&elects);
+
+            System::assert_last_event(Event::ElectionPrepared { elects }.into());
+        })
+    }
+
+    #[test]
+    fn on_prepare_fail_emits_event_for_flat_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let error = Error::MinElectedNotReached.into();
+            <FlatElection as ElectionManager<AccountId32>>::on_prepare_fail(error);
+
+            System::assert_last_event(Event::ElectionFailed { error: error }.into());
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` FAIR-ELECTION ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn weight_of_success_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(&ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(&ALAN, LARGE_VALUE, LARGE_VALUE).unwrap();
+
+            Pallet::enroll(&ALICE, LARGE_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::enroll(&BOB, STANDARD_VALUE, Fortitude::Force).unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                STANDARD_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &BOB,
+                &Funder::Direct(MIKE),
+                LARGE_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                SMALL_VALUE,
+                Precision::BestEffort,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let alice_weight = FairElection::weight_of(&ALICE).unwrap();
+
+            let bob_weight = FairElection::weight_of(&BOB).unwrap();
+
+            let expected_alice_weight =
+                vec![(Funder::Direct(ALAN), 25), (Funder::Direct(CHARLIE), 50)];
+            let expected_bob_weight = vec![(Funder::Direct(MIKE), 100)];
+
+            assert_eq!(alice_weight, expected_alice_weight);
+            assert_eq!(bob_weight, expected_bob_weight);
+        })
+    }
+
+    #[test]
+    fn reveal_success_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            RecentElectedOn::<Test>::put(10);
+            Elected::<Test>::insert((10, ALICE), ());
+            Elected::<Test>::insert((10, BOB), ());
+            Elected::<Test>::insert((10, MIKE), ());
+            Elected::<Test>::insert((10, NIX), ());
+            Elected::<Test>::insert((10, ALAN), ());
+            Elected::<Test>::insert((10, AMY), ());
+
+            let mut actual_elected =
+                <FairElection as ElectionManager<AccountId32>>::reveal().unwrap();
+
+            let mut expected_elected = vec![ALICE, BOB, MIKE, NIX, ALAN, AMY];
+            actual_elected.sort(); 
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+        })
+    }
+
+    #[test]
+    fn reveal_returns_none_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(450);
+            RecentElectedOn::<Test>::put(450);
+            Elected::<Test>::insert((450, ALICE), ());
+            Elected::<Test>::insert((450, BOB), ());
+            Elected::<Test>::insert((450, MIKE), ());
+            Elected::<Test>::insert((450, NIX), ());
+            Elected::<Test>::insert((450, ALAN), ());
+            Elected::<Test>::insert((450, AMY), ());
+
+            System::set_block_number(900);
+            RecentElectedOn::<Test>::put(900);
+            assert!(<FairElection as ElectionManager<AccountId32>>::reveal().is_none());
+        })
+    }
+
+    #[test]
+    fn remove_success_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            RecentElectedOn::<Test>::put(10);
+            Elected::<Test>::insert((10, ALICE), ());
+            Elected::<Test>::insert((10, BOB), ());
+            Elected::<Test>::insert((10, MIKE), ());
+            Elected::<Test>::insert((10, NIX), ());
+            Elected::<Test>::insert((10, ALAN), ());
+            Elected::<Test>::insert((10, AMY), ());
+
+            let mut actual_elected =
+                <FairElection as ElectionManager<AccountId32>>::reveal().unwrap();
+            let mut expected_elected = vec![ALICE, BOB, MIKE, NIX, ALAN, AMY];
+            actual_elected.sort();
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+
+            <FairElection as ElectionManager<AccountId32>>::remove(&NIX);
+
+            let mut actual_elected =
+                <FairElection as ElectionManager<AccountId32>>::reveal().unwrap();
+            let mut expected_elected = vec![ALICE, BOB, MIKE, ALAN, AMY];
+            actual_elected.sort();
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+
+            <FairElection as ElectionManager<AccountId32>>::remove(&AMY);
+
+            let mut actual_elected =
+                <FairElection as ElectionManager<AccountId32>>::reveal().unwrap();
+            let mut expected_elected = vec![ALICE, BOB, MIKE, ALAN];
+            actual_elected.sort();
+            expected_elected.sort();
+            assert_eq!(actual_elected, expected_elected);
+        })
+    }
+
+    #[test]
+    fn is_candidate_success_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            RecentElectedOn::<Test>::put(10);
+            Elected::<Test>::insert((10, ALICE), ());
+            Elected::<Test>::insert((10, BOB), ());
+            Elected::<Test>::insert((10, MIKE), ());
+            Elected::<Test>::insert((10, ALAN), ());
+            Elected::<Test>::insert((10, AMY), ());
+
+            assert_ok!(<FairElection as ElectionManager<AccountId32>>::is_candidate(&ALICE));
+            assert_err!(
+                <FairElection as ElectionManager<AccountId32>>::is_candidate(&NIX),
+                Error::AuthorNotElected
+            );
+        })
+    }
+
+    #[test]
+    fn store_success_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(25);
+            let mut elects = vec![ALICE, ALAN, NIX, AMY, MIKE, BOB];
+            assert!(<FairElection as ElectionManager<AccountId32>>::reveal().is_none());
+            assert_ok!(<FairElection as ElectionManager<AccountId32>>::store(
+                &elects
+            ));
+
+            let elected = <FairElection as ElectionManager<AccountId32>>::reveal();
+            assert!(elected.is_some());
+            let mut elected = elected.unwrap();
+            elects.sort();
+            elected.sort();
+            assert_eq!(elects, elected);
+            assert_eq!(RecentElectedOn::<Test>::get(), 25);
+        })
+    }
+
+    #[test]
+    fn store_err_min_elected_not_reached_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let elects = vec![ALICE, ALAN, NIX, AMY, MIKE];
+            // Since, min_elected is set to 6
+            assert_err!(
+                <FairElection as ElectionManager<AccountId32>>::store(&elects),
+                Error::MinElectedNotReached
+            );
+        })
+    }
+
+    #[test]
+    fn on_prepare_success_emits_event_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let elects = vec![ALICE, ALAN, NIX, AMY, MIKE, BOB];
+            <FairElection as ElectionManager<AccountId32>>::on_prepare_success(&elects);
+
+            System::assert_last_event(Event::ElectionPrepared { elects }.into());
+        })
+    }
+
+    #[test]
+    fn on_prepare_fail_emits_event_for_fair_election() {
+        authors_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            let error = Error::MinElectedNotReached.into();
+            <FairElection as ElectionManager<AccountId32>>::on_prepare_fail(error);
+
+            System::assert_last_event(Event::ElectionFailed { error: error }.into());
+        })
+    }
+}

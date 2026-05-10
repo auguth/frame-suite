@@ -5987,10 +5987,13 @@ dependencies = [
  "frame-suite",
  "frame-support",
  "frame-system",
+ "pallet-commitment",
+ "pallet-xp",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
