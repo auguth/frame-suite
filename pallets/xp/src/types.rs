@@ -635,3 +635,63 @@ where
     T::Xp: Eq,
 {
 }
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+/// Unit tests for [`crate::types`]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` IMPORTS ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // -- Local Crate Imports --
+    use crate::mock::*;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` UNIT TESTS `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn xp_default_check() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            let xp = MockXp::default();
+            assert_eq!(xp.free, 10);
+            assert_eq!(xp.lock, 0);
+            assert_eq!(xp.reserve, 0);
+            assert_eq!(xp.pulse.value, 0);
+            assert_eq!(xp.timestamp, 2);
+        });
+    }
+
+    #[test]
+    fn stepper_new_success() {
+        xp_test_ext().execute_with(|| {
+            let stepper = Stepper::new(100, 10).unwrap();
+            assert_eq!(stepper.threshold, 100);
+            assert_eq!(stepper.per_count, 10);
+        });
+    }
+
+    #[test]
+    fn stepper_new_fail_none() {
+        xp_test_ext().execute_with(|| {
+            let threshold = 150;
+            let per_count = 200;
+            assert_eq!(Stepper::new(threshold, per_count), None);
+        });
+    }
+
+    #[test]
+    fn accumulator_default_check() {
+        xp_test_ext().execute_with(|| {
+            let accumulator = Accumulator::default();
+            assert_eq!(accumulator.value, 0);
+            assert_eq!(accumulator.step, 0);
+        });
+    }
+}

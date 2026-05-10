@@ -714,3 +714,1058 @@ impl<T: Config<I>, I: 'static> MutateFreeze<XpId<T>> for Pallet<T, I> {
 // ===============================================================================
 
 impl<T: Config<I>, I: 'static> MutateHold<XpId<T>> for Pallet<T, I> {}
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+/// Unit tests for [`fungible`](frame_support::traits::fungible) trait
+/// implementations over [`Pallet`].
+#[cfg(test)]
+pub mod tests {
+        
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` IMPORTS ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::mock::*;
+
+    // --- FRAME Suite ---
+    use frame_suite::xp::{XpLock, XpMutate, XpReserve, XpSystem};
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_ok,
+        traits::{
+            fungible::{
+                Inspect, InspectFreeze, InspectHold, Mutate, MutateFreeze, Unbalanced,
+                UnbalancedHold,
+            },
+            tokens::{
+                DepositConsequence, Fortitude, Precision, Preservation, Provenance,
+                WithdrawConsequence,
+            },
+        },
+    };
+
+    // --- Substrate primitives ---
+    use sp_runtime::TokenError;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` INSPECT ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    #[should_panic]
+    fn total_issuance_panic() {
+        xp_test_ext().execute_with(|| {
+            Pallet::total_issuance();
+        });
+    }
+
+    #[test]
+    fn minimum_balance_success() {
+        xp_test_ext().execute_with(|| {
+            let actual = Pallet::minimum_balance();
+            let expected = 0;
+            assert_eq!(expected, actual);
+        });
+    }
+
+    #[test]
+    fn total_balance_fail_uninitalized_xp() {
+        xp_test_ext().execute_with(|| {
+            let actual = Pallet::total_balance(&ALICE);
+            let expected = 0;
+            assert_eq!(expected, actual);
+        });
+    }
+
+    #[test]
+    fn total_balance_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let expected_total_balance = xp.free + xp.reserve;
+            let actual_total_balance = Pallet::total_balance(&XP_ALPHA);
+            assert_eq!(expected_total_balance, actual_total_balance);
+        });
+    }
+
+    #[test]
+    fn balance_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let expected_balance = xp.free;
+            let actual_balance = Pallet::balance(&XP_ALPHA);
+            assert_eq!(expected_balance, actual_balance);
+        });
+    }
+
+    #[test]
+    fn balance_fail_uninitialized() {
+        xp_test_ext().execute_with(|| {
+            let actual = Pallet::balance(&ALICE);
+            let expected = 0;
+            assert_eq!(expected, actual);
+        });
+    }
+
+    #[test]
+    fn reducible_balance_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let expected_liquid = xp.free;
+            let actual_reducible =
+                Pallet::reducible_balance(&XP_ALPHA, Preservation::Expendable, Fortitude::Polite);
+            assert_eq!(expected_liquid, actual_reducible);
+        });
+    }
+
+    #[test]
+    fn reducible_balance_fail_uninitialized() {
+        xp_test_ext().execute_with(|| {
+            let actual_reducible =
+                Pallet::reducible_balance(&ALICE, Preservation::Expendable, Fortitude::Polite);
+            let expected_liquid = 0;
+            assert_eq!(expected_liquid, actual_reducible);
+        });
+    }
+
+    #[test]
+    fn can_deposit_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_eq!(
+                Pallet::can_deposit(&ALICE, DEFAULT_POINTS, Provenance::Extant),
+                DepositConsequence::Success
+            )
+        });
+    }
+
+    #[test]
+    fn can_deposit_success_with_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_eq!(
+                Pallet::can_deposit(&ALICE, INVALID_POINTS, Provenance::Extant),
+                DepositConsequence::Success
+            )
+        });
+    }
+
+    #[test]
+    fn can_deposit_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_eq!(
+                Pallet::can_deposit(&ALICE, DEFAULT_POINTS, Provenance::Extant),
+                DepositConsequence::UnknownAsset
+            )
+        });
+    }
+
+    #[test]
+    fn can_deposit_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_eq!(
+                Pallet::can_deposit(&ALICE, SATURATED_MAX, Provenance::Extant),
+                DepositConsequence::Overflow
+            )
+        });
+    }
+
+    #[test]
+    fn can_deposit_fail_minted() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_eq!(
+                Pallet::can_deposit(&ALICE, DEFAULT_POINTS, Provenance::Minted),
+                DepositConsequence::Blocked
+            )
+        });
+    }
+
+    #[test]
+    fn can_withdraw_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_eq!(
+                Pallet::can_withdraw(&ALICE, DEFAULT_POINTS),
+                WithdrawConsequence::Success
+            )
+        });
+    }
+
+    #[test]
+    fn can_withdraw_success_with_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_eq!(
+                Pallet::can_withdraw(&ALICE, INVALID_POINTS),
+                WithdrawConsequence::Success
+            )
+        });
+    }
+
+    #[test]
+    fn can_withdraw_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_eq!(
+                Pallet::can_withdraw(&ALICE, DEFAULT_POINTS),
+                WithdrawConsequence::UnknownAsset
+            )
+        });
+    }
+
+    #[test]
+    fn can_withdraw_fail_low_balance() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let available_liquid = xp.free;
+            assert_eq!(available_liquid, DEFAULT_POINTS);
+            let withdraw_amount = 20;
+            assert_eq!(
+                Pallet::can_withdraw(&ALICE, withdraw_amount),
+                WithdrawConsequence::BalanceLow
+            )
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn active_issuance_panic() {
+        xp_test_ext().execute_with(|| {
+            Pallet::active_issuance();
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` UNBALANCED ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn write_balance_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&ALICE).unwrap();
+            let free_before = xp.free;
+            assert_eq!(free_before, 10);
+            let new_balance = 50;
+            assert_ok!(Pallet::write_balance(&ALICE, new_balance));
+            let xp = Pallet::get_xp(&ALICE).unwrap();
+            let free_after = xp.free;
+            assert_eq!(free_after, 50);
+        });
+    }
+
+    #[test]
+    fn write_balance_fail_uninitalized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::write_balance(&ALICE, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn increase_balance_success_besteffort() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            let increment_amount = 20;
+            let imbalance =
+                Pallet::increase_balance(&XP_ALPHA, increment_amount, Precision::BestEffort)
+                    .unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_balace = balance_before.saturating_add(increment_amount);
+            let expected_imbalance = balance_after.saturating_sub(balance_before);
+            assert_eq!(expected_imbalance, imbalance);
+            assert_eq!(expected_balace, balance_after);
+        });
+    }
+
+    #[test]
+    fn increase_balance_success_exact() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            let increment_amount = 20;
+            let imbalance =
+                Pallet::increase_balance(&XP_ALPHA, increment_amount, Precision::Exact).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_balace = balance_before.saturating_add(increment_amount);
+            let expected_imbalance = balance_after.saturating_sub(balance_before);
+            assert_eq!(expected_imbalance, imbalance);
+            assert_eq!(expected_balace, balance_after);
+        });
+    }
+
+    #[test]
+    fn increase_balance_handle_exact_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::increase_balance(&XP_ALPHA, SATURATED_MAX, Precision::Exact),
+                Error::XpCapOverflowed
+            )
+        });
+    }
+
+    #[test]
+    fn increase_balance_handle_besteffort_saturating() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            let imbalance =
+                Pallet::increase_balance(&XP_ALPHA, SATURATED_MAX, Precision::BestEffort).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_imbalance = balance_after.saturating_sub(balance_before);
+            assert_eq!(expected_imbalance, imbalance);
+            assert_eq!(balance_after, SATURATED_MAX);
+        });
+    }
+
+    #[test]
+    fn increase_balance_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::increase_balance(&XP_ALPHA, DEFAULT_POINTS, Precision::Exact),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn decrease_balance_success_besteffort() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            let decrement_amount = 5;
+            let imbalance = Pallet::decrease_balance(
+                &XP_ALPHA,
+                decrement_amount,
+                Precision::BestEffort,
+                Preservation::Expendable,
+                Fortitude::Polite,
+            )
+            .unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_balace = balance_before.saturating_sub(decrement_amount);
+            let expected_imbalance = balance_before.saturating_sub(balance_after);
+            assert_eq!(expected_imbalance, imbalance);
+            assert_eq!(expected_balace, balance_after);
+        });
+    }
+
+    #[test]
+    fn decrease_balance_success_exact() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            let decrement_amount = 5;
+            let imbalance = Pallet::decrease_balance(
+                &XP_ALPHA,
+                decrement_amount,
+                Precision::Exact,
+                Preservation::Expendable,
+                Fortitude::Polite,
+            )
+            .unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_balace = balance_before.saturating_sub(decrement_amount);
+            let expected_imbalance = balance_before.saturating_sub(balance_after);
+            assert_eq!(expected_imbalance, imbalance);
+            assert_eq!(expected_balace, balance_after);
+        });
+    }
+
+    #[test]
+    fn decrease_balance_handle_exact_underflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::decrease_balance(
+                    &XP_ALPHA,
+                    SATURATED_MAX,
+                    Precision::Exact,
+                    Preservation::Expendable,
+                    Fortitude::Polite
+                ),
+                Error::XpCapUnderflowed
+            )
+        });
+    }
+
+    #[test]
+    fn decrease_balance_handle_besteffort_saturating() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            let imbalance = Pallet::decrease_balance(
+                &XP_ALPHA,
+                SATURATED_MAX,
+                Precision::BestEffort,
+                Preservation::Expendable,
+                Fortitude::Polite,
+            )
+            .unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_imbalance = balance_before.saturating_sub(balance_after);
+            assert_eq!(expected_imbalance, imbalance);
+            assert_eq!(balance_after, 0);
+        });
+    }
+
+    #[test]
+    fn decrease_balance_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::decrease_balance(
+                    &XP_ALPHA,
+                    DEFAULT_POINTS,
+                    Precision::Exact,
+                    Preservation::Expendable,
+                    Fortitude::Polite
+                ),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` MUTATE ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn mint_into_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            System::set_block_number(2);
+            let minted = Pallet::mint_into(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let balance_expected = balance_before.saturating_add(DEFAULT_POINTS);
+            let expected_minted = balance_after.saturating_sub(balance_before);
+            assert_eq!(balance_expected, balance_after);
+            assert_eq!(expected_minted, minted);
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: minted,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn mint_into_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::mint_into(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn mint_into_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::mint_into(&XP_ALPHA, SATURATED_MAX),
+                Error::XpCapOverflowed
+            )
+        });
+    }
+
+    #[test]
+    fn burn_from_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            System::set_block_number(2);
+            let burn_amount = 5;
+            let burned = Pallet::burn_from(
+                &XP_ALPHA,
+                burn_amount,
+                Preservation::Expendable,
+                Precision::BestEffort,
+                Fortitude::Polite,
+            )
+            .unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_balance = balance_before.saturating_sub(balance_after);
+            assert_eq!(expected_balance, balance_after);
+            assert_eq!(burned, burn_amount);
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: burned,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn burn_from_fail_funds_unavailable() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            System::set_block_number(2);
+            let burn_amount = 20;
+            assert_err!(
+                Pallet::burn_from(
+                    &XP_ALPHA,
+                    burn_amount,
+                    Preservation::Expendable,
+                    Precision::Exact,
+                    Fortitude::Polite
+                ),
+                TokenError::FundsUnavailable
+            )
+        });
+    }
+
+    #[test]
+    fn shelve_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            let shelve_amount = 5;
+            let shelved = Pallet::shelve(&XP_ALPHA, shelve_amount).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_balance = balance_before.saturating_sub(balance_after);
+            assert_eq!(expected_balance, balance_after);
+            assert_eq!(shelve_amount, shelved);
+        });
+    }
+
+    #[test]
+    fn shelve_fail_funds_unavailable() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let shelve_amount = 20;
+            assert_err!(
+                Pallet::shelve(&XP_ALPHA, shelve_amount),
+                TokenError::FundsUnavailable
+            );
+        });
+    }
+
+    #[test]
+    fn restore_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            let restore_amount = 15;
+            let restored = Pallet::restore(&XP_ALPHA, restore_amount).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            let expected_balance = balance_before.saturating_add(restore_amount);
+            assert_eq!(expected_balance, balance_after);
+            assert_eq!(restore_amount, restored);
+        });
+    }
+
+    #[test]
+    fn restore_fail_uninitalized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::restore(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn restore_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::restore(&XP_ALPHA, SATURATED_MAX),
+                Error::XpCapOverflowed
+            )
+        });
+    }
+
+    #[test]
+    fn transfer_failure_success() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::transfer(
+                    &XP_ALPHA,
+                    &XP_BETA,
+                    DEFAULT_POINTS,
+                    Preservation::Expendable
+                ),
+                Error::CannotTransferXp
+            )
+        });
+    }
+
+    #[test]
+    fn set_balance_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_before = xp.free;
+            assert_eq!(balance_before, 10);
+            let set_amount = 50;
+            let new_balance = Pallet::set_balance(&XP_ALPHA, set_amount);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let balance_after = xp.free;
+            assert_eq!(balance_after, set_amount);
+            assert_eq!(balance_after, new_balance);
+        });
+    }
+
+    #[test]
+    fn set_balance_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            let new_balance = Pallet::set_balance(&XP_ALPHA, DEFAULT_POINTS);
+            let expected_balance = 0;
+            assert_eq!(expected_balance, new_balance);
+        });
+    }
+
+    #[test]
+    fn done_burn_from_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::done_burn_from(&XP_ALPHA, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn done_mint_into_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::done_mint_into(&XP_ALPHA, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn done_restore_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::done_restore(&XP_ALPHA, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn done_shelve() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::done_shelve(&XP_ALPHA, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````````` INSPECT HOLD ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn total_balance_on_hold_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let reserve_points_1 = 20;
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, reserve_points_1).unwrap();
+            let reserve_points_2 = 30;
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, reserve_points_2).unwrap();
+            let actual_total_hold = Pallet::total_balance_on_hold(&XP_ALPHA);
+            let expected_total_hold = reserve_points_1 + reserve_points_2;
+            assert_eq!(expected_total_hold, actual_total_hold);
+        });
+    }
+
+    #[test]
+    fn total_balance_on_hold_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            let expected_hold = 0;
+            assert_eq!(Pallet::total_balance_on_hold(&XP_ALPHA), expected_hold);
+        });
+    }
+
+    #[test]
+    fn total_balance_on_hold_no_reserve() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let expected_hold = 0;
+            assert_eq!(Pallet::total_balance_on_hold(&XP_ALPHA), expected_hold);
+        });
+    }
+
+    #[test]
+    fn balance_on_hold_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let reserve_points = 30;
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, reserve_points).unwrap();
+            let actual_hold = Pallet::balance_on_hold(&STAKING, &XP_ALPHA);
+            let expected_hold = reserve_points;
+            assert_eq!(expected_hold, actual_hold);
+        });
+    }
+
+    #[test]
+    fn balance_on_hold_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            let expected_hold = 0;
+            assert_eq!(Pallet::balance_on_hold(&STAKING, &XP_ALPHA), expected_hold);
+        });
+    }
+
+    #[test]
+    fn balance_on_hold_no_reserve() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let expected_hold = 0;
+            assert_eq!(Pallet::balance_on_hold(&STAKING, &XP_ALPHA), expected_hold);
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` INSPECT FREEZE ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn balance_frozen_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let lock_points = 40;
+            Pallet::set_lock(&XP_ALPHA, &STAKING, lock_points).unwrap();
+            let frozen = Pallet::balance_frozen(&STAKING, &XP_ALPHA);
+            assert_eq!(frozen, lock_points);
+        });
+    }
+
+    #[test]
+    fn balance_frozen_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            let frozen = Pallet::balance_frozen(&STAKING, &XP_ALPHA);
+            let expected_frozen = 0;
+            assert_eq!(expected_frozen, frozen);
+        });
+    }
+
+    #[test]
+    fn balance_frozen_no_lock() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let frozen = Pallet::balance_frozen(&STAKING, &XP_ALPHA);
+            let expected_frozen = 0;
+            assert_eq!(expected_frozen, frozen);
+        });
+    }
+
+    #[test]
+    fn can_freeze_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert!(Pallet::can_freeze(&STAKING, &XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn can_freeze_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert!(!Pallet::can_freeze(&STAKING, &XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn can_freeze_fail_lock_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert!(!Pallet::can_freeze(&STAKING, &XP_ALPHA));
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` UNBALANCED HOLD ``````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn set_balance_on_hold_success_on_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let reserve_points = 0;
+            assert_ok!(Pallet::set_balance_on_hold(
+                &STAKING,
+                &XP_ALPHA,
+                reserve_points
+            ));
+            assert_err!(
+                Pallet::reserve_exists(&XP_ALPHA, &STAKING),
+                Error::XpReserveNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn set_balance_on_hold_success_new() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let reserve_points = 40;
+            Pallet::set_balance_on_hold(&STAKING, &XP_ALPHA, reserve_points).unwrap();
+            let reserved = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(reserved, reserve_points);
+        });
+    }
+
+    #[test]
+    fn set_balance_on_hold_success_mutate() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let existing_reserve_points = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(existing_reserve_points, 10);
+            let new_reserve_points = 40;
+            Pallet::set_balance_on_hold(&STAKING, &XP_ALPHA, new_reserve_points).unwrap();
+            let new_reserved = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(new_reserved, new_reserve_points);
+        });
+    }
+
+    #[test]
+    fn set_balance_on_hold_fail_mutate_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::set_balance_on_hold(&STAKING, &XP_ALPHA, SATURATED_MAX),
+                Error::XpReserveCapOverflowed
+            )
+        });
+    }
+
+    #[test]
+    fn set_balance_on_hold_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::set_balance_on_hold(&STAKING, &XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` MUTATE FREEZE ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn set_freeze_thaw_on_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::lock_exists(&XP_ALPHA, &STAKING));
+            let lock_points = 0;
+            Pallet::set_freeze(&STAKING, &XP_ALPHA, lock_points).unwrap();
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn set_freeze_fail_on_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::set_freeze(&STAKING, &XP_ALPHA, INVALID_POINTS),
+                Error::CannotLockZero,
+            );
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn set_freeze_success_new() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let lock_points = 40;
+            Pallet::set_freeze(&STAKING, &XP_ALPHA, lock_points).unwrap();
+            let locked = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(locked, lock_points);
+        });
+    }
+
+    #[test]
+    fn set_freeze_success_mutate() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let existing_lock_points = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(existing_lock_points, 10);
+            let new_lock_points = 40;
+            Pallet::set_freeze(&STAKING, &XP_ALPHA, new_lock_points).unwrap();
+            let new_locked = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(new_locked, new_lock_points);
+        });
+    }
+
+    #[test]
+    fn set_freeze_fail_mutate_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::set_freeze(&STAKING, &XP_ALPHA, SATURATED_MAX),
+                Error::XpLockCapOverflowed
+            )
+        });
+    }
+
+    #[test]
+    fn set_freeze_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::set_freeze(&STAKING, &XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn thaw_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::thaw(&STAKING, &XP_ALPHA));
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn thaw_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::thaw(&STAKING, &XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn thaw_fail_no_lock() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::thaw(&STAKING, &XP_ALPHA), Error::XpLockNotFound);
+        });
+    }
+
+    #[test]
+    fn extend_freeze_success_on_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::extend_freeze(&STAKING, &XP_ALPHA, INVALID_POINTS));
+        });
+    }
+
+    #[test]
+    fn extend_freeze_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let extend_points = 40;
+            Pallet::extend_freeze(&STAKING, &XP_ALPHA, extend_points).unwrap();
+            let extended_freez = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(extended_freez, extend_points)
+        });
+    }
+
+    #[test]
+    fn extend_freeze_low_amount() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let extend_points = 9;
+            Pallet::extend_freeze(&STAKING, &XP_ALPHA, extend_points).unwrap();
+            let extended_freez = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(extended_freez, DEFAULT_POINTS)
+        });
+    }
+
+    #[test]
+    fn extend_freeze_fail_no_lock() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::extend_freeze(&STAKING, &XP_ALPHA, DEFAULT_POINTS),
+                Error::XpLockNotFound
+            )
+        });
+    }
+}

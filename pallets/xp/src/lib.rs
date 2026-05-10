@@ -234,6 +234,10 @@
 // `````````````````````````````````` MODULES ````````````````````````````````````
 // ===============================================================================
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 mod xp;
 mod fungible;
 pub mod types;
@@ -1232,5 +1236,1300 @@ pub mod pallet {
             let xp = Self::get_xp(key)?;
             Ok(xp.timestamp)
         }
+    }
+}
+
+// ===============================================================================
+// `````````````````````````````````` API TESTS ``````````````````````````````````
+// ===============================================================================
+
+/// Unit tests for Extrinsics and Public APIs of [`pallet_xp`](crate).
+#[cfg(test)]
+mod ext_tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::{
+        mock::*,
+        types::{ForceGenesisConfig, IdXp, XpEligibility},
+    };
+
+    // --- FRAME Suite ---
+    use frame_suite::xp::{XpLock, XpMutate, XpOwner, XpReserve, XpSystem};
+
+    // --- FRAME Support ---
+    use frame_support::{assert_err, assert_ok, traits::VariantCountOf};
+
+    // --- Substrate primitives ---
+    use sp_runtime::{BoundedVec, DispatchError};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````` STORAGE INSTANCES ``````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn pulse_factor_instance_check() {
+        xp_test_ext().execute_with(|| {
+            let threshold_1 = 100;
+            let per_count_1 = 10;
+
+            let threshold_2 = 1000;
+            let per_count_2 = 100;
+
+            let old_pulsefactor_instance1 = PulseFactor::get();
+            let old_pulsefactor_instance2 = PulseFactor2::get();
+            assert_eq!(
+                old_pulsefactor_instance1,
+                Stepper::new(50u8.into(), 10u8.into()).unwrap(),
+            );
+            assert_eq!(
+                old_pulsefactor_instance2,
+                Stepper2::new(20u8.into(), 6u8.into()).unwrap(),
+            );
+
+            let stepper_1 = Stepper::new(threshold_1, per_count_1).unwrap();
+            let stepper_2 = Stepper2::new(threshold_2, per_count_2).unwrap();
+
+            PulseFactor::set(stepper_1.clone());
+            PulseFactor2::set(stepper_2.clone());
+
+            assert_eq!(PulseFactor::get(), stepper_1);
+            assert_eq!(PulseFactor2::get(), stepper_2);
+        });
+    }
+
+    #[test]
+    fn min_pulse_instance_check() {
+        xp_test_ext().execute_with(|| {
+            let min_pulse_1 = 10;
+            let min_pulse_2 = 15;
+
+            let old_minpulse_instance1 = MinPulse::get();
+            let old_min_pulse_instance2 = MinPulse2::get();
+            assert_eq!(old_minpulse_instance1, 1);
+            assert_eq!(old_min_pulse_instance2, 5);
+
+            MinPulse::set(min_pulse_1);
+            MinPulse2::set(min_pulse_2);
+            assert_eq!(MinPulse::get(), 10);
+            assert_eq!(MinPulse2::get(), 15);
+        });
+    }
+
+    #[test]
+    fn init_xp_instance_check() {
+        xp_test_ext().execute_with(|| {
+            let init_xp_1 = 5;
+            let init_xp_2 = 3;
+
+            let old_initxp_instance1 = InitXp::get();
+            let old_initxp_instance2 = InitXp2::get();
+            assert_eq!(old_initxp_instance1, 10);
+            assert_eq!(old_initxp_instance2, 1);
+
+            InitXp::set(init_xp_1);
+            InitXp2::set(init_xp_2);
+            assert_eq!(InitXp::get(), 5);
+            assert_eq!(InitXp2::get(), 3);
+        });
+    }
+
+    #[test]
+    fn min_time_stamp_instance_check() {
+        xp_test_ext().execute_with(|| {
+            let min_time_stamp_1 = 5;
+            let min_time_stamp_2 = 10;
+
+            let old_mintimestamp_instance1 = MinTimeStamp::get();
+            let old_mintimestamp_instance2 = MinTimeStamp2::get();
+            assert_eq!(old_mintimestamp_instance1, 0);
+            assert_eq!(old_mintimestamp_instance2, 0);
+
+            MinTimeStamp::set(min_time_stamp_1);
+            MinTimeStamp2::set(min_time_stamp_2);
+            assert_eq!(MinTimeStamp::get(), 5);
+            assert_eq!(MinTimeStamp2::get(), 10);
+        });
+    }
+
+    #[test]
+    fn xp_of_instance_check() {
+        xp_test_ext().execute_with(|| {
+            let xp_1 = MockXp::default();
+            XpOf::insert(XP_ALPHA, xp_1);
+
+            let xp_2 = MockXp2::default();
+            XpOf2::insert(XP_BETA, xp_2);
+
+            assert!(XpOf::contains_key(XP_ALPHA));
+            assert!(XpOf2::contains_key(XP_BETA));
+
+            assert!(!XpOf::contains_key(XP_BETA));
+            assert!(!XpOf2::contains_key(XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn xp_owners_instance_check() {
+        xp_test_ext().execute_with(|| {
+            XpOwners::insert((ALICE, XP_ALPHA), ());
+
+            XpOwners2::insert((BOB, XP_BETA), ());
+
+            assert!(XpOwners::contains_key((ALICE, XP_ALPHA)));
+            assert!(XpOwners2::contains_key((BOB, XP_BETA)));
+            assert!(!XpOwners::contains_key((BOB, XP_BETA)));
+            assert!(!XpOwners2::contains_key((ALICE, XP_ALPHA)));
+        });
+    }
+
+    #[test]
+    fn reserved_xp_of_instance_check() {
+        xp_test_ext().execute_with(|| {
+            let reserve_1 = IdXp::new(STAKING, DEFAULT_POINTS);
+
+            ReservedXpOf::try_mutate(XP_ALPHA, |value| {
+                let vec = value.get_or_insert_with(|| {
+                    BoundedVec::<IdXp<Reason, u64>, VariantCountOf<Reason>>::default()
+                });
+                vec.try_push(reserve_1)
+            })
+            .unwrap();
+
+            let reserve_2 = IdXp::new(GOVERNANCE, DEFAULT_POINTS);
+
+            ReservedXpOf2::try_mutate(XP_BETA, |value| {
+                let vec = value.get_or_insert_with(|| {
+                    BoundedVec::<IdXp<Reason, u64>, VariantCountOf<Reason>>::default()
+                });
+                vec.try_push(reserve_2)
+            })
+            .unwrap();
+
+            assert!(ReservedXpOf::contains_key(XP_ALPHA));
+            assert!(ReservedXpOf2::contains_key(XP_BETA));
+            assert!(!ReservedXpOf::contains_key(XP_BETA));
+            assert!(!ReservedXpOf2::contains_key(XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn locked_xp_of_instance_check() {
+        xp_test_ext().execute_with(|| {
+            let lock_1 = IdXp::new(STAKING, DEFAULT_POINTS);
+
+            LockedXpOf::try_mutate(XP_ALPHA, |value| {
+                let vec = value.get_or_insert_with(|| {
+                    BoundedVec::<IdXp<Reason, u64>, VariantCountOf<Reason>>::default()
+                });
+                vec.try_push(lock_1)
+            })
+            .unwrap();
+
+            let lock_2 = IdXp::new(GOVERNANCE, DEFAULT_POINTS);
+            LockedXpOf2::try_mutate(XP_BETA, |value| {
+                let vec = value.get_or_insert_with(|| {
+                    BoundedVec::<IdXp<Reason, u64>, VariantCountOf<Reason>>::default()
+                });
+                vec.try_push(lock_2)
+            })
+            .unwrap();
+
+            assert!(LockedXpOf::contains_key(XP_ALPHA));
+            assert!(LockedXpOf2::contains_key(XP_BETA));
+            assert!(!LockedXpOf::contains_key(XP_BETA));
+            assert!(!LockedXpOf2::contains_key(XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn reaped_xp_instance_check() {
+        xp_test_ext().execute_with(|| {
+            ReapedXp::insert(XP_ALPHA, ());
+            ReapedXp2::insert(XP_BETA, ());
+
+            assert!(ReapedXp::contains_key(XP_ALPHA));
+            assert!(ReapedXp2::contains_key(XP_BETA));
+
+            assert!(!ReapedXp::contains_key(XP_BETA));
+            assert!(!ReapedXp2::contains_key(XP_ALPHA));
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` PUBLIC API `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn xp_eligibility_success_already_reputed() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value < min_pulse);
+
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value >= min_pulse);
+
+            let status = Pallet::xp_eligibility(&XP_ALPHA).unwrap();
+            assert_eq!(status, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn xp_eligibility_success_edge_cases() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            // Instance1:
+            // threshold = 50
+            // per_count = 10
+            let stepper = Stepper::new(20, 6).unwrap();
+            PulseFactor::put(stepper);
+
+            // calls_per_full_pulse = ceil(20 / 6) = 4
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value < min_pulse);
+            assert_eq!(xp.pulse.step, 12);
+
+            let status = Pallet::xp_eligibility(&XP_ALPHA).unwrap();
+            assert_eq!(status, XpEligibility::Progressing(2));
+
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value >= min_pulse);
+            assert_eq!(xp.pulse.step, 4);
+
+            let status = Pallet::xp_eligibility(&XP_ALPHA).unwrap();
+            assert_eq!(status, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn xp_eligibility_success_calls_to_reach_reputed() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value < min_pulse);
+
+            let status = Pallet::xp_eligibility(&XP_ALPHA).unwrap();
+            assert_eq!(status, XpEligibility::Progressing(5));
+
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let status = Pallet::xp_eligibility(&XP_ALPHA).unwrap();
+
+            assert_eq!(status, XpEligibility::Progressing(4));
+
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let status = Pallet::xp_eligibility(&XP_ALPHA).unwrap();
+
+            assert_eq!(status, XpEligibility::Progressing(2));
+
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value >= min_pulse);
+
+            let status = Pallet::xp_eligibility(&XP_ALPHA).unwrap();
+            assert_eq!(status, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn xp_multiplier_less_than_min_pulse() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value < min_pulse);
+
+            let current_multiplier = Pallet::xp_multiplier(&XP_ALPHA).unwrap();
+            assert!(current_multiplier.is_none());
+        })
+    }
+
+    #[test]
+    fn xp_multiplier_same_block_protection() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(12);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(13);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(14);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(15);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(16);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(17);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value == min_pulse);
+            let current_multiplier = Pallet::xp_multiplier(&XP_ALPHA).unwrap();
+            assert!(current_multiplier.is_none());
+        })
+    }
+
+    #[test]
+    fn xp_multiplier_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(12);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(13);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(14);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(15);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(16);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value == min_pulse);
+            System::set_block_number(17);
+            let current_multiplier = Pallet::xp_multiplier(&XP_ALPHA).unwrap();
+            assert_eq!(current_multiplier, Some(1));
+
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            System::set_block_number(20);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(21);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let min_pulse = MinPulse::get();
+            assert!(xp.pulse.value > min_pulse);
+            dbg!(xp.pulse.value);
+            System::set_block_number(25);
+            let current_multiplier = Pallet::xp_multiplier(&XP_ALPHA).unwrap();
+            assert_eq!(current_multiplier, Some(2));
+        })
+    }
+
+    #[test]
+    fn xp_state_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(5);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            System::set_block_number(20);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(21);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp_state = Pallet::xp_state(&XP_ALPHA).unwrap();
+            assert_eq!(xp_state.liquid, 10);
+            assert_eq!(xp_state.reserved, 0);
+            assert_eq!(xp_state.locked, 0);
+            assert_eq!(xp_state.multiplier, 1);
+            assert_eq!(xp_state.eligibility, XpEligibility::Progressing(1));
+
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, 25).unwrap();
+
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let xp_state = Pallet::xp_state(&XP_ALPHA).unwrap();
+            assert_eq!(xp_state.liquid, 20);
+            assert_eq!(xp_state.reserved, 25);
+            assert_eq!(xp_state.locked, DEFAULT_POINTS);
+            assert_eq!(xp_state.multiplier, 1);
+            assert_eq!(xp_state.eligibility, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn fetch_pulse_progress() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(5);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            System::set_block_number(20);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(21);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let pulse_progress = Pallet::xp_progress(&XP_ALPHA).unwrap();
+            assert_eq!(pulse_progress.progress, 20);
+            assert_eq!(pulse_progress.level, 0);
+            assert_eq!(pulse_progress.threshold, 50);
+            assert_eq!(pulse_progress.per_action, 10);
+
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let pulse_progress = Pallet::xp_progress(&XP_ALPHA).unwrap();
+            assert_eq!(pulse_progress.progress, 0);
+            assert_eq!(pulse_progress.level, 1);
+            assert_eq!(pulse_progress.threshold, 50);
+            assert_eq!(pulse_progress.per_action, 10);
+        })
+    }
+
+    #[test]
+    fn earn_preview_below_min_pulse_returns_zero_reward_and_required_steps() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, DEFAULT_POINTS);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 0);
+            assert_eq!(earn_preview.multiplier, 1);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Progressing(5));
+        })
+    }
+
+    #[test]
+    fn earn_preview_will_repute_progress() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(25);
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, DEFAULT_POINTS);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 0);
+            assert_eq!(earn_preview.multiplier, 1);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Progressing(2));
+
+            System::set_block_number(25);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(26);
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, DEFAULT_POINTS);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 0);
+            assert_eq!(earn_preview.multiplier, 1);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn earn_preview_above_min_pulse() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(25);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(26);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(27);
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 20);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 0);
+            assert_eq!(earn_preview.multiplier, 1);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn earn_preview_multiplier_progress_without_lock() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            // Build reputation to reach MinPulse
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(25);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(26);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(27);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            // same-block
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 30);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 0);
+            assert_eq!(earn_preview.multiplier, 1);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+
+            for n in 28..48 {
+                System::set_block_number(n);
+                Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            }
+            // multiplier not increased without lock
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 230);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 0);
+            assert_eq!(earn_preview.multiplier, 1);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn earn_preview_with_lock() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(25);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(26);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(27);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(28);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(29);
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 40);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 10);
+            assert_eq!(earn_preview.multiplier, 1);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+
+            System::set_block_number(30);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(31);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(32);
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 60);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 10);
+            assert_eq!(earn_preview.multiplier, 2);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn earn_preview_with_lock_multiplier_progress() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(25);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(26);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(27);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(28);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(29);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(30);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(31);
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 60);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 10);
+            assert_eq!(earn_preview.multiplier, 2);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            for n in 32..42 {
+                System::set_block_number(n);
+                Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            }
+
+            // multiplier increased with lock
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 320);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 10);
+            assert_eq!(earn_preview.multiplier, 4);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn earn_preview_with_same_block_protection() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            System::set_block_number(22);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(23);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(24);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(25);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(26);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+
+            System::set_block_number(27);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(28);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(29);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(30);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            System::set_block_number(31);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 70);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 10);
+            assert_eq!(earn_preview.multiplier, 2);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+        })
+    }
+
+    #[test]
+    fn earn_preview_matches_earn_xp_actual_reward() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+
+            // Build to reputed state and increase multiplier with lock
+            for n in 20..40 {
+                System::set_block_number(n);
+                Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            }
+
+            System::set_block_number(41);
+
+            let earn_preview = Pallet::earn_preview(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_eq!(earn_preview.liquid, 350);
+            assert_eq!(earn_preview.reserved, 0);
+            assert_eq!(earn_preview.locked, 10);
+            assert_eq!(earn_preview.multiplier, 4);
+            assert_eq!(earn_preview.eligibility, XpEligibility::Earning);
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let free_before = xp.free;
+
+            let actual_earn = Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let free_after = xp.free;
+
+            let diff = free_after - free_before;
+            assert_eq!(free_after, earn_preview.liquid);
+            assert_eq!(diff, actual_earn);
+        })
+    }
+
+    #[test]
+    fn earn_preview_err_xp_not_found() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::earn_preview(&XP_BETA, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` EXTRINSICS `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_my_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(1);
+            assert_ok!(Xp::inspect_my_xp(RuntimeOrigin::signed(ALICE), XP_ALPHA));
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: InitXp::get(),
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_my_xp_fail_xp_not_found() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::inspect_my_xp(RuntimeOrigin::signed(ALICE), XP_BETA),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_my_xp_fail_not_signed() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Xp::inspect_my_xp(RuntimeOrigin::root(), XP_ALPHA),
+                DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_my_xp_fail_invalid_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::inspect_my_xp(RuntimeOrigin::signed(BOB), XP_ALPHA),
+                Error::InvalidXpOwner
+            );
+        });
+    }
+
+    #[test]
+    fn handover_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(1);
+            assert_ok!(Xp::handover(RuntimeOrigin::signed(ALICE), XP_ALPHA, BOB));
+            assert_ok!(Pallet::is_owner(&BOB, &XP_ALPHA));
+            System::assert_last_event(
+                Event::XpOwner {
+                    id: XP_ALPHA,
+                    owner: BOB,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn handover_fail_xp_not_found() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Xp::handover(RuntimeOrigin::signed(ALICE), XP_ALPHA, BOB),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn handover_fail_not_signed() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Xp::handover(RuntimeOrigin::root(), XP_ALPHA, BOB),
+                DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn handover_fail_invalid_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::handover(RuntimeOrigin::signed(CHARLIE), XP_ALPHA, BOB),
+                Error::InvalidXpOwner
+            );
+        });
+    }
+
+    #[test]
+    fn handover_fail_already_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::handover(RuntimeOrigin::signed(ALICE), XP_ALPHA, ALICE),
+                Error::AlreadyXpOwner
+            );
+        });
+    }
+
+    #[test]
+    fn dispose_success() {
+        xp_test_ext().execute_with(|| {
+            MinTimeStamp::set(3);
+            System::set_block_number(1);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_xp(&XP_ALPHA, 0).unwrap();
+            assert_ok!(Pallet::xp_exists(&XP_ALPHA));
+            System::set_block_number(2);
+            assert_ok!(Xp::dispose(RuntimeOrigin::signed(CHARLIE), ALICE, XP_ALPHA));
+            assert_err!(Pallet::xp_exists(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn dispose_fail_xp_not_found() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            assert_err!(
+                Xp::dispose(RuntimeOrigin::signed(CHARLIE), ALICE, XP_BETA),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn dispose_fail_not_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::dispose(RuntimeOrigin::signed(CHARLIE), BOB, XP_ALPHA),
+                Error::InvalidXpOwner
+            );
+        });
+    }
+
+    #[test]
+    fn dispose_fail_xp_not_dead() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            System::set_block_number(2);
+            System::set_block_number(3);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Xp::dispose(RuntimeOrigin::signed(CHARLIE), ALICE, XP_ALPHA),
+                Error::XpNotDead
+            );
+        });
+    }
+
+    #[test]
+    fn dispose_fail_locked_xp() {
+        xp_test_ext().execute_with(|| {
+            MinTimeStamp::set(3);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            System::set_block_number(2);
+            assert_err!(
+                Xp::dispose(RuntimeOrigin::signed(CHARLIE), ALICE, XP_ALPHA),
+                Error::CannotReapLockedXp
+            );
+        });
+    }
+
+    #[test]
+    fn force_handover_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(1);
+            assert_ok!(Xp::force_handover(
+                RuntimeOrigin::root(),
+                ALICE,
+                XP_ALPHA,
+                BOB
+            ));
+            assert_ok!(Pallet::is_owner(&BOB, &XP_ALPHA));
+            System::assert_last_event(
+                Event::XpOwner {
+                    id: XP_ALPHA,
+                    owner: BOB,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn force_handover_fail_xp_not_found() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::force_handover(RuntimeOrigin::root(), ALICE, XP_BETA, BOB),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn force_handover_fail_not_root() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::force_handover(RuntimeOrigin::signed(CHARLIE), ALICE, XP_ALPHA, BOB),
+                DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn force_handover_fail_invalid_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::force_handover(RuntimeOrigin::root(), CHARLIE, XP_ALPHA, BOB),
+                Error::InvalidXpOwner
+            );
+        });
+    }
+
+    #[test]
+    fn force_handover_fail_already_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Xp::force_handover(RuntimeOrigin::root(), ALICE, XP_ALPHA, ALICE),
+                Error::AlreadyXpOwner
+            );
+        });
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_xp_keys_of_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::new_xp(&ALICE, &XP_BETA);
+            System::set_block_number(1);
+            assert_ok!(Xp::inspect_xp_keys_of(RuntimeOrigin::signed(ALICE), ALICE));
+            System::assert_last_event(
+                Event::XpOfOwner {
+                    owner: ALICE,
+                    ids: vec![XP_ALPHA, XP_BETA],
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_xp_keys_of_fail_not_signed() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::new_xp(&ALICE, &XP_BETA);
+            assert_err!(
+                Xp::inspect_xp_keys_of(RuntimeOrigin::root(), ALICE),
+                DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_min_pulse_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let new_min_pulse: u32 = 5;
+            assert_ok!(Xp::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::MinPulse(new_min_pulse)
+            ));
+            assert_eq!(MinPulse::get(), new_min_pulse);
+
+            System::assert_last_event(
+                Event::GenesisConfigUpdated(ForceGenesisConfig::MinPulse(new_min_pulse)).into(),
+            );
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_min_pulse_fail_not_root() {
+        xp_test_ext().execute_with(|| {
+            let min_pulse = 5;
+            assert_err!(
+                Xp::force_genesis_config(
+                    RuntimeOrigin::signed(CHARLIE),
+                    ForceGenesisConfig::MinPulse(min_pulse)
+                ),
+                DispatchError::BadOrigin
+            );
+            assert_eq!(MinPulse::get(), 1);
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_init_xp_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let new_init_xp = 50;
+            assert_ok!(Xp::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::InitXp(new_init_xp)
+            ));
+            assert_eq!(InitXp::get(), new_init_xp);
+            System::assert_last_event(
+                Event::GenesisConfigUpdated(ForceGenesisConfig::InitXp(new_init_xp)).into(),
+            );
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_init_xp_fail_not_root() {
+        xp_test_ext().execute_with(|| {
+            let new_init_xp = 50;
+            assert_err!(
+                Xp::force_genesis_config(
+                    RuntimeOrigin::signed(CHARLIE),
+                    ForceGenesisConfig::InitXp(new_init_xp)
+                ),
+                DispatchError::BadOrigin
+            );
+            assert_eq!(InitXp::get(), 10);
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_min_time_stamp_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let new_min_time_stamp = 4;
+            System::set_block_number(5);
+            assert_ok!(Xp::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::MinTimeStamp(new_min_time_stamp)
+            ));
+            assert_eq!(MinTimeStamp::get(), new_min_time_stamp);
+            System::assert_last_event(
+                Event::GenesisConfigUpdated(ForceGenesisConfig::MinTimeStamp(new_min_time_stamp))
+                    .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_min_time_stamp_fail_not_root() {
+        xp_test_ext().execute_with(|| {
+            let new_min_time_stamp = 4;
+            assert_err!(
+                Xp::force_genesis_config(
+                    RuntimeOrigin::signed(ALICE),
+                    ForceGenesisConfig::MinTimeStamp(new_min_time_stamp)
+                ),
+                DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_min_time_stamp_fail_invalid_min_time_stamp() {
+        xp_test_ext().execute_with(|| {
+            let new_min_time_stamp = 4;
+            // min_time_stamp > current block number
+            System::set_block_number(3);
+            assert_err!(
+                Xp::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::MinTimeStamp(new_min_time_stamp)
+                ),
+                Error::InvalidMinTimeStamp
+            );
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_pulse_factor_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            let threshold = 100;
+            let per_count = 10;
+            assert_ok!(Xp::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::PulseFactor {
+                    threshold,
+                    per_count
+                }
+            ));
+            let stepper = PulseFactor::get();
+            assert_eq!(stepper.threshold, threshold);
+            assert_eq!(stepper.per_count, per_count);
+            System::assert_last_event(
+                Event::GenesisConfigUpdated(ForceGenesisConfig::PulseFactor {
+                    threshold,
+                    per_count,
+                })
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn force_genesis_config_pulse_factor_fail_low_pulse_threshold() {
+        xp_test_ext().execute_with(|| {
+            let threshold = 100;
+            let per_count = 110;
+            assert_err!(
+                Xp::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::PulseFactor {
+                        threshold,
+                        per_count
+                    }
+                ),
+                Error::LowPulseThreshold
+            );
+        });
+    }
+
+    #[test]
+    fn force_genesis_config_pulse_factor_fail_not_root() {
+        xp_test_ext().execute_with(|| {
+            let threshold = 100;
+            let per_count = 10;
+            assert_err!(
+                Xp::force_genesis_config(
+                    RuntimeOrigin::signed(ALICE),
+                    ForceGenesisConfig::PulseFactor {
+                        threshold,
+                        per_count
+                    }
+                ),
+                DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn call_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::new_xp(&BOB, &XP_BETA);
+
+            let call = Box::new(Call::Xp(crate::Call::handover {
+                xp_id: XP_ALPHA,
+                new_owner: BOB,
+            }));
+            assert_ok!(Pallet::is_owner(&ALICE, &XP_ALPHA));
+            System::set_block_number(2);
+            assert_ok!(Xp::call(RuntimeOrigin::signed(ALICE), XP_ALPHA, call));
+            assert_err!(Pallet::is_owner(&ALICE, &XP_ALPHA), Error::InvalidXpOwner);
+            assert_ok!(Pallet::is_owner(&BOB, &XP_ALPHA));
+            System::assert_last_event(
+                Event::XpOwner {
+                    id: XP_ALPHA,
+                    owner: BOB,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn call_fail_invalid_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::new_xp(&BOB, &XP_BETA);
+
+            let call = Box::new(Call::Xp(crate::Call::handover {
+                xp_id: XP_ALPHA,
+                new_owner: BOB,
+            }));
+            assert_ok!(Pallet::is_owner(&ALICE, &XP_ALPHA));
+            assert_err!(
+                Xp::call(RuntimeOrigin::signed(ALICE), XP_BETA, call),
+                Error::InvalidXpOwner
+            );
+        });
+    }
+
+    #[test]
+    fn call_fail_bad_origin() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::new_xp(&BOB, &XP_BETA);
+
+            let call = Box::new(Call::Xp(crate::Call::handover {
+                xp_id: XP_ALPHA,
+                new_owner: BOB,
+            }));
+            assert_ok!(Pallet::is_owner(&ALICE, &XP_ALPHA));
+            assert_err!(
+                Xp::call(RuntimeOrigin::root(), XP_ALPHA, call),
+                DispatchError::BadOrigin
+            );
+        });
     }
 }

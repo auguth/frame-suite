@@ -1283,3 +1283,2362 @@ impl<T: Config<I>, I: 'static> XpErrorHandler for Pallet<T, I> {
         }
     }
 }
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+/// Unit tests for [`crate::xp`] trait implementations over [`Pallet`].
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` IMPORTS ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local (module + crate) ---
+    use crate::{mock::*, types::ForceGenesisConfig};
+
+    // --- FRAME Suite ---
+    use frame_suite::{accumulators::*, xp::*};
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_ok,
+        traits::{tokens::Precision, VariantCount, VariantCountOf},
+    };
+    use sp_runtime::BoundedVec;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` XP SYSTEM ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn xp_exists_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_ok!(Pallet::xp_exists(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn xp_exists_fail_no_xp() {
+        xp_test_ext().execute_with(|| {
+            assert!(!XpOf::contains_key(XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn has_minimum_xp_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            System::set_block_number(2);
+            System::set_block_number(3);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_ok!(Pallet::has_minimum_xp(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn has_minimum_xp_fail_low_min_time_stamp() {
+        xp_test_ext().execute_with(|| {
+            MinTimeStamp::set(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(1);
+            assert_err!(Pallet::has_minimum_xp(&XP_ALPHA), Error::LowTimeStamp);
+        });
+    }
+
+    #[test]
+    fn get_xp_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            assert_err!(Pallet::get_xp(&XP_ALPHA), Error::XpNotFound);
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            assert_eq!(xp.free, InitXp::get());
+            assert_eq!(xp.pulse.value, 0);
+            assert_eq!(xp.reserve, 0);
+            assert_eq!(xp.lock, 0);
+            assert_eq!(xp.timestamp, 2);
+        });
+    }
+
+    #[test]
+    fn get_liquid_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let liquid = Pallet::get_liquid_xp(&XP_ALPHA).unwrap();
+            assert_eq!(liquid, InitXp::get());
+        });
+    }
+
+    #[test]
+    fn get_liquid_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::get_liquid_xp(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn get_usable_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            ReservedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result.get_or_insert_with(|| {
+                    BoundedVec::<ReserveId, VariantCountOf<Reason>>::default()
+                });
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.reserve = value.reserve.saturating_add(DEFAULT_POINTS);
+            });
+            // Using get_xp as a helper function since its functionality has been validated in dedicated tests.
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let expected = xp.free.saturating_add(xp.reserve);
+            let actual = Pallet::get_usable_xp(&XP_ALPHA).unwrap();
+            assert_eq!(expected, actual);
+        });
+    }
+
+    #[test]
+    fn get_usable_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::get_usable_xp(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` XP OWNER ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn is_owner_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_ok!(Pallet::is_owner(&ALICE, &XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn is_owner_fail_not_owner() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::is_owner(&BOB, &XP_ALPHA), Error::InvalidXpOwner);
+        });
+    }
+
+    #[test]
+    fn xp_of_owner_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::new_xp(&ALICE, &XP_BETA);
+            Pallet::new_xp(&ALICE, &XP_GAMMA);
+            let actual = Pallet::xp_of_owner(&ALICE).unwrap();
+            let expected = vec![XP_GAMMA, XP_ALPHA, XP_BETA];
+            assert_eq!(actual, expected);
+        });
+    }
+
+    #[test]
+    fn transfer_owner_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(1);
+            Pallet::transfer_owner(&ALICE, &XP_ALPHA, &BOB).unwrap();
+            assert_err!(Pallet::is_owner(&ALICE, &XP_ALPHA), Error::InvalidXpOwner);
+            assert_ok!(Pallet::is_owner(&BOB, &XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn xp_key_gen_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            Account::mutate(ALICE, |info| {
+                info.nonce = 5;
+            });
+            let actual_gen_key = Pallet::xp_key_gen(&ALICE, &xp);
+            assert!(actual_gen_key.is_ok());
+            let actual_gen_key = actual_gen_key.unwrap();
+            let expected_gen_key = 4150176476612258495;
+            assert_eq!(actual_gen_key, expected_gen_key);
+        });
+    }
+
+    #[test]
+    fn xp_key_gen_deterministic_check() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            Account::mutate(ALICE, |info| {
+                info.nonce = 3;
+            });
+            let gen_key_first = Pallet::xp_key_gen(&ALICE, &xp).unwrap();
+            let gen_key_second = Pallet::xp_key_gen(&ALICE, &xp).unwrap();
+
+            assert_eq!(gen_key_first, gen_key_second);
+        });
+    }
+
+    #[test]
+    fn xp_key_gen_collision_check() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp_alpha = Pallet::get_xp(&XP_ALPHA).unwrap();
+            Account::mutate(ALICE, |info| {
+                info.nonce = 3;
+            });
+            let gen_key_alpha = Pallet::xp_key_gen(&ALICE, &xp_alpha).unwrap();
+
+            System::set_block_number(4);
+            Pallet::new_xp(&BOB, &XP_BETA);
+            let xp_beta = Pallet::get_xp(&XP_BETA).unwrap();
+            Account::mutate(BOB, |info| {
+                info.nonce = 1;
+            });
+            let gen_key_beta = Pallet::xp_key_gen(&ALICE, &xp_beta).unwrap();
+            assert_ne!(xp_alpha, xp_beta);
+            assert_ne!(System::account_nonce(ALICE), System::account_nonce(BOB));
+            assert_ne!(gen_key_alpha, gen_key_beta);
+        });
+    }
+
+    #[test]
+    fn xp_key_gen_unique_across_owners() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::new_xp(&BOB, &XP_BETA);
+            let xp_alpha = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let xp_beta = Pallet::get_xp(&XP_BETA).unwrap();
+            Account::mutate(ALICE, |info| {
+                info.nonce = 3;
+            });
+            Account::mutate(BOB, |info| {
+                info.nonce = 3;
+            });
+            assert_eq!(xp_alpha, xp_beta);
+            assert_eq!(System::account_nonce(ALICE), System::account_nonce(BOB));
+            let gen_key_alice = Pallet::xp_key_gen(&ALICE, &xp_alpha).unwrap();
+            let gen_key_bob = Pallet::xp_key_gen(&BOB, &xp_beta).unwrap();
+            assert_ne!(gen_key_alice, gen_key_bob);
+        });
+    }
+
+    #[test]
+    fn xp_key_gen_unique_across_xp_struct() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp_1 = Pallet::get_xp(&XP_ALPHA).unwrap();
+            Account::mutate(ALICE, |info| {
+                info.nonce = 3;
+            });
+            System::set_block_number(4);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp_2 = Pallet::get_xp(&XP_ALPHA).unwrap();
+            Account::mutate(ALICE, |info| {
+                info.nonce = 3;
+            });
+            assert_ne!(xp_1, xp_2);
+            assert_eq!(System::account_nonce(ALICE), 3);
+            let gen_key_alice_1 = Pallet::xp_key_gen(&ALICE, &xp_1).unwrap();
+            let gen_key_alice_2 = Pallet::xp_key_gen(&ALICE, &xp_2).unwrap();
+            assert_ne!(gen_key_alice_1, gen_key_alice_2);
+        });
+    }
+
+    #[test]
+    fn xp_key_gen_unique_across_nonce() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            System::set_block_number(2);
+            Account::mutate(ALICE, |info| {
+                info.nonce = 3;
+            });
+            let gen_key_alice_1 = Pallet::xp_key_gen(&ALICE, &xp).unwrap();
+
+            System::set_block_number(4);
+            Account::mutate(ALICE, |info| {
+                info.nonce = 5;
+            });
+            let gen_key_alice_2 = Pallet::xp_key_gen(&ALICE, &xp).unwrap();
+
+            assert_ne!(gen_key_alice_1, gen_key_alice_2);
+        });
+    }
+
+    #[test]
+    fn on_xp_transfer_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            Pallet::on_xp_transfer(&XP_ALPHA, &BOB);
+            System::assert_last_event(
+                Event::XpOwner {
+                    id: XP_ALPHA,
+                    owner: BOB,
+                }
+                .into(),
+            );
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` XP MUTATE ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn new_xp_success() {
+        xp_test_ext().execute_with(|| {
+            assert!(!XpOf::contains_key(XP_ALPHA));
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert!(XpOf::contains_key(XP_ALPHA));
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            assert_eq!(xp.free, 10);
+            assert_eq!(xp.pulse.value, 0);
+            assert_eq!(xp.reserve, 0);
+            assert_eq!(xp.lock, 0);
+            assert_eq!(xp.timestamp, 2);
+            assert_eq!(XpOwners::get((ALICE, XP_ALPHA)), Some(()));
+        });
+    }
+
+    #[test]
+    fn earn_xp_success() {
+        xp_test_ext().execute_with(|| {
+            // Using new_xp as a helper function since its functionality has been validated in dedicated tests.
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp, 10);
+            assert_eq!(pulse_xp, 0); // Default pulse is 0
+            System::set_block_number(2);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //1
+            System::set_block_number(3);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //2
+            System::set_block_number(4);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //3
+            System::set_block_number(5);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //4
+            System::set_block_number(6);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //5
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp, 10);
+            assert_eq!(pulse_xp, 1); // Increased by 1
+            System::set_block_number(7);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp_bfr = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp_bfr, 20);
+            assert_eq!(pulse_xp, 1);
+            System::set_block_number(7);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp_aftr = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp_aftr, 30);
+            assert_eq!(pulse_xp, 1);
+            let actual = liquid_xp_aftr - liquid_xp_bfr;
+            assert_eq!(actual, 10);
+            System::assert_last_event(Event::XpEarn {
+                 id: XP_ALPHA, 
+                 xp: actual 
+                }
+                .into()
+            );
+        });
+    }
+
+    #[test]
+    fn earn_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn earn_xp_success_with_lock() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp, 10);
+            assert_eq!(pulse_xp, 0); // Default pulse is 0
+            System::set_block_number(2);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //1
+            System::set_block_number(3);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //2
+            System::set_block_number(4);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //3
+            System::set_block_number(5);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //4
+            System::set_block_number(6);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //5
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp, 10);
+            assert_eq!(pulse_xp, 1); // Increased by 1
+            System::set_block_number(7);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp, 20);
+            assert_eq!(pulse_xp, 1);
+            System::set_block_number(8);
+            let idxp = LockId::new(STAKING, DEFAULT_POINTS);
+            LockedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result
+                    .get_or_insert_with(|| BoundedVec::<LockId, VariantCountOf<Reason>>::default());
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.lock = value.lock.saturating_add(DEFAULT_POINTS);
+            });
+            assert!(LockedXpOf::contains_key(XP_ALPHA));
+            System::set_block_number(9);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //1
+            System::set_block_number(10);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //2\
+            System::set_block_number(11);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //3
+            System::set_block_number(12);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //4
+            System::set_block_number(13);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap(); //5
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp, 70);
+            assert_eq!(pulse_xp, 2); // Increased to 2 due to lock exist
+            System::set_block_number(14);
+            Pallet::earn_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_xp = xp.free;
+            let pulse_xp = xp.pulse.value;
+            assert_eq!(liquid_xp, 90);
+            assert_eq!(pulse_xp, 2);
+        });
+    }
+
+    #[test]
+    fn set_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(2);
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            assert_eq!(liquid_before, InitXp::get());
+            System::set_block_number(3);
+            Pallet::set_xp(&XP_ALPHA, DEFAULT_POINTS).unwrap();
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            assert_eq!(liquid_after, DEFAULT_POINTS);
+        });
+    }
+
+    #[test]
+    fn set_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::set_xp(&XP_ALPHA, DEFAULT_POINTS), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn on_xp_earn_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::on_xp_earn(&XP_ALPHA, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::XpEarn {
+                    id: XP_ALPHA,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn on_xp_update_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::on_xp_update(&XP_ALPHA, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::Xp {
+                    id: XP_ALPHA,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn slash_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            System::set_block_number(2);
+            let slash_points = 5;
+            assert_ok!(Pallet::slash_xp(&XP_ALPHA, slash_points));
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let liquid_expected = liquid_before.saturating_sub(slash_points);
+
+            assert_eq!(liquid_after, liquid_expected);
+            System::assert_last_event(
+                Event::XpSlash {
+                    id: XP_ALPHA,
+                    xp: liquid_after,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn slash_xp_success_burn() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            assert_eq!(liquid_before, 10);
+            System::set_block_number(2);
+            // slash points > available liquid
+            let slash_points = 20;
+            assert_ok!(Pallet::slash_xp(&XP_ALPHA, slash_points));
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let liquid_expected = 0;
+
+            assert_eq!(liquid_after, liquid_expected);
+        });
+    }
+
+    #[test]
+    fn slash_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::slash_xp(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn reset_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            let burn_points = Pallet::reset_xp(&XP_ALPHA).unwrap();
+            let xp = XpOf::get(XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            assert_eq!(liquid_before, burn_points);
+            assert_eq!(liquid_after, 0);
+        });
+    }
+
+    #[test]
+    fn reset_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::reset_xp(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` XP RESERVE `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn reserve_exists_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            ReservedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result.get_or_insert_with(|| {
+                    BoundedVec::<ReserveId, VariantCountOf<Reason>>::default()
+                });
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.reserve = value.reserve.saturating_add(DEFAULT_POINTS);
+            });
+            assert_ok!(Pallet::reserve_exists(&XP_ALPHA, &STAKING));
+        });
+    }
+
+    #[test]
+    fn reserve_exists_fail() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::reserve_exists(&XP_ALPHA, &STAKING),
+                Error::XpReserveNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn has_reserve_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            ReservedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result.get_or_insert_with(|| {
+                    BoundedVec::<ReserveId, VariantCountOf<Reason>>::default()
+                });
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.reserve = value.reserve.saturating_add(DEFAULT_POINTS);
+            });
+            assert_ok!(Pallet::has_reserve(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn has_reserve_fail_no_reserve() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::has_reserve(&XP_ALPHA), Error::XpReserveNotFound);
+        });
+    }
+
+    #[test]
+    fn has_reserve_fail_uninitialized_key() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::has_reserve(&XP_ALPHA), Error::XpReserveNotFound);
+        });
+    }
+
+    #[test]
+    fn maximum_reserves_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let max_reserves = Pallet::maximum_reserves();
+            let expected = Reason::VARIANT_COUNT as usize;
+            assert_eq!(max_reserves, expected);
+        });
+    }
+
+    #[test]
+    fn get_reserve_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            ReservedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result.get_or_insert_with(|| {
+                    BoundedVec::<ReserveId, VariantCountOf<Reason>>::default()
+                });
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.reserve = value.reserve.saturating_add(DEFAULT_POINTS);
+            });
+            let return_points = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(return_points, DEFAULT_POINTS);
+        });
+    }
+
+    #[test]
+    fn get_reserve_xp_fail_no_reserve() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::get_reserve_xp(&XP_ALPHA, &STAKING),
+                Error::XpReserveNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn set_reserve_success_new() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            // Using has_reserve as a helper function since its functionality has been validated in dedicated tests.
+            assert_err!(Pallet::has_reserve(&XP_ALPHA), Error::XpReserveNotFound);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::has_reserve(&XP_ALPHA));
+            // Using get_reserve_xp as a helper function since its functionality has been validated in dedicated tests.
+            let get_reserve_xp = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(get_reserve_xp, DEFAULT_POINTS);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let xp_reserved_points = xp.reserve;
+            assert_eq!(DEFAULT_POINTS, xp_reserved_points);
+        });
+    }
+
+    #[test]
+    fn set_reserve_success_mutate_existing_xp() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let before_mutation = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(before_mutation, DEFAULT_POINTS);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let xp_reserved_points = xp.reserve;
+            assert_eq!(DEFAULT_POINTS, xp_reserved_points);
+            // increase
+            let new_reserve_points = 25;
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, new_reserve_points).unwrap();
+            let after_mutation = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(after_mutation, new_reserve_points);
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let xp_reserved_points = xp.reserve;
+            assert_eq!(new_reserve_points, xp_reserved_points);
+
+            // decrease
+            let new_reserve_points = 15;
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, new_reserve_points).unwrap();
+            let after_mutation = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(after_mutation, new_reserve_points);
+
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let xp_reserved_points = xp.reserve;
+            assert_eq!(new_reserve_points, xp_reserved_points);
+        });
+    }
+
+    #[test]
+    fn set_reserve_fail_mutate_existing_xp_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::set_reserve(&XP_ALPHA, &REASON_TREASURY, SATURATED_MAX),
+                Error::XpReserveCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn set_reserve_fail_new_reserve_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, SATURATED_MAX).unwrap();
+            assert_err!(
+                Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS),
+                Error::XpReserveCapOverflowed
+            )
+        });
+    }
+
+    /// This scenario cannot be tested via the public API because the maximum number of reserves
+    /// is enforced by the number of variants in the `Reason` enum (using `VariantCountOf`).
+    /// Attempting to add more reserves than allowed is impossible, as each reason can only be used once,
+    /// and reusing a reason will simply update the existing lock instead of creating a new one.
+    /// Therefore, exceeding the reserve limit cannot be simulated in a test.
+    #[test]
+    fn set_reserve_fail_too_many_reserves() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::has_reserve(&XP_ALPHA), Error::XpReserveNotFound);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            // Mutates the existing reserve instead of returning Err(Error::TooManyReserves)
+            Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+        });
+    }
+
+    #[test]
+    fn set_reserve_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        })
+    }
+
+    #[test]
+    fn total_reserved_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            // Using set_reserve as a helper function since its functionality has been validated in dedicated tests.
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            let actual = Pallet::total_reserved(&XP_ALPHA).unwrap();
+            let expected = DEFAULT_POINTS + DEFAULT_POINTS;
+            assert_eq!(expected, actual);
+        })
+    }
+
+    #[test]
+    fn total_reserved_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::total_reserved(&XP_ALPHA), Error::XpNotFound);
+        })
+    }
+
+    #[test]
+    fn get_all_reserves_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            let actual = Pallet::get_all_reserves(&XP_ALPHA).unwrap();
+            let expected = vec![STAKING, GOVERNANCE, REASON_TREASURY];
+            assert_eq!(expected, actual);
+        });
+    }
+
+    #[test]
+    fn on_reserve_update_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(2);
+            Pallet::on_reserve_update(&XP_ALPHA, &STAKING, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::XpReserve {
+                    of: XP_ALPHA,
+                    reason: STAKING,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            let reserve_points = 3;
+            assert_ok!(Pallet::can_reserve_xp(&XP_ALPHA, reserve_points));
+        });
+    }
+
+    #[test]
+    fn can_reserve_xp_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, SATURATED_MAX).unwrap();
+            let reserve_points = 10;
+            assert_err!(
+                Pallet::can_reserve_xp(&XP_ALPHA, reserve_points),
+                Error::XpReserveCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_xp_fail_insufficient_liquid_xp() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let reserve_points = 20;
+            assert_err!(
+                Pallet::can_reserve_xp(&XP_ALPHA, reserve_points),
+                Error::InsufficientLiquidXp
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_xp_fail_point_value_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::can_reserve_xp(&XP_ALPHA, INVALID_POINTS),
+                Error::CannotReserveZero
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::can_reserve_xp(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_mutate_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::can_reserve_mutate(
+                &XP_ALPHA,
+                &STAKING,
+                DEFAULT_POINTS
+            ));
+        });
+    }
+
+    #[test]
+    fn can_reserve_mutate_reserve_not_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::can_reserve_mutate(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpReserveNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_mutate_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::can_reserve_mutate(&XP_ALPHA, &STAKING, SATURATED_MAX),
+                Error::XpReserveCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_new_fail_max_reserve() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_reserve(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+
+            assert_err!(
+                Pallet::can_reserve_new(&XP_ALPHA, DEFAULT_POINTS),
+                Error::TooManyReserves
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_new_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+
+            assert_ok!(Pallet::can_reserve_new(&XP_ALPHA, DEFAULT_POINTS));
+        });
+    }
+
+    #[test]
+    fn can_reserve_new_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::can_reserve_new(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn can_reserve_new_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, SATURATED_MAX).unwrap();
+            assert_err!(
+                Pallet::can_reserve_new(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpReserveCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn reserve_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            let reserve_before = xp.reserve;
+            // Using reserve_exists as a helper function since its functionality has been validated in dedicated tests.
+            assert_err!(
+                Pallet::reserve_exists(&XP_ALPHA, &STAKING),
+                Error::XpReserveNotFound
+            );
+            let reserve_points = 5;
+            assert_ok!(Pallet::reserve_xp(&XP_ALPHA, &STAKING, reserve_points));
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let reserve_after = xp.reserve;
+            let liquid_expected = liquid_before.saturating_sub(reserve_points);
+            let reserve_expected = reserve_before.saturating_add(reserve_points);
+            assert_ok!(Pallet::reserve_exists(&XP_ALPHA, &STAKING));
+            assert_eq!(liquid_after, liquid_expected);
+            assert_eq!(reserve_after, reserve_expected)
+        });
+    }
+
+    #[test]
+    fn reserve_xp_success_mutate() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&ALICE, &STAKING, DEFAULT_POINTS).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            let reserve_before = xp.reserve;
+            assert_ok!(Pallet::reserve_exists(&XP_ALPHA, &STAKING));
+            let reserve_points = 5;
+            assert_ok!(Pallet::reserve_xp(&XP_ALPHA, &STAKING, reserve_points));
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let reserve_after = xp.reserve;
+            let liquid_expected = liquid_before.saturating_sub(reserve_points);
+            let reserve_expected = reserve_before.saturating_add(reserve_points);
+            assert_eq!(liquid_after, liquid_expected);
+            assert_eq!(reserve_after, reserve_expected)
+        });
+    }
+
+    #[test]
+    fn reserve_xp_fail_underflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let available_liquid = xp.free;
+            assert_eq!(available_liquid, 10);
+            // reserve point > available liquid
+            let reserve_points = 25;
+            assert_err!(
+                Pallet::reserve_xp(&XP_ALPHA, &STAKING, reserve_points),
+                Error::InsufficientLiquidXp
+            );
+        });
+    }
+
+    #[test]
+    fn reserve_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::reserve_xp(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn reserve_xp_fail_mutate_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &GOVERNANCE, SATURATED_MAX).unwrap();
+            assert_err!(
+                Pallet::reserve_xp(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS),
+                Error::XpReserveCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            let reserve_before = xp.reserve;
+            assert_ok!(Pallet::reserve_exists(&XP_ALPHA, &STAKING));
+            assert_ok!(Pallet::withdraw_reserve(&XP_ALPHA, &STAKING));
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let reserve_after = xp.reserve;
+            let liquid_expected = liquid_before.saturating_add(reserve_before);
+            let reserve_expected = liquid_before.saturating_sub(DEFAULT_POINTS);
+            assert_eq!(liquid_after, liquid_expected);
+            assert_eq!(reserve_after, reserve_expected);
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_fail_no_reserve_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::withdraw_reserve(&XP_ALPHA, &STAKING),
+                Error::XpReserveNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::withdraw_reserve(&XP_ALPHA, &STAKING),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn slash_reserve_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let reserve_xp_before = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            let slash_points = 5;
+            assert_ok!(Pallet::slash_reserve(&XP_ALPHA, &STAKING, slash_points));
+            let reserve_xp_after = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            let reserve_xp_expected = reserve_xp_before.saturating_sub(slash_points);
+
+            assert_eq!(reserve_xp_expected, reserve_xp_after);
+        });
+    }
+
+    #[test]
+    fn slash_reserve_success_burn() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let reserve_xp_before = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_ok!(Pallet::reserve_exists(&XP_ALPHA, &STAKING));
+            let slash_points = 20;
+            let burn_points = Pallet::slash_reserve(&XP_ALPHA, &STAKING, slash_points).unwrap();
+
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+            let reserve_xp_after = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+
+            assert_eq!(reserve_xp_after, 0);
+            assert_eq!(reserve_xp_before, burn_points);
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_partial_success_exact() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let reserve_before = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(reserve_before, DEFAULT_POINTS);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let free_before = xp.free;
+            assert_eq!(free_before, DEFAULT_POINTS);
+            let partial_withdraw = 6;
+            Pallet::withdraw_reserve_partial(
+                &XP_ALPHA,
+                &STAKING,
+                partial_withdraw,
+                Precision::Exact,
+            )
+            .unwrap();
+            let reserve_after = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            let expected_reserve = reserve_before.saturating_sub(partial_withdraw);
+            assert_eq!(reserve_after, expected_reserve);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let free_after = xp.free;
+            let expected_free = free_before.saturating_add(partial_withdraw);
+            assert_eq!(free_after, expected_free);
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_partial_success_besteffort() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let reserve_before = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(reserve_before, DEFAULT_POINTS);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let free_before = xp.free;
+            assert_eq!(free_before, DEFAULT_POINTS);
+            let partial_withdraw = 11;
+            Pallet::withdraw_reserve_partial(
+                &XP_ALPHA,
+                &STAKING,
+                partial_withdraw,
+                Precision::BestEffort,
+            )
+            .unwrap();
+            let reserve_after = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            let expected_reserve = reserve_before.saturating_sub(partial_withdraw);
+            assert_eq!(reserve_after, expected_reserve);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let free_after = xp.free;
+            let expected_free = 20;
+            assert_eq!(free_after, expected_free);
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_partial_success_with_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::withdraw_reserve_partial(
+                &XP_ALPHA,
+                &STAKING,
+                INVALID_POINTS,
+                Precision::Exact
+            ));
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_partial_fail_exact() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let reserve_before = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(reserve_before, DEFAULT_POINTS);
+            let partial_withdraw = 11;
+            assert_err!(
+                Pallet::withdraw_reserve_partial(
+                    &XP_ALPHA,
+                    &STAKING,
+                    partial_withdraw,
+                    Precision::Exact
+                ),
+                Error::InsufficientReserveXp
+            )
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_partial_fail_no_reserve() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::withdraw_reserve_partial(
+                    &XP_ALPHA,
+                    &STAKING,
+                    DEFAULT_POINTS,
+                    Precision::Exact
+                ),
+                Error::XpReserveNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn withdraw_reserve_partial_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::withdraw_reserve_partial(
+                    &XP_ALPHA,
+                    &STAKING,
+                    DEFAULT_POINTS,
+                    Precision::Exact
+                ),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn slash_reserve_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::slash_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn slash_reserve_fail_no_reserve_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::slash_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpReserveNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn reset_reserve_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_reserve(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let reserve_xp_before = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_ok!(Pallet::reserve_exists(&XP_ALPHA, &STAKING));
+            let burn_points = Pallet::reset_reserve(&XP_ALPHA, &STAKING).unwrap();
+
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+            let reserve_xp_after = Pallet::get_reserve_xp(&XP_ALPHA, &STAKING).unwrap();
+
+            assert_eq!(reserve_xp_after, 0);
+            assert_eq!(reserve_xp_before, burn_points);
+        });
+    }
+
+    #[test]
+    fn reset_reserve_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::reset_reserve(&XP_ALPHA, &STAKING),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn reset_reserve_fail_no_reserve_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::reset_reserve(&XP_ALPHA, &STAKING),
+                Error::XpReserveNotFound
+            )
+        });
+    }
+
+    // ===============================================================================
+    // ``````````````````````````````````` XP LOCK ```````````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn has_lock_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = LockId::new(STAKING, DEFAULT_POINTS);
+            LockedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result
+                    .get_or_insert_with(|| BoundedVec::<LockId, VariantCountOf<Reason>>::default());
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.lock = value.lock.saturating_add(DEFAULT_POINTS);
+            });
+            assert_ok!(Pallet::has_lock(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn has_lock_fail() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::has_lock(&XP_ALPHA), Error::XpLockNotFound);
+        });
+    }
+
+    #[test]
+    fn has_lock_fail_uninitialized_key() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::has_lock(&XP_ALPHA), Error::XpLockNotFound);
+        });
+    }
+
+    #[test]
+    fn get_lock_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = LockId::new(STAKING, DEFAULT_POINTS);
+            LockedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result
+                    .get_or_insert_with(|| BoundedVec::<LockId, VariantCountOf<Reason>>::default());
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.lock = value.lock.saturating_add(DEFAULT_POINTS);
+            });
+            let get_lock_xp = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(get_lock_xp, DEFAULT_POINTS);
+        });
+    }
+
+    #[test]
+    fn get_lock_xp_fail_no_lock() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::get_lock_xp(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn set_lock_success_new() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            // Using has_lock as a helper function since its functionality has been validated in dedicated tests.
+            assert_err!(Pallet::has_lock(&XP_ALPHA), Error::XpLockNotFound);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::has_lock(&XP_ALPHA));
+            // Using get_lock_xp as a helper function since its functionality has been validated in dedicated tests.
+            let get_lock_xp = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(get_lock_xp, DEFAULT_POINTS);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let xp_locked_points = xp.lock;
+            assert_eq!(DEFAULT_POINTS, xp_locked_points);
+        });
+    }
+
+    #[test]
+    fn set_lock_success_mutate_existing_xp() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let before_mutation = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(before_mutation, DEFAULT_POINTS);
+            // increase
+            let new_lock_points = 25;
+            Pallet::set_lock(&XP_ALPHA, &STAKING, new_lock_points).unwrap();
+            let after_mutation = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(after_mutation, new_lock_points);
+            // decrease
+            let new_lock_points = 15;
+            Pallet::set_lock(&XP_ALPHA, &STAKING, new_lock_points).unwrap();
+            let after_mutation = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_eq!(after_mutation, new_lock_points);
+        });
+    }
+
+    #[test]
+    fn set_lock_fail_mutate_existing_xp_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, SATURATED_MAX),
+                Error::XpLockCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn set_lock_fail_new_lock_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, SATURATED_MAX).unwrap();
+            assert_err!(
+                Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS),
+                Error::XpLockCapOverflowed
+            )
+        });
+    }
+
+    #[test]
+    fn set_lock_fail_points_value_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::has_lock(&XP_ALPHA), Error::XpLockNotFound);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::has_lock(&XP_ALPHA));
+            assert_err!(
+                Pallet::set_lock(&XP_ALPHA, &STAKING, INVALID_POINTS),
+                Error::CannotLockZero
+            );
+        });
+    }
+
+    /// This scenario cannot be tested via the public API because the maximum number of locks
+    /// is enforced by the number of variants in the `Reason` enum (using `VariantCountOf`).
+    /// Attempting to add more locks than allowed is impossible, as each reason can only be used once,
+    /// and reusing a reason will simply update the existing lock instead of creating a new one.
+    /// Therefore, exceeding the lock limit cannot be simulated in a test.
+    #[test]
+    fn set_lock_fail_too_many_locks() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::has_lock(&XP_ALPHA), Error::XpLockNotFound);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+        });
+    }
+
+    #[test]
+    fn set_lock_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn lock_exists_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            // Using set_lock as a helper function since its functionality has been validated in dedicated tests.
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::lock_exists(&XP_ALPHA, &STAKING));
+        });
+    }
+
+    #[test]
+    fn lock_exists_fail_no_locks() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn maximum_locks_success() {
+        xp_test_ext().execute_with(|| {
+            let max_locks: usize = Pallet::maximum_locks();
+            let expected = Reason::VARIANT_COUNT as usize;
+            assert_eq!(max_locks, expected);
+        });
+    }
+
+    #[test]
+    fn total_locked_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            let actual_locked = Pallet::total_locked(&XP_ALPHA).unwrap();
+            let expected_locked = DEFAULT_POINTS + DEFAULT_POINTS;
+            assert_eq!(expected_locked, actual_locked);
+        });
+    }
+
+    #[test]
+    fn total_locked_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::total_locked(&XP_ALPHA), Error::XpNotFound);
+        })
+    }
+
+    #[test]
+    fn get_all_locks_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            let actual = Pallet::get_all_locks(&XP_ALPHA).unwrap();
+            let expected = vec![Reason::Staking, Reason::Governance, Reason::Treasury];
+            assert_eq!(actual, expected);
+        });
+    }
+
+    #[test]
+    fn burn_lock_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(2);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            // Using lock_exists as a helper function since its functionality has been validated in dedicated tests.
+            assert_ok!(Pallet::lock_exists(&XP_ALPHA, &STAKING));
+            assert_ok!(Pallet::burn_lock(&XP_ALPHA, &STAKING));
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    /// This scenario cannot be tested via the public API because the "lock dust" (underflow)
+    /// condition requires creating an inconsistent internal state, where the XP's `lock` field
+    /// is less than the points of the lock being burned. Since all fields are private and the
+    /// public API always keeps the state consistent, this edge case cannot be simulated in a test.
+    #[test]
+    fn burn_lock_underflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            let lock_xp = Pallet::get_lock_xp(&XP_ALPHA, &REASON_TREASURY).unwrap();
+            assert_eq!(lock_xp, DEFAULT_POINTS);
+            Pallet::burn_lock(&XP_ALPHA, &REASON_TREASURY).unwrap();
+            // Burns an entire lock id of a given key
+            assert_err!(
+                Pallet::get_lock_xp(&XP_ALPHA, &REASON_TREASURY),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn burn_lock_fail_no_valid_lock_id() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::burn_lock(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn burn_lock_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::burn_lock(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn on_lock_update_success() {
+        xp_test_ext().execute_and_prove(|| {
+            System::set_block_number(2);
+            Pallet::on_lock_update(&XP_ALPHA, &STAKING, DEFAULT_POINTS);
+            System::assert_last_event(
+                Event::XpLock {
+                    of: XP_ALPHA,
+                    reason: STAKING,
+                    xp: DEFAULT_POINTS,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn on_lock_burn_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(1);
+            Pallet::on_lock_burn(&XP_ALPHA, &STAKING);
+            System::assert_last_event(
+                Event::XpLockBurn {
+                    of: XP_ALPHA,
+                    reason: STAKING,
+                }
+                .into(),
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let lock_points = 3;
+            assert_ok!(Pallet::can_lock_xp(&XP_ALPHA, lock_points));
+        });
+    }
+
+    #[test]
+    fn can_lock_xp_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, SATURATED_MAX).unwrap();
+            let lock_points = 3;
+            assert_err!(
+                Pallet::can_lock_xp(&XP_ALPHA, lock_points),
+                Error::XpLockCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_xp_fail_insufficient_liquid_xp() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let lock_points = 20;
+            assert_err!(
+                Pallet::can_lock_xp(&XP_ALPHA, lock_points),
+                Error::InsufficientLiquidXp
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_xp_fail_point_value_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+
+            assert_err!(
+                Pallet::can_lock_xp(&XP_ALPHA, INVALID_POINTS),
+                Error::CannotLockZero
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::can_lock_xp(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_mutate_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::can_lock_mutate(&XP_ALPHA, &STAKING, DEFAULT_POINTS));
+        });
+    }
+
+    #[test]
+    fn can_lock_mutate_lock_not_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::can_lock_mutate(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_mutate_fail_point_value_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::can_lock_mutate(&XP_ALPHA, &STAKING, INVALID_POINTS),
+                Error::CannotLockZero
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_mutate_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::can_lock_mutate(&XP_ALPHA, &STAKING, SATURATED_MAX),
+                Error::XpLockCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_new_fail_max_lock() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &REASON_TREASURY, DEFAULT_POINTS).unwrap();
+            Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS).unwrap();
+            assert_err!(
+                Pallet::can_lock_new(&XP_ALPHA, DEFAULT_POINTS),
+                Error::TooManyLocks
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_new_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+
+            assert_ok!(Pallet::can_lock_new(&XP_ALPHA, DEFAULT_POINTS));
+        });
+    }
+
+    #[test]
+    fn can_lock_new_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::can_lock_new(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_new_fail_with_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::can_lock_new(&XP_ALPHA, INVALID_POINTS),
+                Error::CannotLockZero,
+            );
+        });
+    }
+
+    #[test]
+    fn can_lock_new_fail_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, SATURATED_MAX).unwrap();
+            assert_err!(
+                Pallet::can_lock_new(&XP_ALPHA, DEFAULT_POINTS),
+                Error::XpLockCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn lock_xp_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            let lock_before = xp.lock;
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+            let lock_points = 5;
+            assert_ok!(Pallet::lock_xp(&XP_ALPHA, &STAKING, lock_points));
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let lock_after = xp.lock;
+            let liquid_expected = liquid_before.saturating_sub(lock_points);
+            let lock_expected = lock_before.saturating_add(lock_points);
+            assert_ok!(Pallet::lock_exists(&XP_ALPHA, &STAKING));
+            assert_eq!(liquid_after, liquid_expected);
+            assert_eq!(lock_after, lock_expected)
+        });
+    }
+
+    #[test]
+    fn lock_xp_success_mutate() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&ALICE, &STAKING, DEFAULT_POINTS).unwrap();
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            let lock_before = xp.lock;
+            assert_ok!(Pallet::lock_exists(&XP_ALPHA, &STAKING));
+            let lock_points = 5;
+            assert_ok!(Pallet::lock_xp(&XP_ALPHA, &STAKING, lock_points));
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let lock_after = xp.lock;
+            let liquid_expected = liquid_before.saturating_sub(lock_points);
+            let lock_expected = lock_before.saturating_add(lock_points);
+            assert_eq!(liquid_after, liquid_expected);
+            assert_eq!(lock_after, lock_expected);
+        });
+    }
+
+    #[test]
+    fn lock_xp_fail_underflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let available_liquid = xp.free;
+            assert_eq!(available_liquid, 10);
+            // lock points > available liquid
+            let lock_points = 25;
+            assert_err!(
+                Pallet::lock_xp(&XP_ALPHA, &STAKING, lock_points),
+                Error::InsufficientLiquidXp
+            );
+        });
+    }
+
+    #[test]
+    fn lock_xp_fail_mutate_overflow() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &GOVERNANCE, SATURATED_MAX).unwrap();
+            assert_err!(
+                Pallet::lock_xp(&XP_ALPHA, &GOVERNANCE, DEFAULT_POINTS),
+                Error::XpLockCapOverflowed
+            );
+        });
+    }
+
+    #[test]
+    fn lock_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::lock_xp(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn lock_xp_fail_points_value_zero() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::lock_xp(&XP_ALPHA, &STAKING, INVALID_POINTS),
+                Error::CannotLockZero
+            );
+        });
+    }
+
+    #[test]
+    fn withdraw_lock_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_before = xp.free;
+            Pallet::set_lock(&ALICE, &STAKING, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::lock_exists(&XP_ALPHA, &STAKING));
+            assert_ok!(Pallet::withdraw_lock(&ALICE, &STAKING));
+            let xp = Pallet::get_xp(&XP_ALPHA).unwrap();
+            let liquid_after = xp.free;
+            let liquid_expected = liquid_before.saturating_add(DEFAULT_POINTS);
+
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+            assert_eq!(liquid_expected, liquid_after);
+        });
+    }
+
+    #[test]
+    fn withdraw_lock_fail_no_lock_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::withdraw_lock(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn withdraw_lock_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::withdraw_lock(&XP_ALPHA, &STAKING),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn slash_lock_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let lock_xp_before = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            let slash_points = 5;
+            assert_ok!(Pallet::slash_lock(&XP_ALPHA, &STAKING, slash_points));
+            let lock_xp_after = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            let lock_xp_expected = lock_xp_before.saturating_sub(slash_points);
+
+            assert_eq!(lock_xp_expected, lock_xp_after);
+        });
+    }
+
+    #[test]
+    fn slash_lock_success_burn() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::set_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS).unwrap();
+            let lock_xp_before = Pallet::get_lock_xp(&XP_ALPHA, &STAKING).unwrap();
+            assert_ok!(Pallet::lock_exists(&XP_ALPHA, &STAKING));
+            let slash_points = 20;
+            let burn_points = Pallet::slash_lock(&XP_ALPHA, &STAKING, slash_points).unwrap();
+
+            assert_eq!(lock_xp_before, burn_points);
+            assert_err!(
+                Pallet::lock_exists(&XP_ALPHA, &STAKING),
+                Error::XpLockNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn slash_lock_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(
+                Pallet::slash_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpNotFound
+            )
+        });
+    }
+
+    #[test]
+    fn slash_lock_fail_no_lock_exist() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::slash_lock(&XP_ALPHA, &STAKING, DEFAULT_POINTS),
+                Error::XpLockNotFound
+            )
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` XP REAP ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn reap_xp_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(2);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            ReservedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result.get_or_insert_with(|| {
+                    BoundedVec::<ReserveId, VariantCountOf<Reason>>::default()
+                });
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.reserve = value.reserve.saturating_add(DEFAULT_POINTS);
+            });
+            assert!(ReservedXpOf::contains_key(XP_ALPHA));
+            System::set_block_number(3);
+            // Using get_usable_xp as a helper function since its functionality has
+            // been validated in dedicated tests.
+            let usable_xp = Pallet::get_usable_xp(&XP_ALPHA).unwrap();
+            let reap_points = Pallet::reap_xp(&XP_ALPHA).unwrap();
+            assert!(!ReservedXpOf::contains_key(XP_ALPHA));
+            assert_eq!(usable_xp, reap_points);
+        });
+    }
+
+    #[test]
+    fn reap_xp_fail_lock_exists() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            LockedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result
+                    .get_or_insert_with(|| BoundedVec::<LockId, VariantCountOf<Reason>>::default());
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.lock = value.lock.saturating_add(DEFAULT_POINTS);
+            });
+            assert!(LockedXpOf::contains_key(XP_ALPHA));
+            assert_err!(Pallet::reap_xp(&XP_ALPHA), Error::XpLockExists);
+        });
+    }
+
+    #[test]
+    fn reap_xp_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            // Using xp_exists as a helper function since its functionality
+            // has been validated in dedicated tests.
+            assert_err!(Pallet::xp_exists(&XP_ALPHA), Error::XpNotFound);
+            assert_err!(Pallet::reap_xp(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn is_reaped_success() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            // Using reap_xp as a helper function since its functionality has
+            // been validated in dedicated tests.
+            Pallet::reap_xp(&XP_ALPHA).unwrap();
+            assert_ok!(Pallet::is_reaped(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn is_reaped_fail() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::is_reaped(&XP_ALPHA), Error::XpNotReaped);
+        });
+    }
+
+    #[test]
+    fn on_xp_reap_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::on_xp_reap(&XP_ALPHA);
+            System::assert_last_event(Event::XpReap { id: XP_ALPHA }.into());
+        });
+    }
+
+    // ReapSupport
+
+    #[test]
+    fn can_reap_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(4);
+            System::set_block_number(6);
+            System::set_block_number(8);
+            System::set_block_number(10);
+            Pallet::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::MinTimeStamp(10),
+            )
+            .unwrap();
+            System::set_block_number(12);
+            assert_ok!(Pallet::can_reap(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn can_reap_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::can_reap(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn can_reap_fail_already_reaped() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::reap_xp(&XP_ALPHA).unwrap();
+            assert_err!(Pallet::can_reap(&XP_ALPHA), Error::XpAlreadyReaped,);
+        });
+    }
+
+    #[test]
+    fn can_reap_fail_not_dead() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::can_reap(&XP_ALPHA), Error::XpNotDead,);
+        });
+    }
+
+    #[test]
+    fn can_reap_fail_lock_exists() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            LockedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result
+                    .get_or_insert_with(|| BoundedVec::<LockId, VariantCountOf<Reason>>::default());
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.lock = value.lock.saturating_add(DEFAULT_POINTS);
+            });
+            assert!(LockedXpOf::contains_key(XP_ALPHA));
+            System::set_block_number(6);
+            System::set_block_number(10);
+            System::set_block_number(12);
+            Pallet::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::MinTimeStamp(10),
+            )
+            .unwrap();
+            assert_err!(Pallet::can_reap(&XP_ALPHA), Error::CannotReapLockedXp,);
+        });
+    }
+
+    #[test]
+    fn try_reap_success() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            System::set_block_number(4);
+            System::set_block_number(6);
+            System::set_block_number(8);
+            System::set_block_number(10);
+            Pallet::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::MinTimeStamp(10),
+            )
+            .unwrap();
+            System::set_block_number(12);
+            assert_ok!(Pallet::try_reap(&XP_ALPHA));
+            assert_ok!(Pallet::is_reaped(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn try_reap_fail_uninitialized_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::try_reap(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn try_reap_fail_already_reaped() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::reap_xp(&XP_ALPHA).unwrap();
+            assert_err!(Pallet::try_reap(&XP_ALPHA), Error::XpAlreadyReaped,);
+        });
+    }
+
+    #[test]
+    fn try_reap_fail_not_dead() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(Pallet::try_reap(&XP_ALPHA), Error::XpNotDead,);
+        });
+    }
+
+    #[test]
+    fn try_reap_fail_lock_exists() {
+        xp_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            let idxp = ReserveId::new(STAKING, DEFAULT_POINTS);
+            LockedXpOf::mutate(XP_ALPHA, |result| {
+                let value = result
+                    .get_or_insert_with(|| BoundedVec::<LockId, VariantCountOf<Reason>>::default());
+                value.try_push(idxp).unwrap();
+            });
+            XpOf::mutate(XP_ALPHA, |result| {
+                let value = result.as_mut().unwrap();
+                value.lock = value.lock.saturating_add(DEFAULT_POINTS);
+            });
+            assert!(LockedXpOf::contains_key(XP_ALPHA));
+            System::set_block_number(6);
+            System::set_block_number(10);
+            System::set_block_number(12);
+            Pallet::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::MinTimeStamp(10),
+            )
+            .unwrap();
+            assert_err!(Pallet::try_reap(&XP_ALPHA), Error::CannotReapLockedXp,);
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` BEGIN XP ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn begin_xp_success_new_xp() {
+        xp_test_ext().execute_with(|| {
+            assert_err!(Pallet::xp_exists(&XP_ALPHA), Error::XpNotFound);
+            Pallet::begin_xp(&ALICE, &XP_ALPHA, DEFAULT_POINTS).unwrap();
+            assert_ok!(Pallet::xp_exists(&XP_ALPHA));
+        });
+    }
+
+    #[test]
+    fn begin_xp_success_earn_xp() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_ok!(Pallet::begin_xp(&ALICE, &XP_ALPHA, DEFAULT_POINTS));
+        });
+    }
+
+    #[test]
+    fn begin_xp_fail_reaped() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::reap_xp(&XP_ALPHA).unwrap();
+            assert_err!(Pallet::xp_exists(&XP_ALPHA), Error::XpNotFound);
+            assert_err!(
+                Pallet::begin_xp(&ALICE, &XP_ALPHA, DEFAULT_POINTS),
+                Error::XpAlreadyReaped
+            );
+            assert_err!(Pallet::xp_exists(&XP_ALPHA), Error::XpNotFound);
+        });
+    }
+
+    #[test]
+    fn begin_xp_fail_already_reaped() {
+        xp_test_ext().execute_with(|| {
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            Pallet::reap_xp(&XP_ALPHA).unwrap();
+            assert_err!(Pallet::xp_exists(&XP_ALPHA), Error::XpNotFound);
+            Pallet::new_xp(&ALICE, &XP_ALPHA);
+            assert_err!(
+                Pallet::begin_xp(&ALICE, &XP_ALPHA, DEFAULT_POINTS),
+                Error::XpAlreadyReaped
+            );
+        });
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````` DISCRETE ACCUMULATOR ````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn increment_basic_success() {
+        xp_test_ext().execute_with(|| {
+            let mut accum = Accumulator::default();
+            let stepper = Stepper::new(1000u32, 250u32).unwrap(); // 0.25 fraction
+            Pallet::increment(&mut accum, &stepper);
+            assert_eq!(accum.value, 0);
+            assert_eq!(accum.step, 250);
+            Pallet::increment(&mut accum, &stepper);
+            assert_eq!(accum.value, 0);
+            assert_eq!(accum.step, 500);
+            Pallet::increment(&mut accum, &stepper);
+            assert_eq!(accum.value, 0);
+            assert_eq!(accum.step, 750);
+            Pallet::increment(&mut accum, &stepper);
+            assert_eq!(accum.value, 1);
+            assert_eq!(accum.step, 0);
+        });
+    }
+
+    #[test]
+    fn increment_overflow_success() {
+        xp_test_ext().execute_with(|| {
+            let mut accum = Accumulator::default();
+            let stepper = Stepper::new(1000u32, 350u32).unwrap();
+            Pallet::increment(&mut accum, &stepper);
+            assert_eq!(accum.value, 0);
+            assert_eq!(accum.step, 350);
+            Pallet::increment(&mut accum, &stepper);
+            assert_eq!(accum.value, 0);
+            assert_eq!(accum.step, 700);
+
+            Pallet::increment(&mut accum, &stepper);
+            assert_eq!(accum.value, 1);
+            assert_eq!(accum.step, 50);
+        });
+    }
+
+    #[test]
+    fn decrement_basic_success() {
+        xp_test_ext().execute_with(|| {
+            let mut accum = Accumulator {
+                value: 2,
+                step: 300,
+            };
+            let stepper = Stepper::new(1000u32, 200u32).unwrap();
+            Pallet::decrement(&mut accum, &stepper);
+            assert_eq!(accum.value, 2);
+            assert_eq!(accum.step, 100);
+        });
+    }
+
+    #[test]
+    fn decrement_underflow_success() {
+        xp_test_ext().execute_with(|| {
+            let mut accum = Accumulator { value: 2, step: 0 };
+            let stepper = Stepper::new(1000u32, 200u32).unwrap(); // 0.2 fraction
+            Pallet::decrement(&mut accum, &stepper);
+            assert_eq!(accum.value, 1);
+            assert_eq!(accum.step, 800);
+        });
+    }
+
+    #[test]
+    fn new_frac_fail() {
+        xp_test_ext().execute_with(|| {
+            assert!(Stepper::new(100u32, 150u32).is_none());
+        });
+    }
+}
