@@ -1765,3 +1765,1325 @@ impl<T: Config<I>, I: 'static> Debug for DigestVariant<T, I> {
         }
     }
 }
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::{
+        balance::{balance_total, mint},
+        mock::*,
+    };
+
+    // --- FRAME Suite ---
+    use frame_suite::{
+        commitment::*,
+        misc::{Directive, PositionIndex},
+    };
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_ok,
+        traits::tokens::{Fortitude, Precision},
+    };
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` DIGEST INFO ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn digest_info_balances() {
+        commit_test_ext().execute_with(|| {
+            set_default_user_balance_and_standard_hold(ALICE).unwrap();
+            set_default_user_balance_and_standard_hold(ALAN).unwrap();
+            set_default_user_balance_and_standard_hold(BOB).unwrap();
+
+            let alice_position = Position::default();
+            Pallet::place_commit(
+                &ALICE,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let alan_position = Position::position_of(1).unwrap();
+            Pallet::place_commit_of_variant(
+                &ALAN,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                LARGE_COMMIT,
+                &alan_position,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let bob_position = Position::position_of(2).unwrap();
+            Pallet::place_commit_of_variant(
+                &BOB,
+                &GOVERNANCE,
+                &PROPOSAL_TREASURY_SPEND,
+                LARGE_COMMIT,
+                &bob_position,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let digest_info = DigestMap::get((ESCROW, CONTRACT_FREELANCE)).unwrap();
+            let balances = digest_info.balances().unwrap();
+            // ALICE balances at index 0 (Position, LazyBalanceOf)
+            let alice_balances = balances.get(0).unwrap();
+            assert_eq!(alice_balances.0, alice_position);
+            let alice_bal = digest_info.get_balance(&alice_position).unwrap();
+            assert_eq!(alice_balances.1, *alice_bal);
+            // ALAN balances at index 1 (Position, LazyBalanceOf)
+            let alan_balances = balances.get(1).unwrap();
+            assert_eq!(alan_balances.0, alan_position);
+            let alan_bal = digest_info.get_balance(&alan_position).unwrap();
+            assert_eq!(alan_balances.1, *alan_bal);
+
+            // BOB's digest info
+            let digest_info = DigestMap::get((GOVERNANCE, PROPOSAL_TREASURY_SPEND)).unwrap();
+            let balances = digest_info.balances().unwrap();
+            // BOB's balances at index 0 (Position, LazyBalanceOf)
+            let bob_balances = balances.get(0).unwrap();
+            assert_eq!(bob_balances.0, bob_position);
+            let bob_bal = digest_info.get_balance(&bob_position).unwrap();
+            assert_eq!(bob_balances.1, *bob_bal);
+        })
+    }
+
+    #[test]
+    fn digest_info_get_balance() {
+        commit_test_ext().execute_with(|| {
+            set_default_user_balance_and_standard_hold(ALICE).unwrap();
+
+            let alice_position = Position::default();
+            Pallet::place_commit(
+                &ALICE,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let digest_info = DigestMap::get((ESCROW, CONTRACT_FREELANCE)).unwrap();
+            let alice_balance = digest_info.get_balance(&alice_position).unwrap();
+
+            let alice_bal_total =
+                balance_total(alice_balance, &alice_position, &CONTRACT_FREELANCE).unwrap();
+            assert_eq!(alice_bal_total, STANDARD_COMMIT);
+        })
+    }
+
+    #[test]
+    fn digest_info_mut_balance() {
+        commit_test_ext().execute_with(|| {
+            set_default_user_balance_and_standard_hold(ALICE).unwrap();
+
+            let alice_position = Position::default();
+            Pallet::place_commit(
+                &ALICE,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let mut digest_info = DigestMap::get((ESCROW, CONTRACT_FREELANCE)).unwrap();
+            let alice_mut_balance = digest_info.mut_balance(&alice_position).unwrap();
+
+            let mint_val = 125;
+            mint(
+                alice_mut_balance,
+                &alice_position,
+                &CONTRACT_FREELANCE,
+                &mint_val,
+                &Directive::new(Precision::Exact, Fortitude::Force),
+            )
+            .unwrap();
+            let alice_bal_total =
+                balance_total(alice_mut_balance, &alice_position, &CONTRACT_FREELANCE).unwrap();
+            assert_ne!(alice_bal_total, STANDARD_COMMIT);
+
+            assert_eq!(alice_bal_total, STANDARD_COMMIT + mint_val);
+        })
+    }
+
+    #[test]
+    fn digest_info_reveal() {
+        commit_test_ext().execute_with(|| {
+            set_default_user_balance_and_standard_hold(ALICE).unwrap();
+            set_default_user_balance_and_standard_hold(ALAN).unwrap();
+            set_default_user_balance_and_standard_hold(BOB).unwrap();
+
+            let alice_position = Position::default();
+            Pallet::place_commit(
+                &ALICE,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let alan_position = Position::position_of(1).unwrap();
+            Pallet::place_commit_of_variant(
+                &ALAN,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                LARGE_COMMIT,
+                &alan_position,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let bob_position = Position::position_of(2).unwrap();
+            Pallet::place_commit_of_variant(
+                &BOB,
+                &GOVERNANCE,
+                &PROPOSAL_TREASURY_SPEND,
+                LARGE_COMMIT,
+                &bob_position,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let digest_info = DigestMap::get((ESCROW, CONTRACT_FREELANCE)).unwrap();
+            let reveal_balances = digest_info.reveal();
+
+            assert_eq!(reveal_balances.len(), 2);
+
+            let alice_total_bal =
+                balance_total(&reveal_balances[0], &alice_position, &CONTRACT_FREELANCE).unwrap();
+            assert_eq!(alice_total_bal, STANDARD_COMMIT,);
+
+            let alan_total_bal =
+                balance_total(&reveal_balances[1], &alan_position, &CONTRACT_FREELANCE).unwrap();
+            assert_eq!(alan_total_bal, LARGE_COMMIT,);
+
+            let digest_info = DigestMap::get((GOVERNANCE, PROPOSAL_TREASURY_SPEND)).unwrap();
+            let reveal_balances = digest_info.reveal();
+
+            assert_eq!(reveal_balances.len(), 3);
+            assert_eq!(
+                balance_total(&reveal_balances[0], &bob_position, &PROPOSAL_TREASURY_SPEND),
+                Ok(0)
+            );
+            assert_eq!(
+                balance_total(&reveal_balances[1], &bob_position, &PROPOSAL_TREASURY_SPEND),
+                Ok(0)
+            );
+
+            let bob_total_bal =
+                balance_total(&reveal_balances[2], &bob_position, &PROPOSAL_TREASURY_SPEND)
+                    .unwrap();
+            assert_eq!(bob_total_bal, LARGE_COMMIT,);
+        })
+    }
+
+    #[test]
+    fn digest_info_init_balance() {
+        commit_test_ext().execute_with(|| {
+            let mut digest_info = DigestInfo::default();
+
+            let pos0 = Position::position_of(0).unwrap();
+            let pos1 = Position::position_of(1).unwrap();
+            let pos2 = Position::position_of(2).unwrap();
+
+            // before init -> nothing exists
+            assert!(digest_info.get_balance(&pos0).is_none());
+            assert!(digest_info.get_balance(&pos1).is_none());
+            assert!(digest_info.get_balance(&pos2).is_none());
+
+            assert_ok!(digest_info.init_balance(&pos1));
+
+            // after init -> all slots up to index must exist
+            assert!(digest_info.get_balance(&pos0).is_some());
+            assert!(digest_info.get_balance(&pos1).is_some());
+            assert!(digest_info.get_balance(&pos2).is_none());
+
+            assert_eq!(digest_info.reveal().len(), 2);
+
+            assert_ok!(digest_info.init_balance(&pos2));
+            assert!(digest_info.get_balance(&pos2).is_some());
+
+            assert_eq!(digest_info.reveal().len(), 3);
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` COMMITS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn commits_new_success() {
+        commit_test_ext().execute_with(|| {
+            let commit_ins = CommitInstance::default();
+
+            let commits = Commits::new(commit_ins.clone()).unwrap();
+            assert_eq!(commits.0.len(), 1);
+
+            let init_commit = commits.0.get(0).unwrap();
+            assert_eq!(init_commit.clone(), commit_ins);
+        })
+    }
+
+    #[test]
+    fn commits_success() {
+        commit_test_ext().execute_with(|| {
+            let derive_bal_a = CommitInstance::default();
+            let mut commits = Commits::new(derive_bal_a.clone()).unwrap();
+
+            let commits_vec = commits.commits();
+            assert_eq!(commits_vec, vec![derive_bal_a.clone()]);
+
+            let derive_bal_b = CommitInstance::default();
+            let derive_bal_c = CommitInstance::default();
+            commits.add_commit(derive_bal_b.clone()).unwrap();
+            commits.add_commit(derive_bal_c.clone()).unwrap();
+
+            let commits_vec = commits.commits();
+            assert_eq!(commits_vec, vec![derive_bal_a, derive_bal_b, derive_bal_c]);
+        })
+    }
+
+    #[test]
+    fn add_commit_success() {
+        commit_test_ext().execute_with(|| {
+            let derive_bal_a = CommitInstance::default();
+            let mut commits = Commits::new(derive_bal_a.clone()).unwrap();
+
+            let commits_vec = commits.commits();
+            assert_eq!(commits_vec, vec![derive_bal_a.clone()]);
+
+            let derive_bal_b = CommitInstance::default();
+            let derive_bal_c = CommitInstance::default();
+            commits.add_commit(derive_bal_b.clone()).unwrap();
+            commits.add_commit(derive_bal_c.clone()).unwrap();
+
+            let commits_vec = commits.commits();
+            assert_eq!(commits_vec, vec![derive_bal_a, derive_bal_b, derive_bal_c]);
+
+            let derive_bal_d = CommitInstance::default();
+            assert_err!(commits.add_commit(derive_bal_d), Error::MaxCommitsReached);
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` COMMIT INFO ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn commit_info_new_success() {
+        commit_test_ext().execute_with(|| {
+            let instance = CommitInstance::default();
+            let variant = Position::position_of(0).unwrap();
+            let commit_info = CommitInfo::new(VALIDATOR_ALPHA, instance.clone(), variant).unwrap();
+
+            assert_eq!(commit_info.commits().len(), 1);
+            assert_eq!(commit_info.commits(), vec![instance]);
+            assert_eq!(commit_info.digest(), VALIDATOR_ALPHA);
+            assert_eq!(commit_info.variant(), variant);
+        })
+    }
+
+    #[test]
+    fn commit_info_add_commit_success() {
+        commit_test_ext().execute_with(|| {
+            let instance_a = CommitInstance::default();
+            let variant = Position::position_of(0).unwrap();
+            let mut commit_info =
+                CommitInfo::new(VALIDATOR_ALPHA, instance_a.clone(), variant).unwrap();
+
+            assert_eq!(commit_info.commits().len(), 1);
+            assert_eq!(commit_info.commits(), vec![instance_a.clone()]);
+
+            let instance_b = CommitInstance::default();
+            let instance_c = CommitInstance::default();
+            commit_info.add_commit(instance_b.clone()).unwrap();
+            commit_info.add_commit(instance_c.clone()).unwrap();
+
+            assert_eq!(commit_info.commits().len(), 3);
+            assert_eq!(
+                commit_info.commits(),
+                vec![instance_a, instance_b, instance_c]
+            );
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` ENTRY INFO ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn entry_info_eq_true() {
+        commit_test_ext().execute_with(|| {
+            let variant = Position::position_of(0).unwrap();
+            let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+            let entry_info_b = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+            assert!(entry_info_a.eq(&entry_info_b));
+        })
+    }
+
+    #[test]
+    fn entry_info_eq_false() {
+        commit_test_ext().execute_with(|| {
+            let variant = Position::position_of(0).unwrap();
+            let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+            let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 100, variant).unwrap();
+
+            assert!(!entry_info_a.eq(&entry_info_b));
+        })
+    }
+
+    #[test]
+    fn entry_info_new_success() {
+        commit_test_ext().execute_with(|| {
+            let variant = Position::position_of(0).unwrap();
+            let entry_info = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+            assert_eq!(entry_info.digest(), VALIDATOR_ALPHA);
+            assert_eq!(entry_info.shares, 100);
+            assert_eq!(entry_info.variant(), variant);
+        })
+    }
+
+    #[test]
+    fn entry_info_new_err_share_cannot_be_zero() {
+        let variant = Position::position_of(0).unwrap();
+        assert_err!(
+            EntryInfo::new(VALIDATOR_ALPHA, 0, variant),
+            Error::ShareCannotBeZero
+        );
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` ENTRIES ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn entries_eq_true() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let entries_a = Entries::new(vec![entry_info_a]).unwrap();
+        let entries_b = Entries::new(vec![entry_info_b]).unwrap();
+
+        assert!(entries_a.eq(&entries_b));
+    }
+
+    #[test]
+    fn entries_eq_false() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let entries_a = Entries::new(vec![entry_info_a]).unwrap();
+        let entries_b = Entries::new(vec![entry_info_b]).unwrap();
+
+        assert!(!entries_a.eq(&entries_b));
+    }
+
+    #[test]
+    fn entries_new_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+
+        assert_eq!(entries.0.get(0), Some(&entry_info_a));
+        assert_eq!(entries.0.get(1), Some(&entry_info_b));
+        assert_eq!(entries.0.get(2), Some(&entry_info_c));
+        assert_eq!(entries.0.get(3), None);
+    }
+
+    #[test]
+    fn entries_new_err_duplicate_entry() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let _entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_b.clone(),
+        ]);
+
+        assert!(entries.is_err());
+        assert_err!(entries, Error::DuplicateEntry);
+    }
+
+    #[test]
+    fn entries_new_err_max_entries_reached() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+        let entry_info_d = EntryInfo::new(VALIDATOR_DELTA, 125, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+            entry_info_d.clone(),
+        ]);
+
+        assert!(entries.is_err());
+        assert_err!(entries, Error::MaxEntriesReached);
+    }
+
+    #[test]
+    fn entries_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+
+        let actual_entries = entries.entries();
+        let expected_entries = vec![entry_info_a, entry_info_b, entry_info_c];
+        assert_eq!(actual_entries, expected_entries);
+    }
+
+    #[test]
+    fn add_entry_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone()]).unwrap();
+
+        let actual_entries = entries.entries();
+        let expected_entries = vec![entry_info_a.clone()];
+        assert_eq!(actual_entries, expected_entries);
+
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        entries.add_entry(entry_info_b.clone()).unwrap();
+
+        let actual_entries = entries.entries();
+        let expected_entries = vec![entry_info_a.clone(), entry_info_b.clone()];
+        assert_eq!(actual_entries, expected_entries);
+
+        entries.add_entry(entry_info_c.clone()).unwrap();
+
+        let actual_entries = entries.entries();
+        let expected_entries = vec![entry_info_a, entry_info_b, entry_info_c];
+        assert_eq!(actual_entries, expected_entries);
+    }
+
+    #[test]
+    fn add_entry_err_duplicate_entry() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone()]).unwrap();
+
+        assert_err!(entries.add_entry(entry_info_a), Error::DuplicateEntry);
+    }
+
+    #[test]
+    fn add_entry_err_max_entries_reached() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let mut entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+
+        let entry_info_d = EntryInfo::new(VALIDATOR_DELTA, 125, variant).unwrap();
+
+        assert_err!(entries.add_entry(entry_info_d), Error::MaxEntriesReached);
+    }
+
+    #[test]
+    fn remove_entry_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let mut entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+
+        let actual_entries = entries.entries();
+        let expected_entries = vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ];
+        assert_eq!(actual_entries, expected_entries);
+
+        entries.remove_entry(&VALIDATOR_ALPHA).unwrap();
+
+        let actual_entries = entries.entries();
+        let expected_entries = vec![entry_info_b.clone(), entry_info_c.clone()];
+        assert_eq!(actual_entries, expected_entries);
+
+        entries.remove_entry(&VALIDATOR_GAMMA).unwrap();
+
+        let actual_entries = entries.entries();
+        let expected_entries = vec![entry_info_b.clone()];
+        assert_eq!(actual_entries, expected_entries);
+    }
+
+    #[test]
+    fn remove_entry_err_entry_of_index_not_found() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        assert_err!(
+            entries.remove_entry(&VALIDATOR_GAMMA),
+            Error::EntryOfIndexNotFound
+        );
+    }
+
+    #[test]
+    fn remove_entry_err_empty_entries_not_allowed() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone()]).unwrap();
+
+        assert_err!(
+            entries.remove_entry(&VALIDATOR_ALPHA),
+            Error::EmptyEntriesNotAllowed
+        );
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` INDEX INFO `````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn index_info_eq_true() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let mut entries_a = Entries::new(vec![entry_info_a]).unwrap();
+        let mut entries_b = Entries::new(vec![entry_info_b]).unwrap();
+
+        let index_info_a = IndexInfo::new(&mut entries_a).unwrap();
+        let index_info_b = IndexInfo::new(&mut entries_b).unwrap();
+
+        assert!(index_info_a.eq(&index_info_b));
+    }
+
+    #[test]
+    fn index_info_eq_false() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let mut entries_a = Entries::new(vec![entry_info_a]).unwrap();
+        let mut entries_b = Entries::new(vec![entry_info_b]).unwrap();
+
+        let index_info_a = IndexInfo::new(&mut entries_a).unwrap();
+        let index_info_b = IndexInfo::new(&mut entries_b).unwrap();
+
+        assert!(!index_info_a.eq(&index_info_b));
+    }
+
+    #[test]
+    fn index_info_new_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+        let index_info = IndexInfo::new(&mut entries).unwrap();
+
+        assert_eq!(index_info.capital(), 150);
+        assert_eq!(index_info.principal(), 0);
+        assert_eq!(index_info.entries(), vec![entry_info_a, entry_info_b]);
+    }
+
+    #[test]
+    fn index_info_new_err_capital_overflowed() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, MAX_SHARES, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+        let index_info = IndexInfo::new(&mut entries);
+        assert!(index_info.is_err());
+        assert_err!(index_info, Error::CapitalOverflowed);
+    }
+
+    #[test]
+    fn index_info_reveal_entries() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+        let index_info = IndexInfo::new(&mut entries).unwrap();
+
+        let reveal_entries = index_info.reveal_entries();
+        assert_eq!(reveal_entries, entries);
+    }
+
+    #[test]
+    fn entry_exists_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+        let index_info = IndexInfo::new(&mut entries).unwrap();
+
+        assert_ok!(index_info.entry_exists(&VALIDATOR_ALPHA));
+        assert_ok!(index_info.entry_exists(&VALIDATOR_BETA));
+    }
+
+    #[test]
+    fn entry_exists_err_entry_index_not_found() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let mut entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+        let index_info = IndexInfo::new(&mut entries).unwrap();
+
+        assert_err!(
+            index_info.entry_exists(&VALIDATOR_GAMMA),
+            Error::EntryOfIndexNotFound
+        );
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // `````````````````````````````````` SLOT INFO ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn slot_info_eq_true() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+
+        assert!(slot_info_a.eq(&slot_info_b));
+    }
+
+    #[test]
+    fn slot_info_eq_false() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+
+        assert!(!slot_info_a.eq(&slot_info_b));
+    }
+
+    #[test]
+    fn slot_info_from_entry_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let slot_info: SlotInfo = entry.clone().into();
+
+        assert_eq!(slot_info.digest(), VALIDATOR_ALPHA);
+        assert_eq!(slot_info.shares(), 100);
+        assert_eq!(slot_info.variant(), variant);
+
+        let default_commit = CommitInstance::default();
+        assert_eq!(slot_info.commit(), default_commit);
+    }
+
+    #[test]
+    fn slot_info_set_slot_commit() {
+        commit_test_ext().execute_with(|| {
+            set_default_user_balance_and_standard_hold(ALICE).unwrap();
+            let variant = Position::position_of(0).unwrap();
+            let entry = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+            let mut slot_info: SlotInfo = entry.clone().into();
+
+            let default_commit = CommitInstance::default();
+            assert_eq!(slot_info.commit(), default_commit);
+
+            let alice_position = Position::position_of(1).unwrap();
+            Pallet::place_commit_of_variant(
+                &ALICE,
+                &GOVERNANCE,
+                &PROPOSAL_TREASURY_SPEND,
+                LARGE_COMMIT,
+                &alice_position,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let commit_info = CommitMap::get((ALICE, GOVERNANCE)).unwrap();
+            let new_instance = commit_info.commits.0.get(0).unwrap();
+
+            slot_info.set_slot_commit(new_instance.clone());
+            assert_ne!(slot_info.commit(), default_commit);
+            assert_eq!(slot_info.commit(), new_instance.clone());
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` SLOTS ````````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn slots_eq_true() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let entries_a = Entries::new(vec![entry_info_a]).unwrap();
+        let entries_b = Entries::new(vec![entry_info_b]).unwrap();
+
+        let slots_a = Slots::try_from(entries_a).unwrap();
+        let slots_b = Slots::try_from(entries_b).unwrap();
+
+        assert!(slots_a.eq(&slots_b));
+    }
+
+    #[test]
+    fn slots_eq_false() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let entries_a = Entries::new(vec![entry_info_a]).unwrap();
+        let entries_b = Entries::new(vec![entry_info_b]).unwrap();
+
+        let slots_a = Slots::try_from(entries_a).unwrap();
+        let slots_b = Slots::try_from(entries_b).unwrap();
+
+        assert!(!slots_a.eq(&slots_b));
+    }
+
+    #[test]
+    fn slots_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+
+        let slots = Slots::try_from(entries).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+        let slot_info_c: SlotInfo = entry_info_c.into();
+
+        let actual_slots = slots.slots();
+        let expected_slots = vec![slot_info_a, slot_info_b, slot_info_c];
+        assert_eq!(actual_slots, expected_slots);
+    }
+
+    #[test]
+    fn add_slot_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let mut slots = Slots::try_from(entries).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+
+        let actual_slots = slots.slots();
+        let expected_slots = vec![slot_info_a.clone(), slot_info_b.clone()];
+        assert_eq!(actual_slots, expected_slots);
+
+        slots.add_slot(entry_info_c.clone()).unwrap();
+
+        let slot_info_c: SlotInfo = entry_info_c.into();
+
+        let actual_slots = slots.slots();
+        let expected_slots = vec![slot_info_a, slot_info_b, slot_info_c];
+        assert_eq!(actual_slots, expected_slots);
+    }
+
+    #[test]
+    fn add_slot_err_max_slots_reached() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+        let entry_info_d = EntryInfo::new(VALIDATOR_DELTA, 125, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let mut slots = Slots::try_from(entries).unwrap();
+
+        slots.add_slot(entry_info_c.clone()).unwrap();
+
+        assert_err!(slots.add_slot(entry_info_d), Error::MaxSlotsReached);
+    }
+
+    #[test]
+    fn add_slot_err_duplicate_slot() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let _entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let mut slots = Slots::try_from(entries).unwrap();
+
+        assert_err!(slots.add_slot(entry_info_b), Error::DuplicateSlot);
+    }
+
+    #[test]
+    fn remove_slot_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+        let mut slots = Slots::try_from(entries).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+        let slot_info_c: SlotInfo = entry_info_c.into();
+
+        let actual_slots = slots.slots();
+        let expected_slots = vec![
+            slot_info_a.clone(),
+            slot_info_b.clone(),
+            slot_info_c.clone(),
+        ];
+        assert_eq!(actual_slots, expected_slots);
+
+        slots.remove_slot(&VALIDATOR_ALPHA).unwrap();
+
+        let actual_slots = slots.slots();
+        let expected_slots = vec![slot_info_b.clone(), slot_info_c.clone()];
+        assert_eq!(actual_slots, expected_slots);
+
+        slots.remove_slot(&VALIDATOR_GAMMA).unwrap();
+
+        let actual_slots = slots.slots();
+        let expected_slots = vec![slot_info_b.clone()];
+        assert_eq!(actual_slots, expected_slots);
+    }
+
+    #[test]
+    fn remove_slot_err_slot_of_pool_not_found() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let mut slots = Slots::try_from(entries).unwrap();
+
+        assert_err!(
+            slots.remove_slot(&VALIDATOR_GAMMA),
+            Error::SlotOfPoolNotFound
+        );
+    }
+
+    #[test]
+    fn remove_slot_err_empty_slots_not_allowed() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone()]).unwrap();
+
+        let mut slots = Slots::try_from(entries).unwrap();
+
+        assert_err!(
+            slots.remove_slot(&VALIDATOR_ALPHA),
+            Error::EmptySlotsNotAllowed
+        );
+    }
+
+    #[test]
+    fn set_slot_commit_success() {
+        commit_test_ext().execute_with(|| {
+            set_default_user_balance_and_standard_hold(ALICE).unwrap();
+            let alice_position = Position::position_of(1).unwrap();
+            Pallet::place_commit_of_variant(
+                &ALICE,
+                &GOVERNANCE,
+                &PROPOSAL_TREASURY_SPEND,
+                LARGE_COMMIT,
+                &alice_position,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let commit_info = CommitMap::get((ALICE, GOVERNANCE)).unwrap();
+            let new_instance = commit_info.commits.0.get(0).unwrap();
+
+            let variant = Position::position_of(0).unwrap();
+
+            let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+            let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+            let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 75, variant).unwrap();
+
+            let entries = Entries::new(vec![
+                entry_info_a.clone(),
+                entry_info_b.clone(),
+                entry_info_c.clone(),
+            ])
+            .unwrap();
+
+            let mut slots = Slots::try_from(entries).unwrap();
+            let slot_info_a: SlotInfo = entry_info_a.into();
+            let slot_info_b: SlotInfo = entry_info_b.into();
+            let slot_info_c: SlotInfo = entry_info_c.into();
+
+            let actual_slots = slots.slots();
+            let expected_slots = vec![
+                slot_info_a.clone(),
+                slot_info_b.clone(),
+                slot_info_c.clone(),
+            ];
+            assert_eq!(actual_slots, expected_slots);
+
+            slots
+                .set_slot_commit(&VALIDATOR_BETA, new_instance.clone())
+                .unwrap();
+
+            let actual_slots = slots.slots();
+            let new_slot_b = &actual_slots[1];
+            assert_ne!(new_slot_b.clone(), slot_info_b.clone());
+            let expected_slots = vec![slot_info_a.clone(), new_slot_b.clone(), slot_info_c.clone()];
+            assert_eq!(actual_slots, expected_slots);
+        })
+    }
+
+    #[test]
+    fn set_slot_commit_err_slot_of_pool_not_found() {
+        commit_test_ext().execute_with(|| {
+            set_default_user_balance_and_standard_hold(ALICE).unwrap();
+            let alice_position = Position::position_of(1).unwrap();
+            Pallet::place_commit_of_variant(
+                &ALICE,
+                &GOVERNANCE,
+                &PROPOSAL_TREASURY_SPEND,
+                LARGE_COMMIT,
+                &alice_position,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+
+            let commit_info = CommitMap::get((ALICE, GOVERNANCE)).unwrap();
+            let new_instance = commit_info.commits.0.get(0).unwrap();
+
+            let variant = Position::position_of(0).unwrap();
+
+            let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+            let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+            let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+            let mut slots = Slots::try_from(entries).unwrap();
+            let slot_info_a: SlotInfo = entry_info_a.into();
+            let slot_info_b: SlotInfo = entry_info_b.into();
+
+            let actual_slots = slots.slots();
+            let expected_slots = vec![slot_info_a.clone(), slot_info_b.clone()];
+            assert_eq!(actual_slots, expected_slots);
+
+            let result = slots.set_slot_commit(&VALIDATOR_GAMMA, new_instance.clone());
+            assert_err!(result, Error::SlotOfPoolNotFound);
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` POOL INFO ````````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn pool_info_eq_true() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entries = Entries::new(vec![entry_info]).unwrap();
+
+        let pool_info_a = PoolInfo::new(entries.clone(), COMMISSION_ZERO).unwrap();
+        let pool_info_b = PoolInfo::new(entries, COMMISSION_ZERO).unwrap();
+
+        assert!(pool_info_a.eq(&pool_info_b));
+    }
+
+    #[test]
+    fn pool_info_eq_false() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entries = Entries::new(vec![entry_info]).unwrap();
+
+        let pool_info_a = PoolInfo::new(entries.clone(), COMMISSION_ZERO).unwrap();
+        let pool_info_b = PoolInfo::new(entries, COMMISSION_STANDARD).unwrap();
+
+        assert!(!pool_info_a.eq(&pool_info_b));
+    }
+
+    #[test]
+    fn pool_info_new_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let pool = PoolInfo::new(entries, COMMISSION_STANDARD).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+
+        assert_eq!(pool.balance_of, LazyBalance::default());
+        assert_eq!(pool.capital(), 150);
+        assert_eq!(pool.commission, COMMISSION_STANDARD);
+        assert_eq!(pool.slots().len(), 2);
+        assert_eq!(pool.slots(), vec![slot_info_a, slot_info_b]);
+    }
+
+    #[test]
+    fn pool_info_new_err_capital_overflowed() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, MAX_SHARES, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let pool = PoolInfo::new(entries, COMMISSION_STANDARD);
+        assert!(pool.is_err());
+        assert_err!(pool, Error::CapitalOverflowed);
+    }
+
+    #[test]
+    fn pool_info_slots_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 50, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 150, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+
+        let pool = PoolInfo::new(entries, COMMISSION_STANDARD).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+        let slot_info_c: SlotInfo = entry_info_c.into();
+
+        let actual_slots = pool.slots();
+        let expected_slots = vec![slot_info_a, slot_info_b, slot_info_c];
+        assert_eq!(actual_slots, expected_slots);
+    }
+
+    #[test]
+    fn pool_info_balance_reset_success() {
+        let variant = Position::position_of(0).unwrap();
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 200, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a, entry_info_b]).unwrap();
+        let mut pool = PoolInfo::new(entries, COMMISSION_ZERO).unwrap();
+
+        pool.balance_reset();
+
+        assert_eq!(pool.balance_of, Default::default());
+
+        for slot in pool.slots() {
+            assert_eq!(slot.commit(), Default::default());
+        }
+    }
+
+    #[test]
+    fn pool_info_add_slot_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 100, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let mut pool = PoolInfo::new(entries, COMMISSION_ZERO).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+
+        assert_eq!(pool.capital(), 200);
+        assert_eq!(pool.slots().len(), 2);
+
+        let actual_slots = pool.slots();
+        let expected_slots = vec![slot_info_a.clone(), slot_info_b.clone()];
+        assert_eq!(actual_slots, expected_slots);
+
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 50, variant).unwrap();
+        assert_ok!(pool.add_slot(entry_info_c.clone()));
+        let slot_info_c: SlotInfo = entry_info_c.into();
+
+        assert_eq!(pool.capital(), 250);
+        assert_eq!(pool.slots().len(), 3);
+        let actual_slots = pool.slots();
+        let expected_slots = vec![slot_info_a.clone(), slot_info_b.clone(), slot_info_c];
+        assert_eq!(actual_slots, expected_slots);
+    }
+
+    #[test]
+    fn pool_info_add_slot_err_capital_overflowed() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 100, variant).unwrap();
+
+        let entries = Entries::new(vec![entry_info_a.clone(), entry_info_b.clone()]).unwrap();
+
+        let mut pool = PoolInfo::new(entries, COMMISSION_ZERO).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+
+        assert_eq!(pool.capital(), 200);
+        assert_eq!(pool.slots().len(), 2);
+
+        let actual_slots = pool.slots();
+        let expected_slots = vec![slot_info_a.clone(), slot_info_b.clone()];
+        assert_eq!(actual_slots, expected_slots);
+
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, MAX_SHARES, variant).unwrap();
+        assert_err!(pool.add_slot(entry_info_c), Error::CapitalOverflowed);
+    }
+
+    #[test]
+    fn pool_info_remove_slot_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info_a = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entry_info_b = EntryInfo::new(VALIDATOR_BETA, 100, variant).unwrap();
+        let entry_info_c = EntryInfo::new(VALIDATOR_GAMMA, 50, variant).unwrap();
+
+        let entries = Entries::new(vec![
+            entry_info_a.clone(),
+            entry_info_b.clone(),
+            entry_info_c.clone(),
+        ])
+        .unwrap();
+
+        let mut pool = PoolInfo::new(entries, COMMISSION_ZERO).unwrap();
+        let slot_info_a: SlotInfo = entry_info_a.into();
+        let slot_info_b: SlotInfo = entry_info_b.into();
+        let slot_info_c: SlotInfo = entry_info_c.into();
+
+        assert_eq!(pool.capital(), 250);
+        assert_eq!(pool.slots().len(), 3);
+
+        let actual_slots = pool.slots();
+        let expected_slots = vec![
+            slot_info_a.clone(),
+            slot_info_b.clone(),
+            slot_info_c.clone(),
+        ];
+        assert_eq!(actual_slots, expected_slots);
+
+        pool.remove_slot(&VALIDATOR_ALPHA).unwrap();
+        let actual_slots = pool.slots();
+        let expected_slots = vec![slot_info_b.clone(), slot_info_c.clone()];
+        assert_eq!(actual_slots, expected_slots);
+
+        assert_eq!(pool.capital(), 150);
+        assert_eq!(pool.slots().len(), 2);
+
+        pool.remove_slot(&VALIDATOR_GAMMA).unwrap();
+        let actual_slots = pool.slots();
+        let expected_slots = vec![slot_info_b.clone()];
+        assert_eq!(actual_slots, expected_slots);
+
+        assert_eq!(pool.capital(), 100);
+        assert_eq!(pool.slots().len(), 1);
+    }
+
+    #[test]
+    fn pool_info_slot_exists_success() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entries = Entries::new(vec![entry_info]).unwrap();
+
+        let pool = PoolInfo::new(entries, COMMISSION_ZERO).unwrap();
+
+        assert_ok!(pool.slot_exists(&VALIDATOR_ALPHA));
+    }
+
+    #[test]
+    fn pool_info_slot_exists_err_not_found() {
+        let variant = Position::position_of(0).unwrap();
+
+        let entry_info = EntryInfo::new(VALIDATOR_ALPHA, 100, variant).unwrap();
+        let entries = Entries::new(vec![entry_info]).unwrap();
+
+        let pool = PoolInfo::new(entries, COMMISSION_ZERO).unwrap();
+
+        assert_err!(pool.slot_exists(&VALIDATOR_BETA), Error::SlotOfPoolNotFound);
+    }
+}

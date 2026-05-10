@@ -2692,3 +2692,4608 @@ impl<T: Config<I>, I: 'static> IndexOps<Proprietor<T>, Pallet<T, I>> for CommitH
         Ok(digest)
     }
 }
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+/// Unit tests for [`commit-helpers`](crate::traits) trait
+/// implementations over internal type [`CommitHelpers`].
+#[cfg(test)]
+mod tests {
+
+    // ===============================================================================
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ===============================================================================
+
+    // --- Local crate imports ---
+    use crate::{assert_debug_panic_or_err, balance::*, mock::*, traits::*};
+
+    // --- FRAME Suite ---
+    use frame_suite::{
+        commitment::*,
+        misc::{Directive, PositionIndex},
+    };
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_ok,
+        traits::{
+            fungible::{Inspect, InspectFreeze, InspectHold, UnbalancedHold},
+            tokens::{Fortitude, Precision},
+        },
+    };
+
+    // ===============================================================================
+    // ```````````````````````````````` COMMIT BALANCE ```````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn resolve_imbalance_success_minting() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            // reward scenario
+            let imbalance = AssetDelta::new(20, 25);
+            // 5 units of tokens should have been pre-allocated to AssetToIssue during digest value updates via set_digest_value,
+            // representing the system's capacity to mint rewards when withdrawal > deposit (25 > 20)
+            AssetToIssue::put(5);
+            let total_taken = CommitHelper::resolve_imbalance(&ALICE, imbalance.clone()).unwrap();
+            assert_eq!(total_taken, imbalance.withdraw);
+            assert_eq!(AssetToIssue::get(), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 45);
+        })
+    }
+
+    #[test]
+    fn resolve_imbalance_err_cannot_mint_asset() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let imbalance = AssetDelta::new(20, 25);
+            assert_eq!(AssetToIssue::get(), 0);
+
+            assert_debug_panic_or_err!(
+                CommitHelper::resolve_imbalance(&ALICE, imbalance,),
+                Error::MaxAssetIssued
+            )
+        })
+    }
+
+    #[test]
+    fn resolve_imbalance_success_penalty() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            // penalty scenario
+            let imbalance = AssetDelta::new(20, 14);
+            // 6 units tokens should have been pre-allocated to AssetToReap during digest value updates via set_digest_value,
+            // representing the system's capacity to reap penalty when withdrawal < deposit (14 < 20)
+            AssetToReap::put(6);
+            let total_taken = CommitHelper::resolve_imbalance(&ALICE, imbalance.clone()).unwrap();
+            assert_eq!(total_taken, imbalance.withdraw);
+            assert_eq!(AssetToReap::get(), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 34);
+        })
+    }
+
+    #[test]
+    fn resolve_imbalance_err_cannot_reap_asset() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let imbalance = AssetDelta::new(20, 14);
+            assert_eq!(AssetToReap::get(), 0);
+            assert_debug_panic_or_err!(
+                CommitHelper::resolve_imbalance(&ALICE, imbalance),
+                Error::MaxAssetReaped
+            )
+        })
+    }
+
+    #[test]
+    fn resolve_imbalance_success_equal() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let imbalance = AssetDelta::new(20, 20);
+            let total_taken = CommitHelper::resolve_imbalance(&ALICE, imbalance.clone()).unwrap();
+            assert_eq!(total_taken, imbalance.withdraw);
+            assert_eq!(AssetOf::balance(&ALICE), 40);
+        })
+    }
+
+    #[test]
+    fn deduct_balance_with_reserve_balance_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 10);
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let deducted_balance = CommitHelper::deduct_balance(
+                &ALICE,
+                7,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_eq!(deducted_balance, 7);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 3);
+        })
+    }
+
+    #[test]
+    fn deduct_balance_err_insufficient_funds() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_VALUE, SMALL_VALUE).unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_eq!(AssetOf::balance(&ALICE), 10);
+            assert_err!(
+                CommitHelper::deduct_balance(
+                    &ALICE,
+                    LARGE_VALUE,
+                    &Directive::new(Precision::Exact, Fortitude::Polite)
+                ),
+                Error::InsufficientFunds
+            );
+        })
+    }
+
+    #[test]
+    fn deduct_balance_err_expects_hold_withdrawal() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_VALUE, SMALL_VALUE).unwrap();
+            AssetOf::set_balance_on_hold(&EXTERNAL_HOLD, &ALICE, LARGE_VALUE).unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_eq!(AssetOf::balance_on_hold(&EXTERNAL_HOLD, &ALICE), 20);
+            assert_eq!(AssetOf::balance(&ALICE), 10);
+            // total_reserve = 5 + 20 -> 25
+            // since, total_reserve > value it expects hold withdrawal
+            assert_err!(
+                CommitHelper::deduct_balance(
+                    &ALICE,
+                    LARGE_VALUE,
+                    &Directive::new(Precision::Exact, Fortitude::Polite)
+                ),
+                Error::ExpectsHoldWithdrawal
+            );
+        })
+    }
+
+    #[test]
+    fn deduct_balance_success_with_precision_bestefforts() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_VALUE, SMALL_VALUE).unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_eq!(AssetOf::balance(&ALICE), 10);
+            // since, the total_balance (reserve + free) is 15, with precision as BestEfforts
+            // the balance is reduced as much as possible without throwing InsufficientFunds error.
+            let deducted_balance = CommitHelper::deduct_balance(
+                &ALICE,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // 15 units deducted instead of 20 (requested value)
+            assert_eq!(deducted_balance, 15);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 0);
+        })
+    }
+
+    #[test]
+    fn deduct_balance_success_with_enough_total_balance() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, SMALL_VALUE).unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let deducted_balance = CommitHelper::deduct_balance(
+                &ALICE,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_eq!(deducted_balance, 10);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 15);
+        })
+    }
+
+    #[test]
+    fn deduct_balance_success_with_enough_free_balance_but_empty_reserve() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, ZERO_VALUE).unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), ZERO_VALUE);
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let deducted_balance = CommitHelper::deduct_balance(
+                &ALICE,
+                10,
+                &Directive::new(Precision::Exact, Fortitude::Force),
+            )
+            .unwrap();
+            assert_eq!(deducted_balance, 10);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 10);
+        })
+    }
+
+    // ===============================================================================
+    // ```````````````````````````````` COMMIT DEPOSIT ```````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn deposit_to_success_for_direct_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_DIGEST).unwrap();
+            assert_ok!(Pallet::digest_exists(&STAKING, &ALPHA_DIGEST));
+            // before deposit
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digest_of = digest_info.get_balance(&Default::default()).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_err());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                0
+            );
+            let (receipt, amount) = CommitHelper::deposit_to(
+                &ALICE,
+                &STAKING,
+                &DigestVariant::Direct(ALPHA_DIGEST),
+                STANDARD_VALUE,
+                &Position::default(),
+                &Default::default(),
+            )
+            .unwrap();
+            assert_eq!(amount, STANDARD_VALUE);
+            assert_eq!(receipt_deposit_value(&receipt).unwrap(), STANDARD_VALUE);
+            // after deposit
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digest_of = digest_info.get_balance(&Default::default()).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                STANDARD_VALUE
+            );
+        })
+    }
+
+    #[test]
+    fn deposit_to_success_for_index_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            // Balance before deposit
+            let entries_value_before =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                entries_value_before,
+                vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)]
+            );
+            CommitHelper::deposit_to(
+                &CHARLIE,
+                &STAKING,
+                &DigestVariant::Index(ALPHA_INDEX_DIGEST),
+                35,
+                &Position::default(),
+                &Default::default(),
+            )
+            .unwrap();
+            // Balance after deposit
+            let entries_value_after =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                entries_value_after,
+                vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)]
+            );
+        })
+    }
+
+    #[test]
+    fn deposit_to_success_for_pool_digets_pool() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_pool(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // Balance before deposit
+            let slots_value_before = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(
+                slots_value_before,
+                vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)]
+            );
+            CommitHelper::deposit_to(
+                &CHARLIE,
+                &STAKING,
+                &DigestVariant::Pool(ALPHA_POOL_DIGEST),
+                35,
+                &Position::default(),
+                &Default::default(),
+            )
+            .unwrap();
+            // Balance before deposit
+            let slots_value_after = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(
+                slots_value_after,
+                vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)]
+            );
+        })
+    }
+
+    #[test]
+    fn deposit_to_digest_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_DIGEST).unwrap();
+            assert_ok!(Pallet::digest_exists(&STAKING, &ALPHA_DIGEST));
+            // before deposit
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digest_of = digest_info.get_balance(&Default::default()).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_err());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                0
+            );
+            let (receipt, amount) = CommitHelper::deposit_to_digest(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Position::default(),
+                &Default::default(),
+            )
+            .unwrap();
+            assert_eq!(amount, STANDARD_VALUE);
+            assert_eq!(receipt_deposit_value(&receipt).unwrap(), STANDARD_VALUE);
+            // after deposit
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digest_of = digest_info.get_balance(&Default::default()).unwrap();
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                STANDARD_VALUE
+            );
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_ok());
+        })
+    }
+
+    #[test]
+    fn deposit_to_index_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            // Balance before deposit
+            let entries_value_before =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                entries_value_before,
+                vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)]
+            );
+            CommitHelper::deposit_to_index(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Position::default(),
+                &Default::default(),
+            )
+            .unwrap();
+            // Balance after deposit
+            let entries_value_after =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                entries_value_after,
+                vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)]
+            );
+        })
+    }
+
+    #[test]
+    fn deposit_to_pool_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_pool(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // Balance before deposit
+            let slots_value_before = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(
+                slots_value_before,
+                vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)]
+            );
+            CommitHelper::deposit_to_pool(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                35,
+                &Position::default(),
+                &Default::default(),
+            )
+            .unwrap();
+            // Balance before deposit
+            let slots_value_after = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(
+                slots_value_after,
+                vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)]
+            );
+        })
+    }
+
+    #[test]
+    fn deposit_to_digest_err_direct_digest_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            DigestMap::insert((&STAKING, &ALPHA_DIGEST), DigestInfo::default());
+            assert_ok!(Pallet::digest_exists(&STAKING, &ALPHA_DIGEST));
+            assert_err!(
+                CommitHelper::deposit_to_digest(
+                    &ALICE,
+                    &STAKING,
+                    &BETA_DIGEST,
+                    STANDARD_VALUE,
+                    &Position::default(),
+                    &Default::default(),
+                ),
+                Error::DigestNotFound
+            );
+        })
+    }
+
+    // ===============================================================================
+    // ```````````````````````````````` COMMIT WITHDRAW ``````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn withdraw_for_success_for_direct_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let actual_imbalance = CommitHelper::withdraw_for(
+                &ALICE,
+                &STAKING,
+                &DigestVariant::Direct(ALPHA_DIGEST),
+                &Default::default(),
+            )
+            .unwrap();
+            let expected_imbalance = AssetDelta::new(10, 10);
+            assert_eq!(expected_imbalance, actual_imbalance);
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digest_of = digest_info.get_balance(&Default::default()).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_err());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                0
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_for_success_for_index_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Balance after deposit
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                actual_entries_value,
+                vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)]
+            );
+            // Withdraw for index digets model
+            let actual_imbalance = CommitHelper::withdraw_for(
+                &CHARLIE,
+                &STAKING,
+                &DigestVariant::Index(ALPHA_INDEX_DIGEST),
+                &Position::default(),
+            )
+            .unwrap();
+            let expected_imbalance = AssetDelta::new(35, 35);
+            assert_eq!(expected_imbalance, actual_imbalance);
+            // Balance after withdraw
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                actual_entries_value,
+                vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)]
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_for_success_for_pool_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_pool(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Balance after deposit
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            // Withdraw for pool digets model
+            let actual_imbalance = CommitHelper::withdraw_for(
+                &CHARLIE,
+                &STAKING,
+                &DigestVariant::Pool(ALPHA_POOL_DIGEST),
+                &Position::default(),
+            )
+            .unwrap();
+            let expected_imbalance = AssetDelta::new(35, 35);
+            assert_eq!(expected_imbalance, actual_imbalance);
+            // Balance after withdraw
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+        })
+    }
+
+    #[test]
+    fn withdraw_from_digest_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let new_reward_value = 15;
+            Pallet::set_digest_value(
+                &STAKING,
+                &ALPHA_DIGEST,
+                new_reward_value,
+                &Default::default(),
+            )
+            .unwrap();
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digest_of = digest_info.get_balance(&Default::default()).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                15
+            );
+            let actual_imbalance = CommitHelper::withdraw_from_digest(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                &Default::default(),
+            )
+            .unwrap();
+            let expected_imbalance = AssetDelta::new(10, 15);
+            assert_eq!(expected_imbalance, actual_imbalance);
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digest_of = digest_info.get_balance(&Default::default()).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_err());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                0
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_from_digest_err_digest_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::withdraw_from_digest(
+                    &ALICE,
+                    &STAKING,
+                    &BETA_DIGEST,
+                    &Default::default(),
+                ),
+                Error::DigestNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_from_index_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Balance after deposit
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                actual_entries_value,
+                vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)]
+            );
+            // Withdraw from index
+            let actual_imbalance = CommitHelper::withdraw_from_index(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &Position::default(),
+            )
+            .unwrap();
+            let expected_imbalance = AssetDelta::new(35, 35);
+            assert_eq!(expected_imbalance, actual_imbalance);
+            // Balance after withdraw
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(
+                actual_entries_value,
+                vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)]
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_from_index_err_index_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::withdraw_from_index(
+                    &CHARLIE,
+                    &STAKING,
+                    &BETA_INDEX_DIGEST,
+                    &Position::default(),
+                ),
+                Error::IndexNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_from_pool_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 100).unwrap();
+            initiate_key_and_set_balance_and_hold(ALAN, LARGE_VALUE, 100).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_pool(
+                ALAN, // manager
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_LOW,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                100,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Balance after deposit
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            // Withdraw from pool
+            let actual_imbalance = CommitHelper::withdraw_from_pool(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &Position::default(),
+            )
+            .unwrap();
+            let expected_imbalance = AssetDelta::new(100, 95);
+            assert_eq!(expected_imbalance, actual_imbalance);
+            // Balance after withdraw
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            // Commission distribution for manager
+            let alan_balance = AssetOf::balance(&ALAN);
+            assert_eq!(alan_balance, 25); // 20 (existing balance) + 5 (commission)
+        })
+    }
+
+    #[test]
+    fn withdraw_from_pool_err_pool_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 40).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_pool(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::withdraw_from_pool(
+                    &CHARLIE,
+                    &STAKING,
+                    &BETA_POOL_DIGEST,
+                    &Position::default(),
+                ),
+                Error::PoolNotFound
+            );
+        })
+    }
+
+    // ===============================================================================
+    // `````````````````````````````` COMMIT OPERATIONS ``````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn place_commit_of_success_for_direct_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_err!(
+                Pallet::commit_exists(&ALICE, &STAKING),
+                Error::CommitNotFound
+            );
+            assert_err!(
+                Pallet::digest_exists(&STAKING, &ALPHA_DIGEST),
+                Error::DigestNotFound
+            );
+            CommitHelper::place_commit_of(
+                &ALICE,
+                &STAKING,
+                &DigestVariant::Direct(ALPHA_DIGEST),
+                STANDARD_VALUE,
+                &Default::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // Commit and digest enquirey
+            assert_ok!(Pallet::commit_exists(&ALICE, &STAKING));
+            assert_ok!(Pallet::digest_exists(&STAKING, &ALPHA_DIGEST));
+            // Balance and freeze enquirey
+            let balace_after = AssetOf::balance(&ALICE);
+            let balace_on_hold_after = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance_after = 20;
+            let expected_balance_on_hold_after = 0;
+            assert_eq!(expected_balance_after, balace_after);
+            assert_eq!(expected_balance_on_hold_after, balace_on_hold_after);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), STANDARD_VALUE);
+            // Commit info enquiery
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            assert_eq!(commit_info.digest(), ALPHA_DIGEST);
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), STANDARD_VALUE);
+            // Digest info enquiery
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digests = digest_info.reveal();
+            let digest_of = digests.get(0).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                STANDARD_VALUE
+            );
+            // Total value enquiery
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 10);
+        })
+    }
+
+    #[test]
+    fn place_commit_of_success_for_index_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Before placing a commit to the index
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), 0);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+            // Place commit to an index
+            assert_ok!(CommitHelper::place_commit_of(
+                &CHARLIE,
+                &STAKING,
+                &DigestVariant::Index(ALPHA_INDEX_DIGEST),
+                LARGE_VALUE,
+                &Position::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // After placing a commit to the index
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), LARGE_VALUE);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 50);
+            let commit_variant = Pallet::get_commit_variant(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_variant, Position::default());
+        })
+    }
+
+    #[test]
+    fn place_commit_of_success_for_pool_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // Before placing commit to pool
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = &pool_info.balance();
+            assert!(
+                has_deposits(pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_err()
+            );
+            assert_eq!(
+                balance_total(pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                0
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+            // Placing commit to  pool
+            assert_ok!(CommitHelper::place_commit_of(
+                &CHARLIE,
+                &STAKING,
+                &DigestVariant::Pool(ALPHA_POOL_DIGEST),
+                LARGE_VALUE,
+                &Position::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // After placing commit to pool
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                20
+            );
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 50);
+            // Balance and freeze enquirey
+            let balace_after = AssetOf::balance(&CHARLIE);
+            let balace_on_hold_after = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &CHARLIE);
+            let expected_balance_after = 20;
+            let expected_balance_on_hold_after = 0;
+            assert_eq!(expected_balance_after, balace_after);
+            assert_eq!(expected_balance_on_hold_after, balace_on_hold_after);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &CHARLIE), LARGE_VALUE);
+        })
+    }
+
+    #[test]
+    fn place_digest_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            assert_err!(
+                Pallet::commit_exists(&ALICE, &STAKING),
+                Error::CommitNotFound
+            );
+            assert_err!(
+                Pallet::digest_exists(&STAKING, &ALPHA_DIGEST),
+                Error::DigestNotFound
+            );
+            CommitHelper::place_digest_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Default::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // Commit and digest enquirey
+            assert_ok!(Pallet::commit_exists(&ALICE, &STAKING));
+            assert_ok!(Pallet::digest_exists(&STAKING, &ALPHA_DIGEST));
+            // Balance and freeze enquirey
+            let balace_after = AssetOf::balance(&ALICE);
+            let balace_on_hold_after = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance_after = 20;
+            let expected_balance_on_hold_after = 0;
+            assert_eq!(expected_balance_after, balace_after);
+            assert_eq!(expected_balance_on_hold_after, balace_on_hold_after);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), STANDARD_VALUE);
+            // Commit info enquiery
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            assert_eq!(commit_info.digest(), ALPHA_DIGEST);
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), STANDARD_VALUE);
+            // Digest info enquiery
+            let digest_info = DigestMap::get((STAKING, ALPHA_DIGEST)).unwrap();
+            let digests = digest_info.reveal();
+            let digest_of = digests.get(0).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_DIGEST).unwrap(),
+                STANDARD_VALUE
+            );
+            // Total value enquiery
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 10);
+        })
+    }
+
+    #[test]
+    fn place_index_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Before placing a commit to the index
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), 0);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+            // Place commit to an index
+            assert_ok!(CommitHelper::place_index_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Position::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // After placing a commit to the index
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), LARGE_VALUE);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 50);
+            // Commit info check
+            assert_ok!(Pallet::commit_exists(&CHARLIE, &STAKING));
+            let commit_info = CommitMap::get((CHARLIE, STAKING)).unwrap();
+            assert_eq!(commit_info.digest(), ALPHA_INDEX_DIGEST);
+            assert_eq!(commit_info.variant(), Position::default());
+
+            // Here commits via CommitMap are nothing but a placeholder only for index commits
+            // EntryMap only holds all individual entries commits, so querying value via this
+            // returns error due to default receipt - i.e., invalid
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert!(receipt_deposit_value(commit).is_err(),);
+
+            // Digest info check
+            let digest_info = DigestMap::get((STAKING, ALPHA_ENTRY_DIGEST)).unwrap();
+            let digests = digest_info.reveal();
+            let digest_of = digests.get(0).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_ENTRY_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_ENTRY_DIGEST).unwrap(),
+                28
+            );
+            let digest_info = DigestMap::get((STAKING, BETA_ENTRY_DIGEST)).unwrap();
+            let digests = digest_info.reveal();
+            let digest_of = digests.get(0).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &BETA_ENTRY_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &BETA_ENTRY_DIGEST).unwrap(),
+                22
+            );
+            // Entry info check
+            let alpha_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, ALPHA_ENTRY_DIGEST, CHARLIE)).unwrap();
+            let alpha_entries = alpha_entry_info.commits();
+            let alpha_commit = alpha_entries.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(alpha_commit).unwrap(), 8);
+            let beta_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, BETA_ENTRY_DIGEST, CHARLIE)).unwrap();
+            let beta_entries = beta_entry_info.commits();
+            let beta_commit = beta_entries.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(beta_commit).unwrap(), 12);
+            // Balance and freeze enquirey
+            let balace_after = AssetOf::balance(&CHARLIE);
+            let balace_on_hold_after = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &CHARLIE);
+            let expected_balance_after = 20;
+            let expected_balance_on_hold_after = 0;
+            assert_eq!(expected_balance_after, balace_after);
+            assert_eq!(expected_balance_on_hold_after, balace_on_hold_after);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &CHARLIE), LARGE_VALUE);
+        })
+    }
+
+    #[test]
+    fn place_pool_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // Before placing commit to pool
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_err()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                0
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+            // Placing commit to  pool
+            assert_ok!(CommitHelper::place_pool_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                LARGE_VALUE,
+                &Position::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // After placing commit to pool
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                20
+            );
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 50);
+            // Commit info check
+            assert_ok!(Pallet::commit_exists(&CHARLIE, &STAKING));
+            let commit_info = CommitMap::get((CHARLIE, STAKING)).unwrap();
+            assert_eq!(commit_info.digest(), ALPHA_POOL_DIGEST);
+            assert_eq!(commit_info.variant(), Position::default());
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), LARGE_VALUE);
+            // Digest info check
+            let digest_info = DigestMap::get((STAKING, ALPHA_ENTRY_DIGEST)).unwrap();
+            let digests = digest_info.reveal();
+            let digest_of = digests.get(0).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &ALPHA_ENTRY_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &ALPHA_ENTRY_DIGEST).unwrap(),
+                28
+            );
+            let digest_info = DigestMap::get((STAKING, BETA_ENTRY_DIGEST)).unwrap();
+            let digests = digest_info.reveal();
+            let digest_of = digests.get(0).unwrap();
+            assert!(has_deposits(digest_of, &Default::default(), &BETA_ENTRY_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(digest_of, &Default::default(), &BETA_ENTRY_DIGEST).unwrap(),
+                22
+            );
+            // Balance and freeze enquirey
+            let balace_after = AssetOf::balance(&CHARLIE);
+            let balace_on_hold_after = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &CHARLIE);
+            let expected_balance_after = 20;
+            let expected_balance_on_hold_after = 0;
+            assert_eq!(expected_balance_after, balace_after);
+            assert_eq!(expected_balance_on_hold_after, balace_on_hold_after);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &CHARLIE), LARGE_VALUE);
+        })
+    }
+
+    #[test]
+    fn raise_commit_of_success_for_direct_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let commit_value_before = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value_before, 10);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), STANDARD_VALUE);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, STANDARD_VALUE);
+            assert_ok!(CommitHelper::raise_digest_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                SMALL_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            let commit_value_after = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value_after, 15);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 15);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, 15);
+            // new commit instance added
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 10);
+            // raise commit instance added
+            let commit = commits.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 5);
+        })
+    }
+
+    #[test]
+    fn raise_commit_of_success_for_index_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 50).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            // alice balance inspect
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 50);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Before raising the index commit value
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), 20);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 12), (BETA_ENTRY_DIGEST, 8)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 20);
+            // alice balance inspect
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 30);
+            // Raise index commit value
+            assert_ok!(CommitHelper::raise_index_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // After placing a commit to the index
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), 30);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 18), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+            // entry info check
+            // new instance added for raise commit
+            let alpha_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, ALPHA_ENTRY_DIGEST, ALICE)).unwrap();
+            let alpha_entries = alpha_entry_info.commits();
+            let commit = alpha_entries.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 6);
+            let beta_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, BETA_ENTRY_DIGEST, ALICE)).unwrap();
+            let beta_entries = beta_entry_info.commits();
+            let commit = beta_entries.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 4);
+            // Balance and freeze enquirey
+            let actual_balance = AssetOf::balance(&ALICE);
+            let actual_balace_on_hold = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance = 20;
+            let expected_balance_on_hold = 20;
+            assert_eq!(actual_balance, expected_balance);
+            assert_eq!(actual_balace_on_hold, expected_balance_on_hold);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 30);
+        })
+    }
+
+    #[test]
+    fn raise_commit_of_success_for_pool_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 60).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ONE,
+            )
+            .unwrap();
+            // alice balance inspect
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 60);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 25);
+            // Before raising the pool commit value
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                35
+            );
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 65); // 20 + 10 + 35
+
+            // Raise commit value
+            assert_ok!(CommitHelper::raise_pool_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // // After raising the pool commit value
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                55
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 22), (BETA_ENTRY_DIGEST, 33)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 85);
+            // new commit instance added
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 35);
+            // raise commit instance is added
+            let raise_commit = commits.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(raise_commit).unwrap(), 20);
+        })
+    }
+
+    #[test]
+    fn raise_digest_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let commit_value_before = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value_before, 10);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), STANDARD_VALUE);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, STANDARD_VALUE);
+            assert_ok!(CommitHelper::raise_digest_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                SMALL_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            let commit_value_after = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value_after, 15);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 15);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, 15);
+            // new commit instance added
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 10);
+            // raise commit instance added
+            let commit = commits.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 5);
+        })
+    }
+
+    #[test]
+    fn raise_digest_commit_err_max_commits_reached() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 50).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_ok!(CommitHelper::raise_digest_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                SMALL_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            let commit_value_after = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value_after, 15);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 15);
+            assert_ok!(CommitHelper::raise_digest_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            let commit_value_after = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value_after, 25);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 25);
+            // new commit instance added
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 10);
+            // raise commit instance added
+            let commit = commits.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 5);
+            // raise commit instance added
+            let commit = commits.get(2).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 10);
+            // since, the max commits allowed is set to 3, making an another raise commit will cause error
+            assert_err!(
+                CommitHelper::raise_digest_commit(
+                    &ALICE,
+                    &STAKING,
+                    &ALPHA_DIGEST,
+                    STANDARD_VALUE,
+                    &Directive::new(Precision::BestEffort, Fortitude::Polite)
+                ),
+                Error::MaxCommitsReached
+            );
+        })
+    }
+
+    #[test]
+    fn raise_index_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 50).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            // alice balance inspect
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 50);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Before raising the index commit value
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), 20);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 12), (BETA_ENTRY_DIGEST, 8)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 20);
+            // alice balance inspect
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 30);
+            // Raise index commit value
+            assert_ok!(CommitHelper::raise_index_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // After placing a commit to the index
+            let index_info = Pallet::get_index(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_info.capital(), 100);
+            assert_eq!(index_info.principal(), 30);
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 18), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+            // entry info check
+            // new instance added for raise commit
+            let alpha_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, ALPHA_ENTRY_DIGEST, ALICE)).unwrap();
+            let alpha_entries = alpha_entry_info.commits();
+            let commit = alpha_entries.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 6);
+            let beta_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, BETA_ENTRY_DIGEST, ALICE)).unwrap();
+            let beta_entries = beta_entry_info.commits();
+            let commit = beta_entries.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 4);
+            // Balance and freeze enquirey
+            let actual_balance = AssetOf::balance(&ALICE);
+            let actual_balace_on_hold = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance = 20;
+            let expected_balance_on_hold = 20;
+            assert_eq!(actual_balance, expected_balance);
+            assert_eq!(actual_balace_on_hold, expected_balance_on_hold);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 30);
+        })
+    }
+
+    #[test]
+    fn raise_index_commit_err_max_commits_reached() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 50).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Raise index commit value
+            assert_ok!(CommitHelper::raise_index_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // Raise index commit value
+            assert_ok!(CommitHelper::raise_index_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                5,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // entry info check
+            // new instance added for raise commit
+            let alpha_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, ALPHA_ENTRY_DIGEST, ALICE)).unwrap();
+            let alpha_entries = alpha_entry_info.commits();
+            let commit = alpha_entries.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 6);
+            // raise commit instance added
+            let commit = alpha_entries.get(2).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 3);
+            // raise commit instance added
+            let beta_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, BETA_ENTRY_DIGEST, ALICE)).unwrap();
+            let beta_entries = beta_entry_info.commits();
+            let commit = beta_entries.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 4);
+            // raise commit instance added
+            let beta_entry_info =
+                EntryMap::get((STAKING, ALPHA_INDEX_DIGEST, BETA_ENTRY_DIGEST, ALICE)).unwrap();
+            let beta_entries = beta_entry_info.commits();
+            let commit = beta_entries.get(2).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 2);
+            // since, the max commits allowed is set to 3, making an another raise commit will cause error
+            assert_err!(
+                CommitHelper::raise_index_commit(
+                    &ALICE,
+                    &STAKING,
+                    &ALPHA_INDEX_DIGEST,
+                    10,
+                    &Directive::new(Precision::BestEffort, Fortitude::Polite)
+                ),
+                Error::MaxCommitsReached
+            );
+        })
+    }
+
+    #[test]
+    fn raise_pool_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 60).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ONE,
+            )
+            .unwrap();
+            // alice balance inspect
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 60);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 25);
+            // Before raising the pool commit value
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                35
+            );
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 65); // 20 + 10 + 35
+
+            // Raise commit value
+            assert_ok!(CommitHelper::raise_pool_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // // After raising the pool commit value
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                55
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let actual_slots_value = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value = vec![(ALPHA_ENTRY_DIGEST, 22), (BETA_ENTRY_DIGEST, 33)];
+            assert_eq!(actual_slots_value, expected_slots_value);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 85);
+            // new commit instance added
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 35);
+            // raise commit instance is added
+            let raise_commit = commits.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(raise_commit).unwrap(), 20);
+        })
+    }
+
+    #[test]
+    fn raise_pool_commit_err_max_commits_reached() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 60).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ONE,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Raise commit value
+            assert_ok!(CommitHelper::raise_pool_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            assert_ok!(CommitHelper::raise_pool_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                5,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite)
+            ));
+            // new commit instance added
+            let commit_info = CommitMap::get((ALICE, STAKING)).unwrap();
+            let commits = commit_info.commits();
+            let commit = commits.get(0).unwrap();
+            assert_eq!(receipt_deposit_value(commit).unwrap(), 35);
+            // raise commit instance is added
+            let raise_commit = commits.get(1).unwrap();
+            assert_eq!(receipt_deposit_value(raise_commit).unwrap(), 20);
+            // raise commit instance is added
+            let raise_commit = commits.get(2).unwrap();
+            assert_eq!(receipt_deposit_value(raise_commit).unwrap(), 5);
+            // since, the max commits allowed is set to 3, making an another raise commit will cause error
+            assert_err!(
+                CommitHelper::raise_pool_commit(
+                    &ALICE,
+                    &STAKING,
+                    &ALPHA_POOL_DIGEST,
+                    10,
+                    &Directive::new(Precision::BestEffort, Fortitude::Force)
+                ),
+                Error::MaxCommitsReached
+            );
+        })
+    }
+
+    #[test]
+    fn resolve_commit_of_success_for_direct_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // before resolving the commit
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 0);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), STANDARD_VALUE);
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let commit_value = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value, STANDARD_VALUE);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, STANDARD_VALUE);
+            // resolve commit
+            assert_ok!(CommitHelper::resolve_commit_of(
+                &ALICE,
+                &STAKING,
+                &DigestVariant::Direct(ALPHA_DIGEST)
+            ));
+            // after resolving the commit
+            assert_eq!(AssetOf::balance(&ALICE), 30);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 0);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 0);
+            assert_err!(
+                Pallet::commit_exists(&ALICE, &STAKING),
+                Error::CommitNotFound
+            );
+            let digets_value = Pallet::get_digest_value(&STAKING, &ALPHA_DIGEST).unwrap();
+            assert_eq!(digets_value, 0);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, 0);
+        })
+    }
+
+    #[test]
+    fn resolve_commit_of_success_for_index_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_eq!(Pallet::get_commit_value(&ALICE, &STAKING), Ok(35));
+            // before resolving the commit
+            assert_eq!(
+                Pallet::get_index_value(&STAKING, &ALPHA_INDEX_DIGEST),
+                Ok(35)
+            );
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_eq!(AssetOf::balance(&ALICE), LARGE_VALUE);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 35);
+            // resolve commit
+            assert_ok!(CommitHelper::resolve_commit_of(
+                &ALICE,
+                &STAKING,
+                &DigestVariant::Index(ALPHA_INDEX_DIGEST)
+            ));
+            // after resolving the commit
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 55); // existing balance + resolved balance -> 20 + 35 = 55
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_err!(
+                Pallet::commit_exists(&ALICE, &STAKING),
+                Error::CommitNotFound
+            );
+            assert_eq!(
+                Pallet::get_index_value(&STAKING, &ALPHA_INDEX_DIGEST),
+                Ok(0)
+            );
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+        })
+    }
+
+    #[test]
+    fn resolve_commit_of_success_for_pool_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Before resolving the commit
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                30
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let alpha_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST).unwrap();
+            assert_eq!(alpha_digets_balance, 12);
+            let beta_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &BETA_ENTRY_DIGEST).unwrap();
+            assert_eq!(beta_digets_balance, 18);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 60);
+            // resolve the commit
+            assert_ok!(CommitHelper::resolve_commit_of(
+                &ALICE,
+                &STAKING,
+                &DigestVariant::Pool(ALPHA_POOL_DIGEST)
+            ));
+            // After resolving the commit
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_err()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                0
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let alpha_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST).unwrap();
+            assert_eq!(alpha_digets_balance, 0);
+            let beta_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &BETA_ENTRY_DIGEST).unwrap();
+            assert_eq!(beta_digets_balance, 0);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+        })
+    }
+
+    #[test]
+    fn resolve_digest_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // before resolving the commit
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 0);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), STANDARD_VALUE);
+            assert_eq!(AssetOf::balance(&ALICE), 20);
+            let commit_value = Pallet::get_commit_value(&ALICE, &STAKING).unwrap();
+            assert_eq!(commit_value, STANDARD_VALUE);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, STANDARD_VALUE);
+            // resolve commit
+            assert_ok!(CommitHelper::resolve_digest_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST
+            ));
+            // after resolving the commit
+            assert_eq!(AssetOf::balance(&ALICE), 30);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 0);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 0);
+            assert_err!(
+                Pallet::commit_exists(&ALICE, &STAKING),
+                Error::CommitNotFound
+            );
+            let digets_value = Pallet::get_digest_value(&STAKING, &ALPHA_DIGEST).unwrap();
+            assert_eq!(digets_value, 0);
+            let total_value = Pallet::get_total_value(&STAKING);
+            assert_eq!(total_value, 0);
+        })
+    }
+
+    #[test]
+    fn resolve_index_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_eq!(Pallet::get_commit_value(&ALICE, &STAKING), Ok(35));
+            // before resolving the commit
+            assert_eq!(
+                Pallet::get_index_value(&STAKING, &ALPHA_INDEX_DIGEST),
+                Ok(35)
+            );
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_eq!(AssetOf::balance(&ALICE), LARGE_VALUE);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 35);
+            // resolve commit
+            assert_ok!(CommitHelper::resolve_index_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST
+            ));
+            // after resolving the commit
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 55); // existing balance + resolved balance -> 20 + 35 = 55
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 5);
+            assert_err!(
+                Pallet::commit_exists(&ALICE, &STAKING),
+                Error::CommitNotFound
+            );
+            assert_eq!(
+                Pallet::get_index_value(&STAKING, &ALPHA_INDEX_DIGEST),
+                Ok(0)
+            );
+            let actual_entries_value =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_entries_value = vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_entries_value, expected_entries_value);
+        })
+    }
+
+    #[test]
+    fn resolve_pool_commit_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Before resolving the commit
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_ok()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                30
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let alpha_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST).unwrap();
+            assert_eq!(alpha_digets_balance, 12);
+            let beta_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &BETA_ENTRY_DIGEST).unwrap();
+            assert_eq!(beta_digets_balance, 18);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 60);
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 30);
+            assert_eq!(AssetOf::balance(&ALICE), 20); // existing balance + resolved balance -> 20 + 30 = 50
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 10);
+            // resolve the commit
+            assert_ok!(CommitHelper::resolve_pool_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST
+            ));
+            // After resolving the commit
+            assert_eq!(AssetOf::balance_frozen(&STAKING, &ALICE), 0);
+            assert_eq!(AssetOf::balance(&ALICE), 50); // existing balance + resolved balance -> 20 + 30 = 50
+            assert_eq!(AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE), 10);
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance_of = pool_info.balance();
+            assert!(
+                has_deposits(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).is_err()
+            );
+            assert_eq!(
+                balance_total(&pool_balance_of, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                0
+            );
+            let pool_capital = pool_info.capital();
+            assert_eq!(pool_capital, 100);
+            let alpha_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST).unwrap();
+            assert_eq!(alpha_digets_balance, 0);
+            let beta_digets_balance =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &BETA_ENTRY_DIGEST).unwrap();
+            assert_eq!(beta_digets_balance, 0);
+            let reason_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(reason_value, 30);
+        })
+    }
+
+    #[test]
+    fn set_total_value_works() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            let current_total_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(current_total_value, STANDARD_VALUE);
+            // set new total value for staking reason
+            let new_total_value = 40;
+            CommitHelper::set_total_value(&STAKING, new_total_value);
+            let current_total_value = ReasonValue::get(STAKING).unwrap();
+            assert_eq!(current_total_value, new_total_value);
+        })
+    }
+
+    // ===============================================================================
+    // ```````````````````````````````` COMMIT INSPECT ```````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn commit_value_of_success_for_direct_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let digest_commit_value =
+                CommitHelper::digest_commit_value(&ALICE, &STAKING, &ALPHA_DIGEST).unwrap();
+            assert_eq!(digest_commit_value, STANDARD_VALUE);
+            Pallet::raise_commit(
+                &ALICE,
+                &STAKING,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // updated digest value after raise commit
+            let digest_commit_value = CommitHelper::commit_value_of(
+                &ALICE,
+                &STAKING,
+                &DigestVariant::Direct(ALPHA_DIGEST),
+            )
+            .unwrap();
+            assert_eq!(digest_commit_value, 20);
+        })
+    }
+
+    #[test]
+    fn commit_value_of_success_for_index_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 30).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Place commit to an index
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let index_commit_value =
+                CommitHelper::index_commit_value(&ALICE, &STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_commit_value, LARGE_VALUE);
+            Pallet::raise_commit(
+                &ALICE,
+                &STAKING,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // updated digest value after raise commit
+            let index_commit_value =
+                CommitHelper::index_commit_value(&ALICE, &STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_commit_value, 30);
+        })
+    }
+
+    #[test]
+    fn commit_value_of_success_for_pool_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let pool_commit_value =
+                CommitHelper::pool_commit_value(&ALICE, &STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(pool_commit_value, 30);
+            Pallet::raise_commit(
+                &ALICE,
+                &STAKING,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // updated pool commit value after raise commit
+            let pool_commit_value =
+                CommitHelper::pool_commit_value(&ALICE, &STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(pool_commit_value, 40);
+        })
+    }
+
+    #[test]
+    fn digest_commit_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let digest_commit_value =
+                CommitHelper::digest_commit_value(&ALICE, &STAKING, &ALPHA_DIGEST).unwrap();
+            assert_eq!(digest_commit_value, STANDARD_VALUE);
+            Pallet::raise_commit(
+                &ALICE,
+                &STAKING,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // updated digest value after raise commit
+            let digest_commit_value =
+                CommitHelper::digest_commit_value(&ALICE, &STAKING, &ALPHA_DIGEST).unwrap();
+            assert_eq!(digest_commit_value, 20);
+        })
+    }
+
+    #[test]
+    fn digest_commit_value_err_digest_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::digest_commit_value(&ALICE, &STAKING, &BETA_DIGEST,),
+                Error::DigestNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn digest_commit_value_err_commit_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::digest_commit_value(&BOB, &STAKING, &ALPHA_DIGEST,),
+                Error::CommitNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn index_commit_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 30).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Place commit to an index
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let index_commit_value =
+                CommitHelper::index_commit_value(&ALICE, &STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_commit_value, LARGE_VALUE);
+            Pallet::raise_commit(
+                &ALICE,
+                &STAKING,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // updated digest value after raise commit
+            let index_commit_value =
+                CommitHelper::index_commit_value(&ALICE, &STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            assert_eq!(index_commit_value, 30);
+        })
+    }
+
+    #[test]
+    fn index_commit_value_err_commit_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 30).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Place commit to an index
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::index_commit_value(&BOB, &STAKING, &ALPHA_INDEX_DIGEST,),
+                Error::CommitNotFoundForEntry
+            );
+        })
+    }
+
+    #[test]
+    fn index_entry_commit_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Place commit to an index
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // alice index entry commit value inspect
+            let entry_alpha_value = CommitHelper::index_entry_commit_value(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &ALPHA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            let entry_beta_value = CommitHelper::index_entry_commit_value(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &BETA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            assert_eq!(entry_alpha_value, 8);
+            assert_eq!(entry_beta_value, 12);
+
+            // bob index entry commit value inspect
+            let entry_alpha_value = CommitHelper::index_entry_commit_value(
+                &BOB,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &ALPHA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            let entry_beta_value = CommitHelper::index_entry_commit_value(
+                &BOB,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &BETA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            assert_eq!(entry_alpha_value, 4);
+            assert_eq!(entry_beta_value, 6);
+        })
+    }
+
+    #[test]
+    fn index_entry_commit_value_err_entry_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Place commit to an index
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::index_entry_commit_value(
+                    &ALICE,
+                    &STAKING,
+                    &ALPHA_INDEX_DIGEST,
+                    &GAMMA_ENTRY_DIGEST,
+                ),
+                Error::EntryOfIndexNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn index_entry_commit_value_err_commit_not_found_for_entry() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            // Place commit to an index
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::index_entry_commit_value(
+                    &BOB,
+                    &STAKING,
+                    &ALPHA_INDEX_DIGEST,
+                    &ALPHA_ENTRY_DIGEST,
+                ),
+                Error::CommitNotFoundForEntry
+            );
+        })
+    }
+
+    #[test]
+    fn pool_commit_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let pool_commit_value =
+                CommitHelper::pool_commit_value(&ALICE, &STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(pool_commit_value, 30);
+            Pallet::raise_commit(
+                &ALICE,
+                &STAKING,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // updated pool commit value after raise commit
+            let pool_commit_value =
+                CommitHelper::pool_commit_value(&ALICE, &STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(pool_commit_value, 40);
+        })
+    }
+
+    #[test]
+    fn pool_commit_value_err_pool_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::pool_commit_value(&ALICE, &STAKING, &BETA_POOL_DIGEST,),
+                Error::PoolNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn pool_commit_value_err_commit_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::pool_commit_value(&ALICE, &GOVERNANCE, &ALPHA_POOL_DIGEST,),
+                // new reason
+                Error::PoolNotFound
+            );
+            assert_err!(
+                CommitHelper::pool_commit_value(&BOB, &STAKING, &ALPHA_POOL_DIGEST,),
+                Error::CommitNotFoundForPool
+            );
+        })
+    }
+
+    #[test]
+    fn pool_slot_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 30), (BETA_ENTRY_DIGEST, 70)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // slot value inspect
+            let slot_alpha_value =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST).unwrap();
+            let slot_beta_value =
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &BETA_ENTRY_DIGEST).unwrap();
+            assert_eq!(slot_alpha_value, 9);
+            assert_eq!(slot_beta_value, 21);
+        })
+    }
+
+    #[test]
+    fn pool_slot_value_err_slot_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 30), (BETA_ENTRY_DIGEST, 70)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                Pallet::get_slot_value(&STAKING, &ALPHA_POOL_DIGEST, &GAMMA_ENTRY_DIGEST,),
+                Error::SlotOfPoolNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn pool_slot_value_of_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 30), (BETA_ENTRY_DIGEST, 70)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // place commits to pool
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &MIKE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // alice pool slots value
+            let slot_alpha_value = CommitHelper::pool_slot_commit_value(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &ALPHA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            assert_eq!(slot_alpha_value, 9);
+            let slot_beta_value = CommitHelper::pool_slot_commit_value(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &BETA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            assert_eq!(slot_beta_value, 21);
+            // bob pool slots value
+            let slot_alpha_value = CommitHelper::pool_slot_commit_value(
+                &MIKE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &ALPHA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            assert_eq!(slot_alpha_value, 6);
+            let slot_beta_value = CommitHelper::pool_slot_commit_value(
+                &MIKE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &BETA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            assert_eq!(slot_beta_value, 14);
+        })
+    }
+
+    #[test]
+    fn pool_slot_value_of_err_slot_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 30), (BETA_ENTRY_DIGEST, 70)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // place commits to pool
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::pool_slot_commit_value(
+                    &BOB,
+                    &STAKING,
+                    &ALPHA_POOL_DIGEST,
+                    &GAMMA_ENTRY_DIGEST,
+                ),
+                Error::CommitNotFoundForPool
+            );
+            assert_err!(
+                CommitHelper::pool_slot_commit_value(
+                    &ALICE,
+                    &STAKING,
+                    &ALPHA_POOL_DIGEST,
+                    &GAMMA_ENTRY_DIGEST,
+                ),
+                Error::SlotOfPoolNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn value_of_success_for_reason() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, 50).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_DIGEST).unwrap();
+            initiate_digest_with_default_balance(GOVERNANCE, ALPHA_INDEX_DIGEST).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &GOVERNANCE,
+                &ALPHA_INDEX_DIGEST,
+                10,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_INDEX_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // retrieve the total value of a reason
+            let value_of_staking = CommitHelper::value_of(None, &STAKING).unwrap();
+            let value_of_reason_bet = CommitHelper::value_of(None, &GOVERNANCE).unwrap();
+            assert_eq!(value_of_staking, 30);
+            assert_eq!(value_of_reason_bet, 10);
+            Pallet::place_commit(
+                &BOB,
+                &GOVERNANCE,
+                &BETA_INDEX_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // updated total value of a reason
+            let value_of_reason_bet = CommitHelper::value_of(None, &GOVERNANCE).unwrap();
+            assert_eq!(value_of_reason_bet, 40);
+        })
+    }
+
+    #[test]
+    fn value_of_success_for_direct_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit_of_variant(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                15,
+                &Position::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit_of_variant(
+                &ALICE,
+                &GOVERNANCE,
+                &ALPHA_DIGEST,
+                10,
+                &Position::position_of(1).unwrap(),
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit_of_variant(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                5,
+                &Position::default(),
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // value of direct digest with staking reason
+            let actual_direct_staking_value_of =
+                CommitHelper::value_of(Some(&DigestVariant::Direct(ALPHA_DIGEST)), &STAKING)
+                    .unwrap();
+            let expected_direct_staking_value_of = 20; // 15 + 5
+            assert_eq!(
+                actual_direct_staking_value_of,
+                expected_direct_staking_value_of
+            );
+            // value of direct digest with governance reason
+            let actual_direct_bet_value_of =
+                CommitHelper::value_of(Some(&DigestVariant::Direct(ALPHA_DIGEST)), &GOVERNANCE)
+                    .unwrap();
+            let expected_direct_bet_value_of = 10; // 10
+            assert_eq!(actual_direct_bet_value_of, expected_direct_bet_value_of);
+        })
+    }
+
+    #[test]
+    fn value_of_success_for_index_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, 50).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, 30).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                25,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                25,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            // value of index digest with staking reason
+            let actual_index_staking_value_of =
+                CommitHelper::value_of(Some(&DigestVariant::Index(ALPHA_INDEX_DIGEST)), &STAKING)
+                    .unwrap();
+            let expected_index_staking_value_of = 85; // 25 + 35 + 25 -> 85
+            assert_eq!(
+                actual_index_staking_value_of,
+                expected_index_staking_value_of
+            );
+        })
+    }
+
+    #[test]
+    fn value_of_success_for_pool_digest_model() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 30)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // place commits to pool
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &MIKE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                15,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            // value of pool digest with staking reason
+            let actual_index_staking_value_of =
+                CommitHelper::value_of(Some(&DigestVariant::Pool(ALPHA_POOL_DIGEST)), &STAKING)
+                    .unwrap();
+            let expected_index_staking_value_of = 65; // 30 + 20 + 15 -> 65
+            assert_eq!(
+                actual_index_staking_value_of,
+                expected_index_staking_value_of
+            );
+        })
+    }
+
+    // ===============================================================================
+    // ```````````````````````````````` POOL OPERATIONS ``````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn release_pool_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 30), (BETA_ENTRY_DIGEST, 70)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Balance inspect before releasing the pool
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance = pool_info.balance();
+            assert!(has_deposits(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                30
+            );
+            let actual_slots_balance_before =
+                Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_balance_before =
+                vec![(ALPHA_ENTRY_DIGEST, 9), (BETA_ENTRY_DIGEST, 21)];
+            assert_eq!(actual_slots_balance_before, expected_slots_balance_before);
+            // Releasing the pool
+            let released_pool_balance =
+                CommitHelper::release_pool(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+
+            // Released LazyBalance inspect
+            assert!(has_deposits(
+                &released_pool_balance,
+                &Default::default(),
+                &ALPHA_POOL_DIGEST
+            )
+            .is_ok());
+            assert_eq!(
+                balance_total(
+                    &released_pool_balance,
+                    &Default::default(),
+                    &ALPHA_POOL_DIGEST
+                )
+                .unwrap(),
+                30
+            );
+
+            // Balance inspect after releasing the pool
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance = pool_info.balance();
+            assert!(has_deposits(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).is_err());
+            assert_eq!(
+                balance_total(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                0
+            );
+            let actual_slots_balance_after =
+                Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_balance_after =
+                vec![(ALPHA_ENTRY_DIGEST, 0), (BETA_ENTRY_DIGEST, 0)];
+            assert_eq!(actual_slots_balance_after, expected_slots_balance_after);
+        })
+    }
+
+    #[test]
+    fn release_pool_success_with_default_balance() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let try_zeroed_entries = vec![(ALPHA_ENTRY_DIGEST, 0)];
+            let actual_entries = vec![(ALPHA_ENTRY_DIGEST, 15)];
+            // Shares cannot be zero else rejected and error returned
+            assert!(prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &try_zeroed_entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .is_err());
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &actual_entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            // Releasing the pool returns the default LazyBalanceOf, since no commits to the pool yet.
+            let pool_released_balance_of =
+                CommitHelper::release_pool(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            assert_eq!(LazyBalance::default(), pool_released_balance_of);
+        })
+    }
+
+    #[test]
+    fn release_pool_err_pool_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 30), (BETA_ENTRY_DIGEST, 70)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                30,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            assert_err!(
+                CommitHelper::release_pool(&STAKING, &BETA_POOL_DIGEST),
+                Error::PoolNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn recover_pool_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance = pool_info.balance();
+            assert!(has_deposits(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).is_err());
+            assert_eq!(
+                balance_total(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                0
+            );
+            assert_eq!(pool_balance, LazyBalance::default());
+
+            let mut balance = LazyBalance::default();
+            let (_, receipt) = deposit(
+                &mut balance,
+                &Default::default(),
+                &ALPHA_POOL_DIGEST,
+                &LARGE_VALUE,
+                &Default::default(),
+            )
+            .unwrap();
+            assert_eq!(receipt_deposit_value(&receipt).unwrap(), LARGE_VALUE);
+            assert!(has_deposits(&balance, &Default::default(), &ALPHA_POOL_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(&balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                20
+            );
+
+            // Recover the pool with the defined LazyBalance
+            assert_ok!(CommitHelper::recover_pool(
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &balance
+            ));
+
+            // balance is recovered
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance = pool_info.balance();
+            assert!(has_deposits(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                20
+            );
+            assert_eq!(pool_balance, balance);
+        })
+    }
+
+    #[test]
+    fn recover_pool_err_pool_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance = pool_info.balance();
+            assert!(has_deposits(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).is_err());
+            assert_eq!(
+                balance_total(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                0
+            );
+            assert_eq!(pool_balance, LazyBalance::default());
+
+            let mut balance = LazyBalance::default();
+            let (_, receipt) = deposit(
+                &mut balance,
+                &Default::default(),
+                &ALPHA_POOL_DIGEST,
+                &LARGE_VALUE,
+                &Default::default(),
+            )
+            .unwrap();
+            assert_eq!(receipt_deposit_value(&receipt).unwrap(), LARGE_VALUE);
+            assert!(has_deposits(&balance, &Default::default(), &ALPHA_POOL_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(&balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                20
+            );
+
+            assert_err!(
+                CommitHelper::recover_pool(&STAKING, &BETA_POOL_DIGEST, &balance),
+                Error::PoolNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn recover_pool_err_release_pool_to_recover() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let pool_info = PoolMap::get((STAKING, ALPHA_POOL_DIGEST)).unwrap();
+            let pool_balance = pool_info.balance();
+            assert!(has_deposits(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(&pool_balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                20
+            );
+            assert_ne!(pool_balance, LazyBalance::default());
+
+            let mut balance = LazyBalance::default();
+            let (_, receipt) = deposit(
+                &mut balance,
+                &Default::default(),
+                &ALPHA_POOL_DIGEST,
+                &LARGE_VALUE,
+                &Default::default(),
+            )
+            .unwrap();
+            assert_eq!(receipt_deposit_value(&receipt).unwrap(), LARGE_VALUE);
+            assert!(has_deposits(&balance, &Default::default(), &ALPHA_POOL_DIGEST).is_ok());
+            assert_eq!(
+                balance_total(&balance, &Default::default(), &ALPHA_POOL_DIGEST).unwrap(),
+                20
+            );
+
+            assert_debug_panic_or_err!(
+                CommitHelper::recover_pool(&STAKING, &ALPHA_POOL_DIGEST, &balance,),
+                Error::ReleasePoolToRecover
+            )
+        })
+    }
+
+    #[test]
+    fn remove_pool_slot_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Inspecting the pool stots before removal of a slot
+            let pool_slots_before = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_pool_slots_before = vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(expected_pool_slots_before, pool_slots_before);
+            // Remove a slot
+            assert_ok!(CommitHelper::remove_pool_slot(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &ALPHA_ENTRY_DIGEST
+            ));
+            // Inspecting the pool stots after removal of a slot
+            let pool_slots_before = Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_pool_slots_before = vec![(BETA_ENTRY_DIGEST, 20)];
+            assert_eq!(expected_pool_slots_before, pool_slots_before);
+        })
+    }
+
+    #[test]
+    fn remove_pool_slot_err_pool_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            assert_err!(
+                CommitHelper::remove_pool_slot(
+                    &CHARLIE,
+                    &STAKING,
+                    &BETA_POOL_DIGEST,
+                    &ALPHA_ENTRY_DIGEST
+                ),
+                Error::PoolNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn set_pool_slot_success_mutating() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Inspecting the pool stots before mutating a pool slots
+            let actual_slots_shares_before =
+                Pallet::get_slots_shares(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_shares_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            assert_eq!(actual_slots_shares_before, expected_slots_shares_before);
+            let actual_slots_value_before =
+                Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value_before =
+                vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_slots_value_before, expected_slots_value_before);
+            let alpha_slot_variant =
+                Pallet::get_slot_variant(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(alpha_slot_variant, Position::default());
+            // Mutating the pool slot shares and variant
+            assert_ok!(CommitHelper::set_pool_slot(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &ALPHA_ENTRY_DIGEST,
+                60,
+                &Position::position_of(1).unwrap()
+            ));
+            // Inspecting the pool stots after mutating a pool slots
+            let actual_slots_shares_after =
+                Pallet::get_slots_shares(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_shares_after =
+                vec![(BETA_ENTRY_DIGEST, 60), (ALPHA_ENTRY_DIGEST, 60)];
+            assert_eq!(actual_slots_shares_after, expected_slots_shares_after);
+            let actual_slots_value_after =
+                Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value_after =
+                vec![(BETA_ENTRY_DIGEST, 10), (ALPHA_ENTRY_DIGEST, 10)];
+            assert_eq!(actual_slots_value_after, expected_slots_value_after);
+            let alpha_slot_variant =
+                Pallet::get_slot_variant(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(alpha_slot_variant, Position::position_of(1).unwrap());
+        })
+    }
+
+    #[test]
+    fn set_pool_slot_success_inserting() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &MIKE,
+                &STAKING,
+                &GAMMA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Inspecting the pool stots before mutating a pool slots
+            let actual_slots_shares_before =
+                Pallet::get_slots_shares(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_shares_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            assert_eq!(actual_slots_shares_before, expected_slots_shares_before);
+            let actual_slots_value_before =
+                Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value_before =
+                vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(actual_slots_value_before, expected_slots_value_before);
+            let alpha_slot_variant =
+                Pallet::get_slot_variant(&STAKING, &ALPHA_POOL_DIGEST, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(alpha_slot_variant, Position::default());
+            // Inserting a new slot
+            assert_ok!(CommitHelper::set_pool_slot(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                &GAMMA_ENTRY_DIGEST,
+                20,
+                &Position::position_of(1).unwrap()
+            ));
+            // Inspecting the pool stots after mutating a pool slots
+            let actual_slots_shares_after =
+                Pallet::get_slots_shares(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_shares_after = vec![
+                (ALPHA_ENTRY_DIGEST, 40),
+                (BETA_ENTRY_DIGEST, 60),
+                (GAMMA_ENTRY_DIGEST, 20),
+            ];
+            assert_eq!(actual_slots_shares_after, expected_slots_shares_after);
+            let actual_slots_value_after =
+                Pallet::get_slots_value(&STAKING, &ALPHA_POOL_DIGEST).unwrap();
+            let expected_slots_value_after = vec![
+                (ALPHA_ENTRY_DIGEST, 6),
+                (BETA_ENTRY_DIGEST, 10),
+                (GAMMA_ENTRY_DIGEST, 3),
+            ];
+            assert_eq!(actual_slots_value_after, expected_slots_value_after);
+        })
+    }
+
+    #[test]
+    fn set_pool_slot_err_pool_not_found() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            assert_err!(
+                CommitHelper::set_pool_slot(
+                    &CHARLIE,
+                    &STAKING,
+                    &BETA_POOL_DIGEST,
+                    &GAMMA_ENTRY_DIGEST,
+                    20,
+                    &Position::position_of(1).unwrap()
+                ),
+                Error::PoolNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn set_pool_slot_err_max_slots_reached() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(MIKE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &MIKE,
+                &STAKING,
+                &GAMMA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![
+                (ALPHA_ENTRY_DIGEST, 20),
+                (BETA_ENTRY_DIGEST, 60),
+                (GAMMA_ENTRY_DIGEST, 40),
+            ];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                20,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            assert_err!(
+                CommitHelper::set_pool_slot(
+                    &CHARLIE,
+                    &STAKING,
+                    &ALPHA_POOL_DIGEST,
+                    &DELTA_ENTRY_DIGEST,
+                    20,
+                    &Position::position_of(1).unwrap()
+                ),
+                Error::MaxSlotsReached
+            );
+        })
+    }
+
+    // ===============================================================================
+    // ``````````````````````````````` INDEX OPERATIONS ``````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn remove_index_entry_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            // Inspecting the index entries before removing an entry
+            let index_entries_before =
+                Pallet::get_entries_shares(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            assert_eq!(expected_index_entries_before, index_entries_before);
+            // Removing an entry
+            let new_index_digest = CommitHelper::remove_index_entry(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &BETA_ENTRY_DIGEST,
+            )
+            .unwrap();
+            // Inspecting the old index entries after removing an entry which remains unchanged
+            let index_entries_before =
+                Pallet::get_entries_shares(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            assert_eq!(expected_index_entries_before, index_entries_before);
+            // Inspecting the new generated index entries after removing an entry
+            let index_entries_before =
+                Pallet::get_entries_shares(&STAKING, &new_index_digest).unwrap();
+            let expected_index_entries_before = vec![(ALPHA_ENTRY_DIGEST, 40)];
+            assert_eq!(expected_index_entries_before, index_entries_before);
+        })
+    }
+
+    #[test]
+    fn set_index_entry_success_mutating() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Inspecting the index entries before removing an entry
+            let index_entries_shares_before =
+                Pallet::get_entries_shares(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_shares_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            let index_entries_value_before =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_value_before =
+                vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(
+                expected_index_entries_value_before,
+                index_entries_value_before
+            );
+            assert_eq!(
+                expected_index_entries_shares_before,
+                index_entries_shares_before
+            );
+            let entry_alpha_variant =
+                Pallet::get_entry_variant(&STAKING, &ALPHA_INDEX_DIGEST, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(entry_alpha_variant, Position::default());
+            // Mutating the index entry shares and variant
+            let new_index_digest = CommitHelper::set_index_entry(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &ALPHA_ENTRY_DIGEST,
+                60,
+                &Position::position_of(1).unwrap(),
+            )
+            .unwrap();
+            // Inspecting old index entries after removing an entry which remains unchanged
+            let index_entries_shares_before =
+                Pallet::get_entries_shares(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_shares_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            let index_entries_value_before =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_value_before =
+                vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(
+                expected_index_entries_value_before,
+                index_entries_value_before
+            );
+            assert_eq!(
+                expected_index_entries_shares_before,
+                index_entries_shares_before
+            );
+            let entry_alpha_variant =
+                Pallet::get_entry_variant(&STAKING, &ALPHA_INDEX_DIGEST, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(entry_alpha_variant, Position::default());
+            // Inspecting new generated index entries after removing an entry
+            let index_entries_shares_before =
+                Pallet::get_entries_shares(&STAKING, &new_index_digest).unwrap();
+            let expected_index_entries_shares_before =
+                vec![(BETA_ENTRY_DIGEST, 60), (ALPHA_ENTRY_DIGEST, 60)];
+            let index_entries_value_before =
+                Pallet::get_entries_value(&STAKING, &new_index_digest).unwrap();
+            // fresh entries with no balance
+            let expected_index_entries_value_before =
+                vec![(BETA_ENTRY_DIGEST, 0), (ALPHA_ENTRY_DIGEST, 0)];
+            assert_eq!(
+                expected_index_entries_value_before,
+                index_entries_value_before
+            );
+            assert_eq!(
+                expected_index_entries_shares_before,
+                index_entries_shares_before
+            );
+            let entry_alpha_variant =
+                Pallet::get_entry_variant(&STAKING, &new_index_digest, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(entry_alpha_variant, Position::position_of(1).unwrap());
+        })
+    }
+
+    #[test]
+    fn set_index_entry_success_inserting() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            prepare_and_initiate_index(
+                CHARLIE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // Inspecting the index entries before removing an entry
+            let index_entries_shares_before =
+                Pallet::get_entries_shares(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_shares_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            let index_entries_value_before =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_value_before =
+                vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(
+                expected_index_entries_value_before,
+                index_entries_value_before
+            );
+            assert_eq!(
+                expected_index_entries_shares_before,
+                index_entries_shares_before
+            );
+            let entry_alpha_variant =
+                Pallet::get_entry_variant(&STAKING, &ALPHA_INDEX_DIGEST, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(entry_alpha_variant, Position::default());
+            // Inserting a new entry
+            let new_index_digest = CommitHelper::set_index_entry(
+                &CHARLIE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                &GAMMA_ENTRY_DIGEST,
+                20,
+                &Position::position_of(1).unwrap(),
+            )
+            .unwrap();
+            // Inspecting old index entries after removing an entry which remains unchanged
+            let index_entries_shares_before =
+                Pallet::get_entries_shares(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_shares_before =
+                vec![(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)];
+            let index_entries_value_before =
+                Pallet::get_entries_value(&STAKING, &ALPHA_INDEX_DIGEST).unwrap();
+            let expected_index_entries_value_before =
+                vec![(ALPHA_ENTRY_DIGEST, 8), (BETA_ENTRY_DIGEST, 12)];
+            assert_eq!(
+                expected_index_entries_value_before,
+                index_entries_value_before
+            );
+            assert_eq!(
+                expected_index_entries_shares_before,
+                index_entries_shares_before
+            );
+            let entry_alpha_variant =
+                Pallet::get_entry_variant(&STAKING, &ALPHA_INDEX_DIGEST, &ALPHA_ENTRY_DIGEST)
+                    .unwrap();
+            assert_eq!(entry_alpha_variant, Position::default());
+            // Inspecting new generated index entries after removing an entry
+            let index_entries_shares_before =
+                Pallet::get_entries_shares(&STAKING, &new_index_digest).unwrap();
+            let expected_index_entries_shares_before = vec![
+                (ALPHA_ENTRY_DIGEST, 40),
+                (BETA_ENTRY_DIGEST, 60),
+                (GAMMA_ENTRY_DIGEST, 20),
+            ];
+            let index_entries_value_before =
+                Pallet::get_entries_value(&STAKING, &new_index_digest).unwrap();
+            // fresh entries with no balance
+            let expected_index_entries_value_before = vec![
+                (ALPHA_ENTRY_DIGEST, 0),
+                (BETA_ENTRY_DIGEST, 0),
+                (GAMMA_ENTRY_DIGEST, 0),
+            ];
+            assert_eq!(
+                expected_index_entries_value_before,
+                index_entries_value_before
+            );
+            assert_eq!(
+                expected_index_entries_shares_before,
+                index_entries_shares_before
+            );
+        })
+    }
+}

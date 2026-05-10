@@ -185,6 +185,10 @@
 // `````````````````````````````````` MODULES ````````````````````````````````````
 // ===============================================================================
 
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 mod balance;
 mod commitment;
 mod helpers;
@@ -2199,5 +2203,1179 @@ pub mod pallet {
             )?;
             Ok(slot_value)
         }
+    }
+}
+
+// ===============================================================================
+// `````````````````````````````````` API TESTS ``````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+/// Unit tests for Extrinsics and Public APIs of [`pallet_commitment`](crate).
+mod ext_tests {
+        
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::{mock::*, types::PrecisionWrapper};
+
+    // --- FRAME Suite ---
+    use frame_suite::{commitment::*, misc::Directive};
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_ok,
+        pallet_prelude::DispatchError,
+        traits::{
+            fungible::{Inspect, InspectHold},
+            tokens::{Fortitude, Precision},
+        },
+    };
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````` EXTRINSIC TESTS ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn deposit_reserve_success_exact() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::deposit_reserve(RuntimeOrigin::signed(ALICE), 10, PrecisionWrapper::Exact)
+                .unwrap();
+            // balance check
+            let actual_balance = AssetOf::balance(&ALICE);
+            let actual_hold_balance = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance = 10;
+            let expected_hold_balance = 30;
+            assert_eq!(actual_balance, expected_balance);
+            assert_eq!(actual_hold_balance, expected_hold_balance);
+            System::assert_last_event(
+                Event::ReserveDeposited {
+                    amount: 10,
+                    total_on_hold: actual_hold_balance,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn deposit_reserve_success_best_efforts() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::deposit_reserve(
+                RuntimeOrigin::signed(ALICE),
+                25,
+                PrecisionWrapper::BestEffort,
+            )
+            .unwrap();
+            // balance check
+            let actual_balance = AssetOf::balance(&ALICE);
+            let actual_hold_balance = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance = 0;
+            let expected_hold_balance = 40;
+            assert_eq!(actual_balance, expected_balance);
+            assert_eq!(actual_hold_balance, expected_hold_balance);
+            System::assert_last_event(
+                Event::ReserveDeposited {
+                    amount: 20,
+                    total_on_hold: actual_hold_balance,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn deposit_reserve_err_insufficient_funds() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            assert_err!(
+                Pallet::deposit_reserve(
+                    RuntimeOrigin::signed(ALICE),
+                    25,
+                    PrecisionWrapper::Exact
+                ),
+                Error::InsufficientFunds
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_reserve_success() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::withdraw_reserve(RuntimeOrigin::signed(ALICE), None).unwrap();
+            // balance check
+            let actual_balance = AssetOf::balance(&ALICE);
+            let actual_hold_balance = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance = 40;
+            let expected_hold_balance = 0;
+            assert_eq!(actual_balance, expected_balance);
+            assert_eq!(actual_hold_balance, expected_hold_balance);
+            System::assert_last_event(
+                Event::ReserveWithdrawn {
+                    amount: 20,
+                    total_on_hold: 0,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_reserve_err_insufficient_funds() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            assert_err!(
+                Pallet::withdraw_reserve(RuntimeOrigin::signed(ALICE), Some(25)),
+                Error::InsufficientFunds
+            );
+        })
+    }
+
+    #[test]
+    fn withdraw_reserve_partial_success() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(2);
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            Pallet::withdraw_reserve(RuntimeOrigin::signed(ALICE), Some(15)).unwrap();
+            // balance check
+            let actual_balance = AssetOf::balance(&ALICE);
+            let actual_hold_balance = AssetOf::balance_on_hold(&PREPARE_FOR_COMMIT, &ALICE);
+            let expected_balance = 35;
+            let expected_hold_balance = 5;
+            assert_eq!(actual_balance, expected_balance);
+            assert_eq!(actual_hold_balance, expected_hold_balance);
+            System::assert_last_event(
+                Event::ReserveWithdrawn {
+                    amount: 15,
+                    total_on_hold: 5,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_digest_model_direct_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                15,
+                &Directive::new(Precision::Exact, Fortitude::Force),
+            )
+            .unwrap();
+            Pallet::inspect_digest_model(RuntimeOrigin::signed(ALICE), ALPHA_DIGEST, STAKING)
+                .unwrap();
+            System::assert_last_event(
+                Event::DigestModel {
+                    digest: DigestVariant::Direct(ALPHA_DIGEST),
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_digest_model_index_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            System::set_block_number(4);
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            System::set_block_number(6);
+            // Place commit to an index
+            let commit_amount = 20;
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                commit_amount,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::inspect_digest_model(
+                RuntimeOrigin::signed(ALICE),
+                ALPHA_INDEX_DIGEST,
+                STAKING,
+            )
+            .unwrap();
+            System::assert_last_event(
+                Event::DigestModel {
+                    digest: DigestVariant::Index(ALPHA_INDEX_DIGEST),
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_digest_model_pool_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, 30).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                BOB,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            let commit_amount = 25;
+            System::set_block_number(6);
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                commit_amount,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::inspect_digest_model(
+                RuntimeOrigin::signed(ALICE),
+                ALPHA_POOL_DIGEST,
+                STAKING,
+            )
+            .unwrap();
+            System::assert_last_event(
+                Event::DigestModel {
+                    digest: DigestVariant::Pool(ALPHA_POOL_DIGEST),
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_digest_model_err_bad_origin() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                15,
+                &Directive::new(Precision::Exact, Fortitude::Force),
+            )
+            .unwrap();
+            assert_err!(
+                Pallet::inspect_digest_model(RuntimeOrigin::root(), ALPHA_DIGEST, STAKING,),
+                DispatchError::BadOrigin
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_commit_value_for_direct_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, STANDARD_VALUE).unwrap();
+            System::set_block_number(2);
+            let commit_amount = 10;
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                commit_amount,
+                &Directive::new(Precision::BestEffort, Fortitude::Force),
+            )
+            .unwrap();
+            // fetch the commit value
+            Pallet::inspect_commit_value(RuntimeOrigin::signed(ALICE), STAKING).unwrap();
+            // verify if the data in the event emmission is correct
+            System::assert_last_event(
+                Event::CommitValue {
+                    model: DigestVariant::Direct(ALPHA_DIGEST),
+                    reason: STAKING,
+                    value: commit_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_commit_value_for_index_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            System::set_block_number(4);
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            assert_ok!(Pallet::index_exists(&STAKING, &ALPHA_INDEX_DIGEST));
+            System::set_block_number(6);
+            // Place commit to an index
+            let commit_amount = 20;
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                commit_amount,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // fetch the commit value
+            Pallet::inspect_commit_value(RuntimeOrigin::signed(ALICE), STAKING).unwrap();
+            // verify if the data in the event emmission is correct
+            System::assert_last_event(
+                Event::CommitValue {
+                    model: DigestVariant::Index(ALPHA_INDEX_DIGEST),
+                    reason: STAKING,
+                    value: commit_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_commit_value_for_pool_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, 30).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                BOB,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+            let commit_amount = 25;
+            System::set_block_number(6);
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                commit_amount,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            // fetch the commit value
+            Pallet::inspect_commit_value(RuntimeOrigin::signed(BOB), STAKING).unwrap();
+            // verify if the data in the event emmission is correct
+            System::assert_last_event(
+                Event::CommitValue {
+                    model: DigestVariant::Pool(ALPHA_POOL_DIGEST),
+                    reason: STAKING,
+                    value: commit_amount,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_commit_value_err_bad_origin() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_DIGEST,
+                15,
+                &Directive::new(Precision::Exact, Fortitude::Force),
+            )
+            .unwrap();
+            assert_err!(
+                Pallet::inspect_commit_value(RuntimeOrigin::root(), STAKING),
+                DispatchError::BadOrigin
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_index_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_index_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::IndexValue {
+                    index_of: ALPHA_INDEX_DIGEST,
+                    reason: STAKING,
+                    value: 35,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_entry_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_entry_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_ENTRY_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::IndexEntryValue {
+                    index_of: ALPHA_INDEX_DIGEST,
+                    reason: STAKING,
+                    entry_of: ALPHA_ENTRY_DIGEST,
+                    value: 14,
+                }
+                .into(),
+            );
+
+            Pallet::inspect_entry_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_INDEX_DIGEST,
+                BETA_ENTRY_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::IndexEntryValue {
+                    index_of: ALPHA_INDEX_DIGEST,
+                    reason: STAKING,
+                    entry_of: BETA_ENTRY_DIGEST,
+                    value: 21,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_entries_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, 40).unwrap();
+            initiate_digest_with_default_balance(STAKING, ALPHA_ENTRY_DIGEST).unwrap();
+            initiate_digest_with_default_balance(STAKING, BETA_ENTRY_DIGEST).unwrap();
+            prepare_and_initiate_index(
+                ALICE,
+                STAKING,
+                &[(ALPHA_ENTRY_DIGEST, 40), (BETA_ENTRY_DIGEST, 60)],
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_INDEX_DIGEST,
+                35,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_entries_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_INDEX_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::IndexEntriesValue {
+                    index_of: ALPHA_INDEX_DIGEST,
+                    reason: STAKING,
+                    entries: vec![(ALPHA_ENTRY_DIGEST, 14), (BETA_ENTRY_DIGEST, 21)],
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_pool_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            System::set_block_number(6);
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_pool_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_POOL_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::PoolValue {
+                    pool_of: ALPHA_POOL_DIGEST,
+                    reason: STAKING,
+                    value: 20,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_slot_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            System::set_block_number(6);
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_slot_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_POOL_DIGEST,
+                ALPHA_ENTRY_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::PoolSlotValue {
+                    pool_of: ALPHA_POOL_DIGEST,
+                    reason: STAKING,
+                    slot_of: ALPHA_ENTRY_DIGEST,
+                    value: 12,
+                }
+                .into(),
+            );
+
+            Pallet::inspect_slot_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_POOL_DIGEST,
+                BETA_ENTRY_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::PoolSlotValue {
+                    pool_of: ALPHA_POOL_DIGEST,
+                    reason: STAKING,
+                    slot_of: BETA_ENTRY_DIGEST,
+                    value: 8,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_slots_value_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            System::set_block_number(6);
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)];
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_slots_value(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_POOL_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::PoolSlotsValue {
+                    pool_of: ALPHA_POOL_DIGEST,
+                    reason: STAKING,
+                    slots: vec![(ALPHA_ENTRY_DIGEST, 12), (BETA_ENTRY_DIGEST, 8)],
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_pool_commission_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            System::set_block_number(6);
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)];
+            let init_commission = COMMISSION_HIGH;
+            prepare_and_initiate_pool(
+                ALICE,
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                init_commission,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_pool_commission(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_POOL_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::PoolCommission {
+                    pool_of: ALPHA_POOL_DIGEST,
+                    reason: STAKING,
+                    commission: init_commission,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_pool_manager_success() {
+        commit_test_ext().execute_with(|| {
+            initiate_key_and_set_balance_and_hold(ALICE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, LARGE_VALUE, LARGE_VALUE).unwrap();
+            initiate_key_and_set_balance_and_hold(CHARLIE, LARGE_VALUE, LARGE_VALUE).unwrap();
+            System::set_block_number(2);
+            Pallet::place_commit(
+                &BOB,
+                &STAKING,
+                &ALPHA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            System::set_block_number(6);
+            Pallet::place_commit(
+                &CHARLIE,
+                &STAKING,
+                &BETA_ENTRY_DIGEST,
+                STANDARD_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            let entries = vec![(ALPHA_ENTRY_DIGEST, 60), (BETA_ENTRY_DIGEST, 40)];
+            let manager = ALICE;
+            prepare_and_initiate_pool(
+                manager.clone(),
+                STAKING,
+                &entries,
+                ALPHA_INDEX_DIGEST,
+                ALPHA_POOL_DIGEST,
+                COMMISSION_ZERO,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &ALPHA_POOL_DIGEST,
+                LARGE_VALUE,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_pool_manager(
+                RuntimeOrigin::signed(ALICE),
+                STAKING,
+                ALPHA_POOL_DIGEST,
+            )
+            .unwrap();
+
+            System::assert_last_event(
+                Event::PoolManager {
+                    pool_of: ALPHA_POOL_DIGEST,
+                    reason: STAKING,
+                    manager: manager,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_asset_to_mint() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let new_digest_val = 325; // 250 -> 325
+            Pallet::set_digest_value(
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                new_digest_val,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let expected_issuable = new_digest_val.saturating_sub(STANDARD_COMMIT); // 75
+            Pallet::inspect_asset_to_issue(RuntimeOrigin::signed(ALICE)).unwrap();
+            System::assert_last_event(
+                Event::AssetIssuable {
+                    asset: expected_issuable,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_asset_to_reap() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let new_digest_val = 215; // 250 -> 215
+            Pallet::set_digest_value(
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                new_digest_val,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let expected_reapable = STANDARD_COMMIT.saturating_sub(new_digest_val); // 35
+            Pallet::inspect_asset_to_reap(RuntimeOrigin::signed(ALICE)).unwrap();
+            System::assert_last_event(
+                Event::AssetReapable {
+                    asset: expected_reapable,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_reason_value() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, STANDARD_COMMIT, STANDARD_HOLD).unwrap();
+            initiate_key_and_set_balance_and_hold(ALAN, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                150,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+
+            Pallet::inspect_reason_value(RuntimeOrigin::signed(ALICE), STAKING).unwrap();
+            System::assert_last_event(
+                Event::ReasonValuation {
+                    reason: STAKING,
+                    value: 150,
+                }
+                .into(),
+            );
+
+            Pallet::place_commit(
+                &BOB,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::inspect_reason_value(RuntimeOrigin::signed(ALICE), ESCROW).unwrap();
+            System::assert_last_event(
+                Event::ReasonValuation {
+                    reason: ESCROW,
+                    value: 250,
+                }
+                .into(),
+            );
+
+            Pallet::place_commit(
+                &ALAN,
+                &STAKING,
+                &VALIDATOR_BETA,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            Pallet::inspect_reason_value(RuntimeOrigin::signed(ALICE), STAKING).unwrap();
+            System::assert_last_event(
+                Event::ReasonValuation {
+                    reason: STAKING,
+                    value: 400,
+                }
+                .into(),
+            );
+
+            Pallet::inspect_reason_value(RuntimeOrigin::signed(ALICE), GOVERNANCE).unwrap();
+            System::assert_last_event(
+                Event::ReasonValuation {
+                    reason: GOVERNANCE,
+                    value: 0,
+                }
+                .into(),
+            );
+        })
+    }
+
+    #[test]
+    fn query_asset_to_mint() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let new_digest_val = 325; // 250 -> 325
+            Pallet::set_digest_value(
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                new_digest_val,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let expected_issuable = new_digest_val.saturating_sub(STANDARD_COMMIT); // 75
+            let actual_issuable = Pallet::query_asset_to_issue();
+            assert_eq!(expected_issuable, actual_issuable);
+        })
+    }
+
+    #[test]
+    fn query_asset_to_reap() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let new_digest_val = 215; // 250 -> 215
+            Pallet::set_digest_value(
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                new_digest_val,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let expected_reapable = STANDARD_COMMIT.saturating_sub(new_digest_val); // 35
+            let actual_reapable = Pallet::query_asset_to_reap();
+            assert_eq!(expected_reapable, actual_reapable);
+        })
+    }
+
+    #[test]
+    fn query_reason_value() {
+        commit_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            initiate_key_and_set_balance_and_hold(ALICE, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+            initiate_key_and_set_balance_and_hold(BOB, STANDARD_COMMIT, STANDARD_HOLD).unwrap();
+            initiate_key_and_set_balance_and_hold(ALAN, STANDARD_COMMIT, STANDARD_HOLD)
+                .unwrap();
+
+            Pallet::place_commit(
+                &ALICE,
+                &STAKING,
+                &VALIDATOR_ALPHA,
+                150,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let staking_value = Pallet::query_reason_value(STAKING);
+            assert_eq!(staking_value, 150);
+
+            Pallet::place_commit(
+                &BOB,
+                &ESCROW,
+                &CONTRACT_FREELANCE,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let escrow_value = Pallet::query_reason_value(ESCROW);
+            assert_eq!(escrow_value, 250);
+
+            Pallet::place_commit(
+                &ALAN,
+                &STAKING,
+                &VALIDATOR_BETA,
+                STANDARD_COMMIT,
+                &Directive::new(Precision::BestEffort, Fortitude::Polite),
+            )
+            .unwrap();
+            let staking_value = Pallet::query_reason_value(STAKING);
+            assert_eq!(staking_value, 400);
+
+            let governance_value = Pallet::query_reason_value(GOVERNANCE);
+            assert_eq!(governance_value, 0);
+        })
     }
 }
