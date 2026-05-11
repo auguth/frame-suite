@@ -1,0 +1,72 @@
+[package]
+name = "pallet-chain-manager"
+version = "0.1.1"
+description = "A session-driven orchestration pallet coordinating validator selection, participation, and settlement using offchain workers and pluggable models"
+readme = "README.md"
+keywords = ["substrate", "frame", "polkadot", "staking", "validators"]
+documentation = "https://auguth.github.io/frame-suite/rust-doc/pallet_chain_manager/index.html"
+
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+
+[dependencies]
+codec.workspace = true
+serde.workspace = true
+frame-support.workspace = true
+frame-system.workspace = true
+frame-suite.workspace = true
+frame-plugins.workspace = true
+frame-benchmarking = {workspace = true, default-features = false }
+pallet-authorship.workspace = true
+pallet-offences.workspace = true
+pallet-timestamp.workspace = true
+pallet-session.workspace = true
+sp-application-crypto.workspace = true
+sp-core.workspace = true
+sp-io.workspace = true
+sp-inherents.workspace = true 
+sp-staking.workspace = true
+sp-std.workspace = true 
+sp-runtime.workspace = true
+scale-info.workspace = true
+
+
+[features]
+default = ["std"]
+std = [
+    "frame-benchmarking/std",
+    "frame-support/std",
+    "frame-system/std",
+    "frame-suite/std",
+    "frame-plugins/std",
+    "pallet-authorship/std",
+    "pallet-session/std",
+    "pallet-session/historical",
+    "pallet-offences/std",
+    "sp-application-crypto/std",
+    "sp-core/std",
+    "sp-io/std",
+    "sp-inherents/std",
+    "sp-staking/std",
+    "sp-std/std",
+    "sp-runtime/std",
+]
+
+dev = []
+
+runtime-benchmarks = [
+    "frame-benchmarking/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "frame-system/runtime-benchmarks",
+]
+
+try-runtime = [
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+]
+
+[lints]
+workspace = true

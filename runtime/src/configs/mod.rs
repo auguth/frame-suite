@@ -23,41 +23,57 @@
 //
 // For more information, please refer to <http://unlicense.org>
 
-// Substrate and Polkadot dependencies
-use frame_support::{
-	derive_impl, parameter_types,
-	traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, VariantCountOf},
-	weights::{
-		constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
-		IdentityFee, Weight,
-	},
-};
-use frame_system::limits::{BlockLength, BlockWeights};
-use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_runtime::{traits::One, Perbill, FixedU64};
-use sp_version::RuntimeVersion;
+use codec::Encode;
 use core::marker::PhantomData;
 
-// Local dependencies
-use frame_suite::{
-    plugin_context, Disposition, Ignore
+use frame_support::{
+    derive_impl,
+    pallet_prelude::TransactionPriority,
+    parameter_types,
+    traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, VariantCountOf},
+    weights::{
+        constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
+        IdentityFee, Weight,
+    },
 };
+use frame_system::{
+    limits::{BlockLength, BlockWeights},
+};
+
+use frame_suite::{plugin_context, Disposition, Ignore};
+
 use frame_plugins::{
-	elections::{TopDownFairModel, TopDownFlatModel},
-	influence::LinearModel,
+    penalty::{ThresholdPenalty, ThresholdPenaltyConfig},
+    elections::{TopDownFairModel, TopDownFlatModel},
+    influence::LinearModel,
+    rewards::{
+        payee::SharesPay,
+        payout::{ConstantPayout, ConstantPayoutConfig},
+    },
     balances::{ShareBalanceFamily, ShareBalanceContext},
 };
 
-// temp
-use codec::{Encode, Decode};
-use frame_support::pallet_prelude::{TypeInfo, MaxEncodedLen, DecodeWithMemTracking, DispatchError};
+use sp_runtime::{
+    generic::Era,
+    traits::{One, OpaqueKeys, Verify},
+    Perbill, FixedU64, MultiAddress
+};
+use sp_version::RuntimeVersion;
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+
+use pallet_transaction_payment::{
+    ChargeTransactionPayment, ConstFeeMultiplier, FungibleAdapter, Multiplier,
+};
+use pallet_session::PeriodicSessions;
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use pallet_chain_manager::crypto::sr25519::AffidavitCryptoSr25519;
 
 // Local module imports
 use super::{
 	AccountId, Aura, Balance, Balances, Block, BlockNumber, Hash, Nonce, PalletInfo, Runtime,
 	RuntimeCall, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask,
-	System, EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION, Xp, Commitment, Authors
+	System, EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION, HOURS, Xp, Commitment, Authors, ChainManager, ImOnline,
+	Offences, SessionKeys, UncheckedExtrinsic, Signature,
 };
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -172,6 +188,75 @@ impl pallet_sudo::Config for Runtime {
 	type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const Period: u32 = HOURS;
+    pub const Offset: u32 = 0;
+}
+
+impl pallet_session::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ValidatorId = AccountId;
+    type ValidatorIdOf = ChainManager;
+    type ShouldEndSession = PeriodicSessions<Period, Offset>;
+    type NextSessionRotation = PeriodicSessions<Period, Offset>;
+    type SessionManager = ChainManager;
+    type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+    type Keys = SessionKeys;
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
+}
+
+impl pallet_session::historical::Config for Runtime {
+    type FullIdentification = AccountId;
+    type FullIdentificationOf = ChainManager;
+}
+
+parameter_types! {
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::MAX;
+    pub const MaxKeys: u32 = 10_000;
+    pub const MaxPeerInHeartbeats: u32 = 10_000;
+}
+
+impl pallet_im_online::Config for Runtime {
+    type AuthorityId = ImOnlineId;
+    type RuntimeEvent = RuntimeEvent;
+    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type ValidatorSet = pallet_session::historical::Pallet<Runtime>;
+    type ReportUnresponsiveness = Offences;
+    type UnsignedPriority = ImOnlineUnsignedPriority;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+    type MaxKeys = MaxKeys;
+    type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
+}
+
+impl pallet_offences::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type IdentificationTuple = pallet_session::historical::IdentificationTuple<Runtime>;
+    type OnOffenceHandler = ChainManager;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct BenchmarkAuthorFinder;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl FindAuthor<AccountId> for BenchmarkAuthorFinder {
+    fn find_author<'a, I>(_: I) -> Option<AccountId> 
+    where
+    I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
+    {
+        Some(frame_benchmarking::account("alice_id", 0, 1))
+    }
+}
+
+impl pallet_authorship::Config for Runtime {
+    #[cfg(feature = "runtime-benchmarks")]
+    type FindAuthor = BenchmarkAuthorFinder;
+
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+    type EventHandler = ImOnline;
+}
+
 impl pallet_xp::Config for Runtime {
     type Xp = Balance;
     type Pulse = BlockNumber;
@@ -181,7 +266,7 @@ impl pallet_xp::Config for Runtime {
     type LockReason = RuntimeFreezeReason;
     type Extensions = Ignore<Xp>;
     type EmitEvents = ConstBool<false>;
-    type WeightInfo = pallet_xp::weights::SubstrateWeight<Self>;
+    type WeightInfo = pallet_xp::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_commitment::Config for Runtime {
@@ -234,35 +319,107 @@ impl pallet_authors::Config for Runtime {
     type FairElectionContext = ();
     type FairElectionModel = TopDownFairModel;
 	type WeightInfo = pallet_authors::weights::SubstrateWeight<Runtime>;
-    type ActivityProvider = NoActivity;
+    type ActivityProvider = ChainManager;
     type EmitEvents = ConstBool<true>;
 }
 
 
-// Temporary impl
+plugin_context!(
+    name: pub MyConstantPayoutContext,
+    context: ConstantPayoutConfig<Balance>,
+    value: ConstantPayoutConfig::<Balance> {
+        payout: Balance::from(100u32)
+    }
+);
 
-#[derive(
-    Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq,
-    MaxEncodedLen, TypeInfo, Debug,
-)]
-pub enum NeverActive {}
+plugin_context!(
+    name: pub MyPenaltyThresholdContext,
+    context: ThresholdPenaltyConfig<Perbill>,
+    value: ThresholdPenaltyConfig::<Perbill> {
+        threshold: Perbill::from_percent(70)
+    }
+);
 
-impl From<NeverActive> for DispatchError {
-    fn from(x: NeverActive) -> DispatchError {
-        match x {}  
+type _FlatElection<T> = pallet_authors::FlatElection<T>;
+type FairElection<T> = pallet_authors::FairElection<T>;
+
+impl pallet_chain_manager::Config for Runtime {
+    type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type RewardContext = ();
+    type RewardModel = SharesPay;
+    type InflationContext = MyConstantPayoutContext;
+    type InflationModel = ConstantPayout;
+    type RoleAdapter = Authors;
+    type Asset = pallet_xp::Pallet<Self>;
+    type InflateViaSupply = ConstBool<false>;
+    type WeightInfo = ();
+    type PenaltyContext = MyPenaltyThresholdContext;
+    type PenaltyModel = ThresholdPenalty;
+    type NextSessionRotation = PeriodicSessions<Period, Offset>;
+    type MaxAffidavitWeights = ConstU32<500>;
+    type AffidavitCrypto = AffidavitCryptoSr25519;
+    type ElectionAdapter = FairElection<Self>;
+    type EmitEvents = ConstBool<true>;
+    type Points = u64;
+    type PointsAdapter = ChainManager;
+    const MAX_FORKS: u32 = 10;
+    const MAX_FORK_RECOVERY_TRAVERSAL: u32 = 30;
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as Verify>::Signer;
+    type Signature = Signature;
+}
+
+impl<LocalCall> frame_system::offchain::CreateTransactionBase<LocalCall> for Runtime
+where
+    RuntimeCall: From<LocalCall>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type RuntimeCall = RuntimeCall;
+}
+
+impl frame_system::offchain::CreateInherent<pallet_im_online::Call<Runtime>> for Runtime {
+    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+        UncheckedExtrinsic::new_bare(call)
     }
 }
 
-impl frame_support::traits::VariantCount for NeverActive {
-    const VARIANT_COUNT: u32 = 0;
-}
+impl frame_system::offchain::CreateSignedTransaction<RuntimeCall> for Runtime {
+    fn create_signed_transaction<
+        C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>,
+    >(
+        call: RuntimeCall,
+        public: <Signature as Verify>::Signer,
+        account: <Runtime as frame_system::Config>::AccountId,
+        nonce: <Runtime as frame_system::Config>::Nonce,
+    ) -> Option<UncheckedExtrinsic> {
+        let tip: u128 = 0;
 
-pub struct NoActivity;
+        let extra = (
+            frame_system::CheckNonZeroSender::<Runtime>::new(),
+            frame_system::CheckSpecVersion::<Runtime>::new(),
+            frame_system::CheckTxVersion::<Runtime>::new(),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckEra::<Runtime>::from(Era::mortal(128, 0)),
+            frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckWeight::<Runtime>::new(),
+            ChargeTransactionPayment::<Runtime>::from(tip),
+            frame_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(false),
+            frame_system::WeightReclaim::<Runtime>::new(),
+        );
 
-impl frame_suite::RoleActivity<AccountId, BlockNumber> for NoActivity {
-    type Activity = NeverActive;
+        let raw_payload =
+            sp_runtime::generic::SignedPayload::<RuntimeCall, _>::new(call, extra).ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let (call, extra, _) = raw_payload.deconstruct();
 
-    fn is_idle(_who: &AccountId) -> Result<(), Self::Activity> {
-        Ok(())
+        Some(UncheckedExtrinsic::new_signed(
+            call,
+            MultiAddress::Id(account),
+            signature,
+            extra,
+        ))
     }
 }

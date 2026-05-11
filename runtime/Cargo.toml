@@ -26,9 +26,14 @@ frame-system.workspace = true
 frame-try-runtime = { optional = true, workspace = true }
 pallet-aura.workspace = true
 pallet-authors.workspace = true
+pallet-authorship.workspace = true
 pallet-balances.workspace = true
+pallet-chain-manager.workspace = true
 pallet-commitment.workspace = true
 pallet-grandpa.workspace = true
+pallet-im-online.workspace = true
+pallet-offences.workspace = true
+pallet-session.workspace = true
 pallet-sudo.workspace = true
 pallet-timestamp.workspace = true
 pallet-transaction-payment-rpc-runtime-api.workspace = true
@@ -70,9 +75,14 @@ std = [
 	"frame-try-runtime?/std",
 	"pallet-aura/std",
 	"pallet-authors/std",
+	"pallet-authorship/std",
 	"pallet-balances/std",
+	"pallet-chain-manager/std",
 	"pallet-commitment/std",
 	"pallet-grandpa/std",
+	"pallet-im-online/std",
+	"pallet-offences/std",
+	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",

@@ -183,6 +183,11 @@ pub type Executive = frame_executive::Executive<
 	Migrations,
 >;
 
+type _EventRecord = frame_system::EventRecord<
+    <Runtime as frame_system::Config>::RuntimeEvent,
+    <Runtime as frame_system::Config>::Hash,
+>;
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 #[frame_support::runtime]
 mod runtime {
@@ -230,4 +235,22 @@ mod runtime {
 
     #[runtime::pallet_index(9)]
     pub type Authors = pallet_authors;
+
+    #[runtime::pallet_index(10)]
+    pub type ChainManager = pallet_chain_manager;
+
+    #[runtime::pallet_index(11)]
+    pub type Session = pallet_session;
+
+    #[runtime::pallet_index(12)]
+    pub type ImOnline = pallet_im_online;
+
+    #[runtime::pallet_index(13)]
+    pub type Offences = pallet_offences;
+
+    #[runtime::pallet_index(14)]
+    pub type Historical = pallet_session::historical;
+
+    #[runtime::pallet_index(15)]
+    pub type Authorship = pallet_authorship;
 }
