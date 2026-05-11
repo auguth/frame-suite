@@ -64,6 +64,19 @@ jobs:
           <html>
           <head>
             <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0;url=rust-doc/">
+            </head>
+            <body></body>
+          </html>
+          EOF
+
+      - name: Add rust-doc index.html
+        run: |
+          cat <<'EOF' > deploy/rust-doc/index.html
+          <!DOCTYPE html>
+          <html>
+            <head>
+            <meta charset="utf-8">
             <title>Crates Documentation</title>
         
             <style>
