@@ -1,0 +1,242 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines a plugin model in a fully generic, and type-safe way."><title>plugin_model in frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">plugin_<wbr>model</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#syntax" title="Syntax">Syntax</a><ul><li><a href="#immutable-model-no-context" title="Immutable Model (No Context)">Immutable Model (No Context)</a></li><li><a href="#immutable-model-with-context" title="Immutable Model with Context">Immutable Model with Context</a></li><li><a href="#mutable-model" title="Mutable Model">Mutable Model</a></li></ul></li><li><a href="#output-type-semantics" title="Output Type Semantics">Output Type Semantics</a></li><li><a href="#semantics" title="Semantics">Semantics</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">frame_suite</a></div><h1>Macro <span class="macro">plugin_model</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/plugins.rs.html#1751-2374">Source</a> </span></div><pre class="rust item-decl"><code>macro_rules! plugin_model {
+    (@output_ty $Input:tt) =&gt; { ... };
+    (@output_ty $Input:tt, $Output:tt) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: $Input:ident,
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: $Input:ident,
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: ($($Input:ident),+),
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: ($($Input:ident),+),
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: $Input:ident,
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: $Input:ident,
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: ($($Input:ident),+),
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: ($($Input:ident),+),
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut $Input:ident,
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut $Input:ident,
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut ($($Input:ident),+),
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut ($($Input:ident),+),
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut $Input:ident,
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut $Input:ident,
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut ($($Input:ident),+),
+        $(output: $Output:ident ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+    (
+        $(#[$name_meta:meta])*
+        name: $vis:vis $ModelName:ident,
+        input: mut ($($Input:ident),+),
+        $(output: ($($Output:ident),+) ,)?
+        $(others: [$($other_gen:tt),* $(,)? ] ,)?
+        context: $Context:ty,
+        bounds: [$($bounds:tt)*],
+        $(#[$compute_meta:meta])*
+        compute: |$input_arg:ident, $ctx_arg:ident| $body:block $(,)?
+    ) =&gt; { ... };
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines a plugin model in a fully generic, and type-safe way.</p>
+<p>The macro generates:</p>
+<ul>
+<li>A <code>struct</code> representing the plugin model (deriving <code>Default</code>)</li>
+<li>An implementation of either <a href="plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel"><code>PurePluginModel</code></a> or <a href="plugins/trait.MutablePluginModel.html" title="trait frame_suite::plugins::MutablePluginModel"><code>MutablePluginModel</code></a></li>
+</ul>
+<p>This removes repetitive boilerplate while ensuring that the relationships
+between input, output, and context types are enforced at compile time.</p>
+<p>Exactly one of:</p>
+<ul>
+<li><code>input:</code>     -&gt; immutable model (<code>PurePluginModel</code>)</li>
+<li><code>input: mut</code> -&gt; mutable model (<code>MutablePluginModel</code>)</li>
+</ul>
+<p>Optionally:</p>
+<ul>
+<li><code>context:</code> enables contextual execution (otherwise context defaults to <code>()</code>)</li>
+<li><code>root:</code> + <code>child:</code> attaches the model to a plugin family for late resolution</li>
+</ul>
+<h3 id="syntax"><a class="doc-anchor" href="#syntax">§</a>Syntax</h3><h4 id="immutable-model-no-context"><a class="doc-anchor" href="#immutable-model-no-context">§</a>Immutable Model (No Context)</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_model!</span> {
+    name: <span class="kw">pub </span>ModelName,          <span class="comment">// Required: struct visibility and struct name of the plugin model
+    </span>input: InputType,             <span class="comment">// Required: generic immutable input type
+    </span>output: OutputType,           <span class="comment">// Optional: output type (defaults to input if omitted)
+    </span>others: [T1, T2],             <span class="comment">// Optional: additional generic parameters
+    </span>bounds: [TraitBounds],        <span class="comment">// Required: trait bounds for generics
+    </span>compute: |input, ctx| { ... } <span class="comment">// Required: compute logic (`ctx` is `()`)
+</span>}</code></pre></div>
+<h4 id="immutable-model-with-context"><a class="doc-anchor" href="#immutable-model-with-context">§</a>Immutable Model with Context</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_model!</span> {
+    name: <span class="kw">pub </span>ModelName,          <span class="comment">// Required: struct visibility and struct name of the plugin model
+    </span>input: InputType,             <span class="comment">// Required: generic immutable input type
+    </span>output: OutputType,           <span class="comment">// Optional: output type (defaults to input if omitted)
+    </span>others: [T1, T2],             <span class="comment">// Optional: additional generic parameters
+    </span>context: ContextType,         <span class="comment">// Required: context struct used during execution
+    </span>bounds: [TraitBounds],        <span class="comment">// Required: trait bounds for generics
+    </span>compute: |input, ctx| { ... } <span class="comment">// `ctx: &amp;ContextType`
+</span>}</code></pre></div>
+<h4 id="mutable-model"><a class="doc-anchor" href="#mutable-model">§</a>Mutable Model</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_model!</span> {
+    name: <span class="kw">pub </span>ModelName,          <span class="comment">// Required: struct visibility and struct name of the plugin model
+    </span>input: <span class="kw-2">mut </span>InputType,         <span class="comment">// Required: mutable input type (`&amp;mut InputType`)
+    </span>output: OutputType,           <span class="comment">// Optional: output type (defaults to immutable input type)
+    </span>others: [T1, T2],             <span class="comment">// Optional: additional generic parameters
+    </span>context: ContextType,         <span class="comment">// Optional: context struct (defaults to `()`)
+    </span>bounds: [TraitBounds],        <span class="comment">// Required: trait bounds for generics
+    </span>compute: |input, ctx| { ... } <span class="comment">// Uses `compute_mut`
+</span>}</code></pre></div>
+<h3 id="output-type-semantics"><a class="doc-anchor" href="#output-type-semantics">§</a>Output Type Semantics</h3>
+<ul>
+<li>If <code>output</code> is omitted, the output type defaults to the <strong>immutable input type</strong>,
+even for mutable models (it does <strong>not</strong> default to <code>()</code>).</li>
+<li>This rule applies to both immutable and mutable plugin models.</li>
+<li>If a unit output <code>()</code> is desired, it must be specified explicitly as:</li>
+</ul>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>output: Output,
+bounds: [Output: Default]</code></pre></div>
+<p>The <code>Default</code> bound is required so <code>compute</code>’s block can construct the output value.</p>
+<h3 id="semantics"><a class="doc-anchor" href="#semantics">§</a>Semantics</h3>
+<ul>
+<li>Each model is fully generic over its input, output, and optional context.</li>
+<li>If <code>context</code> is omitted, the model uses <code>()</code> as its context type.</li>
+<li>If <code>root</code> and <code>child</code> are provided, the model becomes a member of a plugin
+family and is selected indirectly using the <code>(root, child, context)</code>
+resolution lattice.</li>
+<li>Immutable variants use <code>compute</code> with shared input references.</li>
+<li>Mutable variants use <code>compute_mut</code> and may mutate the input in-place.</li>
+</ul>
+<p>All constraints are enforced purely through trait bounds and associated
+types, guaranteeing compile-time correctness of model wiring and resolution.</p>
+</div></details></section></div></main></body></html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Core state exploration engine for `LazyBalance`."><title>explore_balance_states in frame_suite::assets::lazy_balance_model_checker - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>assets::<wbr>lazy_<wbr>balance_<wbr>model_<wbr>checker</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">frame_suite</a>::<wbr><a href="../index.html">assets</a>::<wbr><a href="index.html">lazy_balance_model_checker</a></div><h1>Function <span class="fn">explore_balance_states</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/frame_suite/assets.rs.html#2376-2659">Source</a> </span></div><pre class="rust item-decl"><code>fn explore_balance_states&lt;T, M, G, F, H&gt;(
+    users: &amp;[M::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>],
+    deposits: &amp;[T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    adjustments: &amp;[T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    subjects: &amp;[T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>],
+    max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_bps: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_diff: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    overrides: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps">BalanceTraps</a>&lt;G, F&gt;&gt;,
+    hasher: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;H&gt;,
+    results: &amp;mut <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;T, M&gt;,
+)<div class="where">where
+    T: <a class="trait" href="../trait.LazyBalanceMarker.html" title="trait frame_suite::assets::LazyBalanceMarker">LazyBalanceMarker</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,
+    M: <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;T&gt; + <a class="trait" href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher">BalanceStateHasher</a>&lt;T, M&gt; + <a class="trait" href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards">BalanceGuards</a>&lt;T, M&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>,
+    T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Id" title="type frame_suite::assets::LazyBalance::Id">Id</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>,
+    T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt;,
+    G: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;, &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;T, M&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+    F: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;, &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;T, M&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+    H: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u64.html">u64</a>,</div></code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Core state exploration engine for <a href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance"><code>LazyBalance</code></a>.</p>
+<p>Performs <strong>breadth-first</strong> exploration over operation sequences,
+starting from an initial empty state.</p>
+<div class="example-wrap"><pre class="language-text"><code>-&gt; [Deposit]   -&gt; [Deposit, Mint] -&gt; [Deposit, Mint, Withdraw]
+-&gt; [Mint]      -&gt; [Mint, Reap]
+-&gt; [Reap]      -&gt; ...
+-&gt; [Withdraw]  -&gt; ...
+-&gt; [Drain]     -&gt; ...</code></pre></div>
+<p>Exploration proceeds level by level:</p>
+<ul>
+<li>all sequences of length <code>n</code> are explored before <code>n+1</code></li>
+<li>each step extends the current <strong>trace</strong> by one <a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a></li>
+<li>guards / traps / flow determine whether a branch continues</li>
+</ul>
+<p>At each step:</p>
+<ul>
+<li>checks <a href="../trait.BalanceGuards.html#method.invariant" title="associated function frame_suite::assets::BalanceGuards::invariant"><code>BalanceGuards::invariant</code></a> on the current state</li>
+<li>generates candidate operations (vector of <a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a>)</li>
+<li>filters using:
+<ul>
+<li><code>guard_{op}(...) || trap(...)</code></li>
+<li><code>guard_flow_{op}(...) &amp;&amp; trap_flow(...)</code></li>
+</ul>
+</li>
+</ul>
+<p>For each valid operation:</p>
+<ul>
+<li>executes lazy model</li>
+<li>applies manual model</li>
+<li>updates state (receipts, trace)</li>
+<li>evaluates withdrawal drift (<a href="fn.compare_balances_values.html" title="fn frame_suite::assets::lazy_balance_model_checker::compare_balances_values"><code>compare_balances_values</code></a>)</li>
+</ul>
+<p>Uses:</p>
+<ul>
+<li>visited set with <a href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher"><code>BalanceStateHasher</code></a> to avoid revisiting states</li>
+<li>optional custom hasher for additional deduplication</li>
+</ul>
+<p>Records:</p>
+<ul>
+<li>errors (failures)</li>
+<li>exits (drift beyond tolerance)</li>
+<li>successful paths</li>
+</ul>
+<p>This function defines the full execution semantics for:</p>
+<ul>
+<li>guarded exploration</li>
+<li>trap-based overrides</li>
+<li>state-space traversal</li>
+</ul>
+</div></details></section></div></main></body></html>

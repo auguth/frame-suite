@@ -1,0 +1,193 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Extends `RoleManager` to introduce reward and penalty mechanics for role-based systems."><title>CompensateRoles in frame_suite::roles - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Compensate<wbr>Roles</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#concepts" title="Concepts">Concepts</a></li><li><a href="#example-implementations" title="Example Implementations">Example Implementations</a><ul><li><a href="#example-1-validator-rewards-and-penalties" title="Example 1: Validator Rewards and Penalties">Example 1: Validator Rewards and Penalties</a></li><li><a href="#example-2-council-member-performance-incentives" title="Example 2: Council Member Performance Incentives">Example 2: Council Member Performance Incentives</a></li></ul></li><li><a href="#invariants" title="Invariants">Invariants</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Ratio" title="Ratio">Ratio</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.forgive" title="forgive">forgive</a></li><li><a href="#tymethod.get_hold" title="get_hold">get_hold</a></li><li><a href="#tymethod.get_penalties_of" title="get_penalties_of">get_penalties_of</a></li><li><a href="#tymethod.get_penalties_on" title="get_penalties_on">get_penalties_on</a></li><li><a href="#tymethod.get_rewards_of" title="get_rewards_of">get_rewards_of</a></li><li><a href="#tymethod.get_rewards_on" title="get_rewards_on">get_rewards_on</a></li><li><a href="#tymethod.has_penalty" title="has_penalty">has_penalty</a></li><li><a href="#tymethod.has_reward" title="has_reward">has_reward</a></li><li><a href="#tymethod.penalize" title="penalize">penalize</a></li><li><a href="#tymethod.reclaim" title="reclaim">reclaim</a></li><li><a href="#tymethod.reward" title="reward">reward</a></li><li><a href="#tymethod.set_hold" title="set_hold">set_hold</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.on_forgive" title="on_forgive">on_forgive</a></li><li><a href="#method.on_penalize" title="on_penalize">on_penalize</a></li><li><a href="#method.on_reclaim" title="on_reclaim">on_reclaim</a></li><li><a href="#method.on_reward" title="on_reward">on_reward</a></li><li><a href="#method.on_set_hold" title="on_set_hold">on_set_hold</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>roles</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">roles</a></div><h1>Trait <span class="trait">CompensateRoles</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/roles.rs.html#574-717">Source</a> </span></div><pre class="rust item-decl"><code>pub trait CompensateRoles&lt;Candidate&gt;: <a class="trait" href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager">RoleManager</a>&lt;Candidate&gt; {
+    type <a href="#associatedtype.Ratio" class="associatedtype">Ratio</a>: <a class="trait" href="../base/trait.Percentage.html" title="trait frame_suite::base::Percentage">Percentage</a>;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 17 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.has_reward" class="fn">has_reward</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.has_penalty" class="fn">has_penalty</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_hold" class="fn">get_hold</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_rewards_of" class="fn">get_rewards_of</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_rewards_on" class="fn">get_rewards_on</a>(
+        time_stamp: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Candidate, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_penalties_of" class="fn">get_penalties_of</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_penalties_on" class="fn">get_penalties_on</a>(
+        time_stamp: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Candidate, Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_hold" class="fn">set_hold</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+        precision: Precision,
+        force: Fortitude,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reward" class="fn">reward</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+        precision: Precision,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.penalize" class="fn">penalize</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        factor: Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.forgive" class="fn">forgive</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        from: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reclaim" class="fn">reclaim</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        from: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+
+    // Provided methods
+    fn <a href="#method.on_reward" class="fn">on_reward</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _amount: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, _at: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_penalize" class="fn">on_penalize</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _factor: Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>, _at: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_forgive" class="fn">on_forgive</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _factor: Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_reclaim" class="fn">on_reclaim</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _amount: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_set_hold" class="fn">on_set_hold</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Extends <a href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager"><code>RoleManager</code></a> to introduce <strong>reward and penalty mechanics</strong>
+for role-based systems.</p>
+<p>This trait manages economic incentives and behavioral enforcement for candidates,
+tracking rewards, penalties, and temporary holdings. Typical applications include
+(but not constrained to):</p>
+<ul>
+<li><strong>Validators</strong> - rewards for block production, penalties for missed duties.</li>
+<li><strong>Council members</strong> - incentives for active participation, slashing for misconduct.</li>
+<li><strong>Oracle operators</strong> - rewards for accurate reporting, penalties for stale or
+incorrect data.</li>
+</ul>
+<h3 id="concepts"><a class="doc-anchor" href="#concepts">§</a>Concepts</h3>
+<ul>
+<li><strong>Hold</strong>: The total reservation of a candidate’s assets, includes rewards and other
+backings (collaterals, fundings, etc).</li>
+<li><strong>Reward</strong>: An addition to a candidate’s assets for performing expected duties.</li>
+<li><strong>Penalty</strong>: A fractional deduction (ratio) applied to assets for misbehavior or
+non-performance.</li>
+<li><strong>Forgive</strong>: Reverses penalties, partially or fully, for rehabilitation or
+governance action.</li>
+<li><strong>Reclaim</strong>: Withdraw previously rewarded assets for redistribution or correction.</li>
+</ul>
+<p>All returned values (assets, rewards, penalties) are <strong>real-time</strong>, reflecting the
+candidate’s current effective state.</p>
+<h3 id="example-implementations"><a class="doc-anchor" href="#example-implementations">§</a>Example Implementations</h3><h4 id="example-1-validator-rewards-and-penalties"><a class="doc-anchor" href="#example-1-validator-rewards-and-penalties">§</a>Example 1: Validator Rewards and Penalties</h4>
+<p>In a blockchain validator system:</p>
+<ul>
+<li>Validators earn rewards for producing blocks, finalizing chains, or performing
+other expected duties.</li>
+<li>Misbehavior, missed blocks, or downtime results in penalties, which reduce the
+validator’s hold.</li>
+<li>Rewards and penalties are recorded with timestamps, allowing auditability and
+historical tracking.</li>
+<li>The system may forgive temporary penalties or reclaim rewards in case of protocol
+corrections.</li>
+<li>Real-time queries (get_rewards_of, get_penalties_of) reflect the current effective
+state of the validator.</li>
+</ul>
+<h4 id="example-2-council-member-performance-incentives"><a class="doc-anchor" href="#example-2-council-member-performance-incentives">§</a>Example 2: Council Member Performance Incentives</h4>
+<p>In a governance council:</p>
+<ul>
+<li>Council members receive rewards for attending sessions, voting, or completing
+assigned tasks.</li>
+<li>Failure to participate or violating rules triggers penalties, possibly reducing
+influence or rewards.</li>
+<li>Holds represent assets reserved for potential penalties or pending rewards.</li>
+<li>Forgiveness mechanisms allow partial reversal of penalties for rehabilitation or
+governance decisions.</li>
+<li>Reclaiming rewards may occur if a proposal is invalidated or performance is reversed.</li>
+<li>Real-time computations ensure all incentives and penalties are up-to-date when queried.</li>
+</ul>
+<p>These examples illustrate how <code>CompensateRoles</code> can manage <strong>dynamic reward and penalty
+systems</strong> across different roles, ensuring fairness, accountability, and flexibility in
+role-based operations.</p>
+<h3 id="invariants"><a class="doc-anchor" href="#invariants">§</a>Invariants</h3>
+<ul>
+<li>Total penalties cannot exceed the candidate’s current hold or collateral.</li>
+<li>Implementations should track timestamps accurately to maintain auditability.</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Ratio" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#582">Source</a><h4 class="code-header">type <a href="#associatedtype.Ratio" class="associatedtype">Ratio</a>: <a class="trait" href="../base/trait.Percentage.html" title="trait frame_suite::base::Percentage">Percentage</a></h4></section></summary><div class="docblock"><p>The ratio type used to represent <strong>penalty factors</strong> applied to a candidate.</p>
+<p>This type defines how much of a candidate’s assets should be deducted
+during a penalty event, expressed as a fractional percentage.</p>
+<ul>
+<li>Values should be within <code>[0, 1]</code> (0% to 100%)</li>
+<li>Example: <code>0.05</code> -&gt; 5% penalty, <code>0.25</code> -&gt; 25% penalty</li>
+</ul>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.has_reward" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#589">Source</a><h4 class="code-header">fn <a href="#tymethod.has_reward" class="fn">has_reward</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether the candidate has any pending rewards.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.has_penalty" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#592">Source</a><h4 class="code-header">fn <a href="#tymethod.has_penalty" class="fn">has_penalty</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether the candidate has any pending penalties.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_hold" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#602">Source</a><h4 class="code-header">fn <a href="#tymethod.get_hold" class="fn">get_hold</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns the current <strong>hold amount</strong> of a candidate.</p>
+<p>Holds are total reserved assets (may include rewards) that may be used
+for penalties or temporary constraints.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_rewards_of" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#607-609">Source</a><h4 class="code-header">fn <a href="#tymethod.get_rewards_of" class="fn">get_rewards_of</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns all pending rewards for a candidate along with their timestamp of enforcement.</p>
+<p>The list reflects <strong>real-time pending rewards</strong>, not historical logs.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_rewards_on" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#616-618">Source</a><h4 class="code-header">fn <a href="#tymethod.get_rewards_on" class="fn">get_rewards_on</a>(
+    time_stamp: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Candidate, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns all rewards of candidates issued at a specific timestamp.</p>
+<ul>
+<li>This is a <strong>snapshot query</strong> for the given timestamp; it does <strong>not mutate state</strong>.</li>
+<li>Returned values may reflect the <strong>rewards actually enforced or pending</strong> based on
+the given timestamp, which may be used for auditing, reporting, or batch processing.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_penalties_of" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#623-625">Source</a><h4 class="code-header">fn <a href="#tymethod.get_penalties_of" class="fn">get_penalties_of</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns all pending penalties for a candidate along with their timestamp of enforcement.</p>
+<p>The list reflects <strong>real-time pending penalties</strong>, not historical logs.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_penalties_on" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#632-634">Source</a><h4 class="code-header">fn <a href="#tymethod.get_penalties_on" class="fn">get_penalties_on</a>(
+    time_stamp: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Candidate, Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns all penalties of candidates issued at a specific timestamp.</p>
+<ul>
+<li>This is a <strong>snapshot query</strong> for the given timestamp; it does <strong>not mutate state</strong>.</li>
+<li>Returned values may reflect the <strong>penalties actually enforced or pending</strong> based on
+the given timestamp, which may be used for auditing, reporting, or batch processing.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_hold" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#644-649">Source</a><h4 class="code-header">fn <a href="#tymethod.set_hold" class="fn">set_hold</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+    precision: Precision,
+    force: Fortitude,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Updates the hold of a candidate to the specified amount.</p>
+<p>This method is utilized to reward or penalize a <code>Candidate</code>’s hold which
+reflects on its individual backings.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reward" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#657-661">Source</a><h4 class="code-header">fn <a href="#tymethod.reward" class="fn">reward</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+    precision: Precision,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Issues a reward to a candidate, marks it as pending and returning the timestamp.</p>
+<p>Once the reward is enforced during the timestamp, it is applied to the
+<code>Candidate</code>’s hold.</p>
+<p>This is to ensure rewards reversal (regaining) if applied wrongly.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.penalize" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#670">Source</a><h4 class="code-header">fn <a href="#tymethod.penalize" class="fn">penalize</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    factor: Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Applies a penalty (fractional <a href="trait.CompensateRoles.html#associatedtype.Ratio"><code>Ratio</code></a>) to a candidate, marks it as pending
+and returning the timestamp.</p>
+<p>Once the penalty is enforced during the timestamp, it is applied to the
+<code>Candidate</code>’s hold.</p>
+<p>This is to ensure penalty reversal (forgiving) if applied wrongly.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.forgive" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#677">Source</a><h4 class="code-header">fn <a href="#tymethod.forgive" class="fn">forgive</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    from: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Forgives a pending penalty, returning its factor.</p>
+<p>Cannot be utilized for enforced penalties, only pending ones.</p>
+<p><code>from</code> specifies the timestamp of the penalty to forgive.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reclaim" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#684">Source</a><h4 class="code-header">fn <a href="#tymethod.reclaim" class="fn">reclaim</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    from: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Reclaims a pending reward from a candidate, returning its reward value.</p>
+<p>Cannot be utilized for enforced rewards, only pending ones.</p>
+<p><code>from</code> specifies the timestamp of the reward to reclaim.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.on_reward" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#693">Source</a><h4 class="code-header">fn <a href="#method.on_reward" class="fn">on_reward</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _amount: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, _at: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>)</h4></section></summary><div class="docblock"><p>Hook triggered when a reward is issued.</p>
+<p>Default is no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_penalize" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#698">Source</a><h4 class="code-header">fn <a href="#method.on_penalize" class="fn">on_penalize</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _factor: Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>, _at: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.TimeStamp" title="type frame_suite::roles::RoleManager::TimeStamp">TimeStamp</a>)</h4></section></summary><div class="docblock"><p>Hook triggered when a penalty is applied.</p>
+<p>Default is no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_forgive" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#703">Source</a><h4 class="code-header">fn <a href="#method.on_forgive" class="fn">on_forgive</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _factor: Self::<a class="associatedtype" href="trait.CompensateRoles.html#associatedtype.Ratio" title="type frame_suite::roles::CompensateRoles::Ratio">Ratio</a>)</h4></section></summary><div class="docblock"><p>Hook triggered when a penalty is forgiven.</p>
+<p>Default is no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_reclaim" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#708">Source</a><h4 class="code-header">fn <a href="#method.on_reclaim" class="fn">on_reclaim</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _amount: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)</h4></section></summary><div class="docblock"><p>Hook triggered when a reward is reclaimed.</p>
+<p>Default is no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_set_hold" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#716">Source</a><h4 class="code-header">fn <a href="#method.on_set_hold" class="fn">on_set_hold</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)</h4></section></summary><div class="docblock"><p>Hook triggered when an author’s total hold is updated.</p>
+<p>Signals a mutation maybe due to rewards/penalties or internal
+changes enforced (finalized)</p>
+<p>Default is no-op.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/roles/trait.CompensateRoles.js" async></script></section></div></main></body></html>

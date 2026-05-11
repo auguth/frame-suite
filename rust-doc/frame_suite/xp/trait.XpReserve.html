@@ -1,0 +1,342 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Trait for reserving XP under specific reasons with built-in support utilities."><title>XpReserve in frame_suite::xp - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">XpReserve</a></h2><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Reserve" title="Reserve">Reserve</a></li><li><a href="#associatedtype.ReserveReason" title="ReserveReason">ReserveReason</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.get_all_reserves" title="get_all_reserves">get_all_reserves</a></li><li><a href="#tymethod.get_reserve_xp" title="get_reserve_xp">get_reserve_xp</a></li><li><a href="#tymethod.has_reserve" title="has_reserve">has_reserve</a></li><li><a href="#tymethod.reserve_exists" title="reserve_exists">reserve_exists</a></li><li><a href="#tymethod.set_reserve" title="set_reserve">set_reserve</a></li><li><a href="#tymethod.total_reserved" title="total_reserved">total_reserved</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.can_reserve_mutate" title="can_reserve_mutate">can_reserve_mutate</a></li><li><a href="#method.can_reserve_new" title="can_reserve_new">can_reserve_new</a></li><li><a href="#method.can_reserve_xp" title="can_reserve_xp">can_reserve_xp</a></li><li><a href="#method.maximum_reserves" title="maximum_reserves">maximum_reserves</a></li><li><a href="#method.on_reserve_slash" title="on_reserve_slash">on_reserve_slash</a></li><li><a href="#method.on_reserve_update" title="on_reserve_update">on_reserve_update</a></li><li><a href="#method.reserve_xp" title="reserve_xp">reserve_xp</a></li><li><a href="#method.reset_reserve" title="reset_reserve">reset_reserve</a></li><li><a href="#method.slash_reserve" title="slash_reserve">slash_reserve</a></li><li><a href="#method.withdraw_reserve" title="withdraw_reserve">withdraw_reserve</a></li><li><a href="#method.withdraw_reserve_partial" title="withdraw_reserve_partial">withdraw_reserve_partial</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>xp</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">xp</a></div><h1>Trait <span class="trait">XpReserve</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/xp.rs.html#820-1267">Source</a> </span></div><pre class="rust item-decl"><code>pub trait XpReserve<div class="where">where
+    Self: <a class="trait" href="trait.XpMutate.html" title="trait frame_suite::xp::XpMutate">XpMutate</a> + <a class="trait" href="trait.XpSystem.html" title="trait frame_suite::xp::XpSystem">XpSystem</a>&lt;Extension: <a class="trait" href="trait.XpReserveListener.html" title="trait frame_suite::xp::XpReserveListener">XpReserveListener</a> + <a class="trait" href="trait.XpSystemExtensions.html" title="trait frame_suite::xp::XpSystemExtensions">XpSystemExtensions</a>&lt;Via = Self&gt;&gt;,</div>{
+    type <a href="#associatedtype.Reserve" class="associatedtype">Reserve</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a>;
+    type <a href="#associatedtype.ReserveReason" class="associatedtype">ReserveReason</a>: <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a> + VariantCount;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 17 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.reserve_exists" class="fn">reserve_exists</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.has_reserve" class="fn">has_reserve</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_reserve_xp" class="fn">get_reserve_xp</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.total_reserved" class="fn">total_reserved</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_all_reserves" class="fn">get_all_reserves</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_reserve" class="fn">set_reserve</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; DispatchResult;
+
+    // Provided methods
+    fn <a href="#method.can_reserve_xp" class="fn">can_reserve_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_reserve_mutate" class="fn">can_reserve_mutate</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_reserve_new" class="fn">can_reserve_new</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.maximum_reserves" class="fn">maximum_reserves</a>() -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.usize.html">usize</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.reserve_xp" class="fn">reserve_xp</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.withdraw_reserve" class="fn">withdraw_reserve</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.reset_reserve" class="fn">reset_reserve</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.slash_reserve" class="fn">slash_reserve</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.withdraw_reserve_partial" class="fn">withdraw_reserve_partial</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+        precision: Precision,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_reserve_update" class="fn">on_reserve_update</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+        reserve_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_reserve_slash" class="fn">on_reserve_slash</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+        slashed_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Trait for reserving XP under specific reasons with built-in support utilities.</p>
+<p>Reserved XP is set aside for future intent, constraints, or commitments,
+and is temporarily excluded from the liquid/spendable pool. Reservations are
+keyed by <code>ReserveReason</code> to allow multiple reserved segments per XP record.</p>
+<p>Reserved XP is inaccessible to the owner until unreserved, but may be used by
+the runtime for specific logical intents.</p>
+<p>Typical use cases include planned usage, cooldowns, bonding, or module isolation.</p>
+<p>Additionally, this trait provides default support methods for common reserve-related
+patterns, such as validation, reserving XP, withdrawing reserves, burning, and slashing
+reserved XP.</p>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Reserve" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#829">Source</a><h4 class="code-header">type <a href="#associatedtype.Reserve" class="associatedtype">Reserve</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a></h4></section></summary><div class="docblock"><p>Structure representing reserve metadata (e.g., reason and reserved XP points).</p>
+<p>It is merely given for alias and hygiene reason for the implementation</p>
+<p>Reserve entries can be exposed to users for inspection or management.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.ReserveReason" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#842">Source</a><h4 class="code-header">type <a href="#associatedtype.ReserveReason" class="associatedtype">ReserveReason</a>: <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a> + VariantCount</h4></section></summary><div class="docblock"><p>The <code>ReserveReason</code> represents <em>why</em> XP is reserved or modified within the system.</p>
+<p>It should be a lightweight, bounded identifier that classifies the context or intent
+of runtime-level operations-such as staking, governance, or slashing.</p>
+<p>Should be constrained to a small, enumerable set defined by the runtime to prevent
+storage bloat.</p>
+<p>Example use cases:</p>
+<ul>
+<li><code>ReserveReason::Staking</code> - XP reserved for block author staking.</li>
+<li><code>ReserveReason::Treasury</code> - XP reserved for governance or public goods.</li>
+</ul>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.reserve_exists" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#856">Source</a><h4 class="code-header">fn <a href="#tymethod.reserve_exists" class="fn">reserve_exists</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if a reserve exists for the given XP key and reserve reason.</p>
+<p>This method serves as a guard function to verify reserve existence before performing
+operations that assume a specific reserve is present.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if a reserve exists for the specified key and reason.</li>
+<li><code>Err(DispatchError)</code> if the reserve does not exist or the XP key is invalid.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.has_reserve" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#867">Source</a><h4 class="code-header">fn <a href="#tymethod.has_reserve" class="fn">has_reserve</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if the XP entry has any active reserves.</p>
+<p>This method provides a quick existence check for any reserves without
+checking a reserve’s specific reason. Useful as a precondition check
+before performing reserve-sensitive operations.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the XP entry has one or more active reserves.</li>
+<li><code>Err(DispatchError)</code> if no reserves exist for the XP key.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_reserve_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#976-979">Source</a><h4 class="code-header">fn <a href="#tymethod.get_reserve_xp" class="fn">get_reserve_xp</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the amount of XP reserved under the specified reserve reason.</p>
+<p>This method returns the exact number of points currently reserved for the given
+reason, allowing precise queries of reserve states for accounting, validation,
+or display purposes.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the reserved XP amount for the specified reason.</li>
+<li><code>Err(DispatchError)</code> if the XP key or reserve does not exist.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.total_reserved" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#990">Source</a><h4 class="code-header">fn <a href="#tymethod.total_reserved" class="fn">total_reserved</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the total points of XP actively reserved for the given key.</p>
+<p><strong>Performance Tip</strong>: If total reserved XP is available as high-level metadata
+in the XP structure, it is more efficient to query this value
+directly rather than summing individual reserves.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the total reserved XP amount.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_all_reserves" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1001">Source</a><h4 class="code-header">fn <a href="#tymethod.get_all_reserves" class="fn">get_all_reserves</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves all active reserve reasons associated with the XP key.</p>
+<p>Returns an empty vector if no reserves exist for the XP key.
+Use <a href="trait.XpReserve.html#tymethod.has_reserve"><code>has_reserve</code></a> as a precondition to avoid unnecessary queries when
+no reserves exist.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;ReserveReason&gt;)</code> containing all active reserve reasons.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or lookup fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_reserve" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1034-1038">Source</a><h4 class="code-header">fn <a href="#tymethod.set_reserve" class="fn">set_reserve</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p><strong>Use with caution!</strong> Directly sets the reserved XP for the given key and reason.</p>
+<p>This function bypasses standard XP flow and permission checks, allowing direct
+manipulation of reserve values. It is intended strictly for low-level runtime intents
+such as migrations, internal state resets, or administrative operations.</p>
+<p>This method must <strong>never</strong> be exposed to users or XP providers, as it allows
+arbitrary creation or mutation of reserves, which can break system invariants.</p>
+<p>If a reserve with the given reason does not exist, it will be created with the specified points.</p>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if a reserve with specified XP key and reason is successfully created
+or mutated.</li>
+<li><code>Err(DispatchError)</code> if the operation fails due to system constraints.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.can_reserve_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#883-897">Source</a><h4 class="code-header">fn <a href="#method.can_reserve_xp" class="fn">can_reserve_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if the specified points of XP can be reserved for the given key.</p>
+<p>This method performs comprehensive validation before allowing reserve creation:</p>
+<ul>
+<li>Verifies the XP key exists and can support new reserves</li>
+<li>Ensures the points to reserve are non-zero</li>
+<li>Confirms sufficient liquid XP is available</li>
+<li>Validates that adding the reserve won’t cause arithmetic overflow</li>
+</ul>
+<p>This validation ensures that reserve operations will succeed and maintain
+system invariants when performed.</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the reserve can be safely created.</li>
+<li><code>Err(DispatchError)</code> if any validation condition fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_reserve_mutate" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#911-935">Source</a><h4 class="code-header">fn <a href="#method.can_reserve_mutate" class="fn">can_reserve_mutate</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if an existing reserve can be mutated to the new value.</p>
+<p>This method validates whether an existing reserve’s value can be safely changed
+to the specified points. It handles both increases and decreases in reserve value,
+ensuring that arithmetic operations won’t overflow or underflow.</p>
+<p>This is essential for reserve modification operations that need to adjust
+existing reserve points while maintaining system stability.</p>
+<h6 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the reserve mutation is allowed.</li>
+<li><code>Err(DispatchError)</code> if the mutation would cause arithmetic errors or violate constraints.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_reserve_new" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#950-961">Source</a><h4 class="code-header">fn <a href="#method.can_reserve_new" class="fn">can_reserve_new</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Determines if a new XP reserve can be created for the given key and points.</p>
+<p>This method validates the fundamental requirements for creating a new reserve:</p>
+<ul>
+<li>The XP key must exist in storage</li>
+<li>The number of existing reserves must be below the maximum allowed</li>
+<li>Adding the new reserve must not cause arithmetic overflow</li>
+</ul>
+<p>This is a more basic validation than <a href="trait.XpReserve.html#method.can_reserve_xp"><code>can_reserve_xp</code></a>, focusing only on
+the structural requirements rather than liquid balance availability.</p>
+<h6 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if reserve creation is structurally allowed.</li>
+<li><code>Err(DispatchError)</code> if any fundamental requirement fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.maximum_reserves" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1011-1013">Source</a><h4 class="code-header">fn <a href="#method.maximum_reserves" class="fn">maximum_reserves</a>() -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.usize.html">usize</a></h4></section></summary><div class="docblock"><p>Returns the maximum number of concurrent reserves allowed per XP key.</p>
+<p>This value is determined by the number of variants in the <code>ReserveReason</code> enum,
+as returned by [<code>VariantCountOf&lt;Self::ReserveReason&gt;</code>]. Each reserve must have a
+unique reason, so the maximum is bounded by the available reserve reasons.</p>
+<h6 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h6>
+<ul>
+<li>Returns the maximum number of concurrent reserves as a <code>usize</code>.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.reserve_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1053-1079">Source</a><h4 class="code-header">fn <a href="#method.reserve_xp" class="fn">reserve_xp</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Reserve’s the specified points of XP under the given reserve reason.</p>
+<p>This method deducts the specified points from the liquid balance and creates
+or updates a reserve with the given reason. If a reserve with the same reason already
+exists, its value is increased; otherwise, a new reserve is created.</p>
+<p>The operation ensures atomic consistency by validating preconditions and
+updating both the liquid balance and reserve state in a coordinated manner.
+This prevents partial updates that could leave the XP entry in an inconsistent state.</p>
+<h6 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the reserve is successfully created or updated.</li>
+<li><code>Err(DispatchError)</code> if the operation fails, with an appropriate error.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.withdraw_reserve" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1095-1100">Source</a><h4 class="code-header">fn <a href="#method.withdraw_reserve" class="fn">withdraw_reserve</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Withdraws the specified reserve, returning the reserved XP to the liquid balance.</p>
+<p>This method removes the entire reserve and restores all its reserved XP to the
+account’s liquid balance. The reserve can only be withdrawn completely because
+partial withdrawals of reserved points are not supported by this method,
+use <a href="trait.XpReserve.html#method.withdraw_reserve_partial"><code>withdraw_reserve_partial</code></a> instead.</p>
+<p>The withdrawal operation is atomic, ensuring that both the reserve removal and
+liquid balance update occur together to maintain consistency.</p>
+<h6 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the reserve is successfully withdrawn.</li>
+<li><code>Err(DispatchError)</code> if the XP key or reserve does not exist or any of the
+operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.reset_reserve" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1117-1126">Source</a><h4 class="code-header">fn <a href="#method.reset_reserve" class="fn">reset_reserve</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Resets (permanently burns) all reserved XP points for the given reason.</p>
+<p>This method completely resets the reserved XP balance to zero for the specified
+reason and returns the previous value. Unlike <code>XpLock::burn_lock</code>, the reserve entry
+structure is preserved but its point value is reset to zero, allowing for
+potential future reuse of the same reserve reason.</p>
+<h6 id="note"><a class="doc-anchor" href="#note">§</a>Note</h6>
+<p>This is a low-level primitive intended for internal state resets or corrections.
+It does not inherently represent a penalty. For penalty-oriented reductions,
+prefer using <a href="trait.XpReserve.html#method.slash_reserve"><code>slash_reserve</code></a>.</p>
+<h6 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the amount of reserved XP that was burned.</li>
+<li><code>Err(DispatchError)</code> if the XP key or reserve does not exist or any operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.slash_reserve" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1145-1162">Source</a><h4 class="code-header">fn <a href="#method.slash_reserve" class="fn">slash_reserve</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Reduces or burns reserved XP under the given reserve reason.</p>
+<p>This method provides flexible slashing behavior based on the reserve’s
+current value:</p>
+<ul>
+<li>If the reserved XP points is greater than specified points, only the
+requested amount is slashed</li>
+<li>If the reserved XP points is less than the requested points, the entire
+reserve is reset</li>
+</ul>
+<h6 id="note-1"><a class="doc-anchor" href="#note-1">§</a>Note</h6>
+<p>This is the preferred method for applying penalties to reserved XP. It provides
+a safe, high-level abstraction over reserve reduction.</p>
+<h6 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the actual amount slashed or burned.</li>
+<li><code>Err(DispatchError)</code> if the XP key or reserve does not exist or any of
+the operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.withdraw_reserve_partial" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1179-1221">Source</a><h4 class="code-header">fn <a href="#method.withdraw_reserve_partial" class="fn">withdraw_reserve_partial</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    precision: Precision,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Withdraws a specified amount of reserved XP, returning it to the liquid balance.</p>
+<p>This method allows for partial or full withdrawal of reserved XP depending on the
+specified <code>points</code> and the <code>precision</code> mode. The withdrawn XP is transferred from
+the reserve back to the liquid balance, making it available for normal operations
+again.</p>
+<p>The precision parameter controls withdrawal behavior:</p>
+<ul>
+<li><strong>Exact</strong>: Only succeeds if the exact amount can be withdrawn, fails otherwise</li>
+<li><strong>BestEffort</strong>: Withdraws as much as possible up to the requested amount</li>
+</ul>
+<h6 id="returns-14"><a class="doc-anchor" href="#returns-14">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the withdrawal completes successfully according to the precision mode.</li>
+<li><code>Err(DispatchError)</code> if the XP key or reserve does not exist, or if exact precision
+fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_reserve_update" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1242-1248">Source</a><h4 class="code-header">fn <a href="#method.on_reserve_update" class="fn">on_reserve_update</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    reserve_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+)</h4></section></summary><div class="docblock"><p>Hook invoked after a reserve is created or its value is updated.</p>
+<p>The <code>reserve_points</code> parameter reflects the current value of the
+reserve after the update.</p>
+<h6 id="note-2"><a class="doc-anchor" href="#note-2">§</a>Note</h6>
+<p>An update does not imply a slashing event. It may represent either:</p>
+<ul>
+<li>Depositing XP into a reserve (increase), or</li>
+<li>Withdrawing XP from a reserve (decrease).</li>
+</ul>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit reserve creation or update events</li>
+<li>Update related metadata or statistics</li>
+<li>Trigger side effects related to reserve changes (optionally
+via listener <a href="trait.XpReserveListener.html#method.reserve_updated" title="associated function frame_suite::xp::XpReserveListener::reserve_updated"><code>XpReserveListener::reserve_updated</code></a>)</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_reserve_slash" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1260-1266">Source</a><h4 class="code-header">fn <a href="#method.on_reserve_slash" class="fn">on_reserve_slash</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpReserve.html#associatedtype.ReserveReason" title="type frame_suite::xp::XpReserve::ReserveReason">ReserveReason</a>,
+    slashed_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+)</h4></section></summary><div class="docblock"><p>Hook invoked after a reserve is slashed.</p>
+<p>The <code>slashed_points</code> parameter reflects the slashed value of the
+reserve in points.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit reserve slashing events</li>
+<li>Update related metadata or statistics</li>
+<li>Trigger side effects related to reserve slashing (optionally
+via listener <a href="trait.XpReserveListener.html#method.reserve_slashed" title="associated function frame_suite::xp::XpReserveListener::reserve_slashed"><code>XpReserveListener::reserve_slashed</code></a>)</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/xp/trait.XpReserve.js" async></script></section></div></main></body></html>

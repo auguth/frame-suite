@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Trait for XP lifecycle finalization (reaping) with built-in support utilities."><title>XpReap in frame_suite::xp - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">XpReap</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#example-use-cases" title="Example Use Cases">Example Use Cases</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.is_reaped" title="is_reaped">is_reaped</a></li><li><a href="#tymethod.reap_xp" title="reap_xp">reap_xp</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.can_reap" title="can_reap">can_reap</a></li><li><a href="#method.on_xp_reap" title="on_xp_reap">on_xp_reap</a></li><li><a href="#method.try_reap" title="try_reap">try_reap</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>xp</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">xp</a></div><h1>Trait <span class="trait">XpReap</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/xp.rs.html#1821-1927">Source</a> </span></div><pre class="rust item-decl"><code>pub trait XpReap<div class="where">where
+    Self: <a class="trait" href="trait.XpLock.html" title="trait frame_suite::xp::XpLock">XpLock</a> + <a class="trait" href="trait.XpSystem.html" title="trait frame_suite::xp::XpSystem">XpSystem</a>&lt;Extension: <a class="trait" href="trait.XpReapListener.html" title="trait frame_suite::xp::XpReapListener">XpReapListener</a> + <a class="trait" href="trait.XpSystemExtensions.html" title="trait frame_suite::xp::XpSystemExtensions">XpSystemExtensions</a>&lt;Via = Self&gt;&gt;,</div>{
+    // Required methods
+    fn <a href="#tymethod.is_reaped" class="fn">is_reaped</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reap_xp" class="fn">reap_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;;
+
+    // Provided methods
+    fn <a href="#method.can_reap" class="fn">can_reap</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.try_reap" class="fn">try_reap</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_xp_reap" class="fn">on_xp_reap</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Trait for XP lifecycle finalization (reaping) with built-in support utilities.</p>
+<p><code>XpReap</code> enables explicit deactivation or invalidation of XP entries that are no longer
+in use or have failed to exhibit expected runtime behavior.</p>
+<p>This trait extends XP mutation and system capabilities to ensure full lifecycle control,
+including cleanup, guarded creation, and safe finalization.</p>
+<p>XP entries marked as “reaped” are considered finalized and cannot be reinitialized.</p>
+<p>Additionally, this trait includes default support methods for common reaping patterns,
+such as validating whether an XP entry can be safely reaped and performing safe,
+atomic reaping operations.</p>
+<h5 id="example-use-cases"><a class="doc-anchor" href="#example-use-cases">§</a>Example Use Cases</h5>
+<ul>
+<li>Invalidated quests or tasks</li>
+<li>Expired onboarding flows</li>
+<li>Cleanup of abandoned or dead XP keys</li>
+</ul>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.is_reaped" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1837">Source</a><h4 class="code-header">fn <a href="#tymethod.is_reaped" class="fn">is_reaped</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if the given XP key has been reaped (finalized).</p>
+<p>This method serves as a guard against accidental recreation or mutation of
+finalized XP entries.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the XP key has been reaped.</li>
+<li><code>Err(DispatchError)</code> if the XP key has not been reaped or does not exist.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reap_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1892">Source</a><h4 class="code-header">fn <a href="#tymethod.reap_xp" class="fn">reap_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Irreversibly marks the given XP key as reaped (finalized).</p>
+<p>This operation permanently invalidates the XP entry, making it unusable for future
+operations. The method returns the total usable points from the XP entry, allowing
+the runtime to determine how to handle the recovered value.</p>
+<p>Reaped XP cannot be recreated with the same key, ensuring that finalization is
+truly permanent. The recovered points can be redirected toward other purposes
+such as governance, treasury operations, or other runtime-controlled flows.</p>
+<p>This is a destructive operation that should only be performed when an XP entry
+is confirmed to be no longer needed or valid according to system rules.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the total usable points from the reaped XP entry.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or reaping fails.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.can_reap" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1854-1870">Source</a><h4 class="code-header">fn <a href="#method.can_reap" class="fn">can_reap</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether the given XP key can be safely reaped (finalized).</p>
+<p>This method enforces comprehensive safety conditions before allowing reaping:</p>
+<ul>
+<li>The XP entry must exist in storage</li>
+<li>The XP entry must not meet the minimum XP threshold (i.e., is “dead”)</li>
+<li>The XP entry must not have any active locks (prevents loss of locked value)</li>
+<li>The XP entry must not already be reaped (prevents double-finalization)</li>
+</ul>
+<p>These conditions ensure that reaping only occurs when an XP entry is truly
+abandoned, expired, or no longer viable according to system rules.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if all safety conditions are satisfied and reaping is allowed.</li>
+<li><code>Err(DispatchError)</code> if any condition fails, with specific error indicating the
+failure reason.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.try_reap" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1907-1912">Source</a><h4 class="code-header">fn <a href="#method.try_reap" class="fn">try_reap</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Attempts to reap (finalize) the given XP entry if all conditions are met.</p>
+<p>This method provides a safe, atomic approach to XP finalization by first
+validating all reaping conditions using <a href="trait.XpReap.html#method.can_reap"><code>can_reap</code></a>, then proceeding with
+the irreversible reaping operation if validation passes.</p>
+<p>This is the recommended way to perform XP reaping as it ensures all safety
+invariants are checked before the destructive operation occurs.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the total usable points from the reaped XP entry.</li>
+<li><code>Err(DispatchError)</code> if any safety condition fails or the reaping operation
+encounters an error.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_xp_reap" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1924-1926">Source</a><h4 class="code-header">fn <a href="#method.on_xp_reap" class="fn">on_xp_reap</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>)</h4></section></summary><div class="docblock"><p>Hook invoked after an XP entry has been reaped.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit reaping events</li>
+<li>Update related metadata</li>
+<li>Trigger side effects related to XP finalization</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/xp/trait.XpReap.js" async></script></section></div></main></body></html>

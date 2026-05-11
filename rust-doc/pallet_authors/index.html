@@ -1,0 +1,97 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The Authors pallet implements a economically-backed role system for managing *block authors (validators) as first-class on-chain actors."><title>pallet_authors - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="pallet_authors" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../pallet_authors/index.html">pallet_<wbr>authors</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#architectural-role" title="Architectural Role">Architectural Role</a></li><li><a href="#funding-models" title="Funding Models">Funding Models</a></li><li><a href="#election-models" title="Election Models">Election Models</a></li><li><a href="#temporal-semantics" title="Temporal Semantics">Temporal Semantics</a></li><li><a href="#governance--safety" title="Governance &#38; Safety">Governance &amp; Safety</a></li><li><a href="#intended-use" title="Intended Use">Intended Use</a></li><li><a href="#development-feature-gate" title="Development Feature Gate">Development Feature Gate</a></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>pallet_authors</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/pallet_authors/lib.rs.html#16-5808">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>The <strong>Authors pallet</strong> implements a economically-backed <strong>role system</strong>
+for managing *<em>block authors</em> (validators) as first-class on-chain actors.</p>
+<p>This pallet provides a concrete, implementation of the
+generic role abstractions, enabling authors to be enrolled, funded, elected,
+rewarded, penalized, and governed in a deterministic and auditable manner.</p>
+<ul>
+<li><a href="pallet/trait.Config.html" title="trait pallet_authors::pallet::Config"><code>Config</code></a> - Runtime configuration</li>
+<li><a href="pallet/enum.Call.html" title="enum pallet_authors::pallet::Call"><code>Call</code></a> - Dispatchable extrinsics</li>
+<li><a href="pallet/struct.Pallet.html" title="struct pallet_authors::pallet::Pallet"><code>Pallet</code></a> - External Usage (Trait Impls)</li>
+<li><a href="pallet/struct.FlatElection.html" title="struct pallet_authors::pallet::FlatElection"><code>FlatElection</code></a> - External Usage (Resolved Plugin)</li>
+<li><a href="pallet/struct.FairElection.html" title="struct pallet_authors::pallet::FairElection"><code>FairElection</code></a>- External Usage (Resolved Plugin)</li>
+</ul>
+<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
+<p>An <strong>Author</strong> represents an actor who:</p>
+<ul>
+<li>locks <strong>self-collateral</strong> as a security commitment (enrollment),</li>
+<li>progresses through a <strong>probationary lifecycle</strong> before permanence.</li>
+<li>may receive <strong>external backing</strong> from third parties (funding),</li>
+<li>participates in <strong>elections</strong> and other duties,</li>
+<li>accrues <strong>rewards and penalties over time</strong>, and</li>
+</ul>
+<p>The pallet models authors as <strong>economic and temporal subjects</strong>, not merely
+accounts.</p>
+<h3 id="architectural-role"><a class="doc-anchor" href="#architectural-role">§</a>Architectural Role</h3>
+<p>The pallet provides a <strong>composable role layer</strong> that integrates:</p>
+<ul>
+<li>lifecycle management (enrollment, status, resignation),</li>
+<li>economic backing (collateral and external funding),</li>
+<li>reward and penalty scheduling,</li>
+<li>probation and risk handling,</li>
+<li>activity-aware participation controls.</li>
+</ul>
+<p>This allows the Authors pallet to act as a <strong>pluggable role provider</strong>
+for other runtime modules without exposing low-level storage details.</p>
+<h3 id="funding-models"><a class="doc-anchor" href="#funding-models">§</a>Funding Models</h3>
+<p>Authors may receive economic support through multiple funding paths:</p>
+<ul>
+<li><strong>Self-collateral</strong> provided during enrollment.</li>
+<li><strong>Direct backing</strong> from individual backers.</li>
+<li><strong>Aggregated backing</strong> via indexes or pools (when enabled).</li>
+</ul>
+<p>All funding is mediated through a shared commitment abstraction, ensuring
+consistent locking, accounting, and release semantics across the runtime.</p>
+<h3 id="election-models"><a class="doc-anchor" href="#election-models">§</a>Election Models</h3>
+<p>The pallet supports <strong>pluggable election strategies</strong> via
+<a href="../frame_suite/elections/index.html" title="mod frame_suite::elections"><code>elections</code></a> traits, selectable at runtime-composition:</p>
+<ul>
+<li><strong>Flat elections</strong> aggregate all backing (including self-collateral)
+into a single influence metric per author.</li>
+<li><strong>Fair elections</strong> preserve individual backer contributions and
+explicitly including self-collateral as a self-backing.</li>
+</ul>
+<p>Election logic is intentionally externalized using plugin-based models via <a href="pallet/trait.Config.html" title="trait pallet_authors::pallet::Config"><code>Config</code></a>,
+allowing governance to evolve influence and election logic without modifying pallet code.</p>
+<h3 id="temporal-semantics"><a class="doc-anchor" href="#temporal-semantics">§</a>Temporal Semantics</h3>
+<p>Rewards and penalties are:</p>
+<ul>
+<li><strong>scheduled</strong>, not immediate,</li>
+<li>applied deterministically at block boundaries,</li>
+<li>buffered to prevent manipulation and race conditions.</li>
+</ul>
+<p>The pallet processes all pending compensations at the <strong>start of each block</strong>,
+guaranteeing consistent state for subsequent extrinsics and elections.</p>
+<h3 id="governance--safety"><a class="doc-anchor" href="#governance--safety">§</a>Governance &amp; Safety</h3>
+<p>Governance or Sudo may:</p>
+<ul>
+<li>adjust collateral and funding thresholds,</li>
+<li>tune probation and risk parameters,</li>
+<li>control election bounds and strictness,</li>
+<li>override configuration via root-only calls.</li>
+</ul>
+<p>Storage is intentionally <strong>append-only</strong> for critical mappings,
+prioritizing auditability and long-term safety over aggressive cleanup.</p>
+<h3 id="intended-use"><a class="doc-anchor" href="#intended-use">§</a>Intended Use</h3>
+<p>While named “Authors”, this pallet is designed to be reusable for any
+economically-backed role such as:</p>
+<ul>
+<li>block producers,</li>
+<li>content curators,</li>
+<li>oracle operators,</li>
+<li>council members,</li>
+<li>or DAO representatives.</li>
+</ul>
+<p>It serves both as a reusable production pallet and as a reference
+implementation of advanced role abstractions.</p>
+<h3 id="development-feature-gate"><a class="doc-anchor" href="#development-feature-gate">§</a>Development Feature Gate</h3>
+<p>This pallet includes a <code>dev</code> feature gate for development and testing.</p>
+<p>Core functionality is exposed via public APIs for RPC and UI usage.
+The <code>dev</code> feature provides thin wrapper extrinsics and extended
+events for direct inspection.</p>
+<p>This feature must be disabled in production runtimes due to additional debugging overhead.</p>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt><code>pub use <a class="mod" href="pallet/index.html" title="mod pallet_authors::pallet">pallet</a>::*;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="election/index.html" title="mod pallet_authors::election">election</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Provides <strong>concrete election implementations</strong> for author
+selection using <strong><a href="../frame_suite/plugins/index.html" title="mod frame_suite::plugins"><code>plugin</code></a>-based election traits</strong>.</dd><dt><a class="mod" href="pallet/index.html" title="mod pallet_authors::pallet">pallet</a></dt><dd>The <code>pallet</code> module in each FRAME pallet hosts the most important items needed
+to construct this pallet.</dd><dt><a class="mod" href="roles/index.html" title="mod pallet_authors::roles">roles</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Provides the <strong>concrete runtime implementation</strong> of the Author subsystem,
+translating abstract <a href="../frame_suite/roles/index.html" title="mod frame_suite::roles"><code>role traits</code></a> into operational
+logic governing authors’ funding, rewards/penalties, and lifecycle
+within the runtime.</dd><dt><a class="mod" href="types/index.html" title="mod pallet_authors::types">types</a></dt><dd><strong>Core types and aliases for the Authors system.</strong></dd><dt><a class="mod" href="weights/index.html" title="mod pallet_authors::weights">weights</a></dt><dd>Autogenerated weights for <code>pallet_authors</code></dd></dl><script type="text/json" id="notable-traits-data">{"&'static [u8]":"<h3>Notable traits for <code>&amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a> for &amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</div>","&<Vec<T, A> as Index<I>>::Output":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","&[u8]":"<h3>Notable traits for <code>&amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a> for &amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</div>","&mut <Vec<T, A> as Index<I>>::Output":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","<Vec<T, A> as IntoIterator>::IntoIter":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","<Vec<T> as IntoDeserializer<'de, E>>::Deserializer":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>"}</script></section></div></main></body></html>

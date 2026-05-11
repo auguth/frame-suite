@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["call","dispose","force_genesis_config","force_handover","handover","inspect_my_xp","inspect_xp_keys_of"]};

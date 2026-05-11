@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Implements an empty virtual extension schema for a given extension."><title>empty_virtual_extension in frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">empty_<wbr>virtual_<wbr>extension</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#semantics" title="Semantics">Semantics</a></li><li><a href="#syntax" title="Syntax">Syntax</a><ul><li><a href="#dynamic-default" title="Dynamic (default)">Dynamic (default)</a></li><li><a href="#static" title="Static">Static</a></li></ul></li><li><a href="#parameters" title="Parameters">Parameters</a></li><li><a href="#behavior" title="Behavior">Behavior</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">frame_suite</a></div><h1>Macro <span class="macro">empty_virtual_extension</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/virtuals.rs.html#2242-2298">Source</a> </span></div><pre class="rust item-decl"><code>macro_rules! empty_virtual_extension {
+    (
+        target: $target:ty,
+        tag: $extension:ty,
+        schema: static $schema:ty
+        $(, generics: [$($gen:tt),* $(,)? ])?
+        $(, bounds: [$($extra_bounds:tt)*])?
+        $(,)?
+    ) =&gt; { ... };
+    (
+        target: $target:ty,
+        tag: $extension:ty,
+        schema: $schema:ty
+        $(, generics: [$($gen:tt),* $(,)? ])?
+        $(, bounds: [$($extra_bounds:tt)*])?
+        $(,)?
+    ) =&gt; { ... };
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Implements an empty virtual extension schema for a given extension.</p>
+<p>This macro defines a no-op schema where the extension has <strong>no storage</strong>
+and behaves as absent.</p>
+<p>It supports two modes:</p>
+<ul>
+<li>
+<p><strong>Dynamic (default)</strong> -&gt; implements <a href="virtuals/trait.VirtualDynExtensionSchema.html" title="trait frame_suite::virtuals::VirtualDynExtensionSchema"><code>VirtualDynExtensionSchema</code></a></p>
+<ul>
+<li>uses vector-like semantics (<code>Vec&lt;()&gt;</code>)</li>
+<li>size-related operations (<code>len</code>, <code>min</code>, <code>max</code>) return <code>0</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Static (<code>static</code> keyword)</strong> -&gt; implements <a href="virtuals/trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema"><code>VirtualStaticExtensionSchema</code></a></p>
+<ul>
+<li>uses array-like semantics (<code>[(); 0]</code>)</li>
+<li>fully determined at compile time</li>
+<li>no size-related operations are required</li>
+</ul>
+</li>
+</ul>
+<h3 id="semantics"><a class="doc-anchor" href="#semantics">§</a>Semantics</h3>
+<p>In both modes:</p>
+<ul>
+<li><code>None</code>, <code>Some</code>, and <code>Repr</code> are represented as <code>()</code></li>
+<li>no data is stored</li>
+<li>the extension is effectively non-existent</li>
+</ul>
+<p>This is useful when:</p>
+<ul>
+<li>a container participates in the extension system</li>
+<li>but a particular extension is unsupported or intentionally omitted</li>
+</ul>
+<h3 id="syntax"><a class="doc-anchor" href="#syntax">§</a>Syntax</h3><h4 id="dynamic-default"><a class="doc-anchor" href="#dynamic-default">§</a>Dynamic (default)</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">empty_virtual_extension!</span>(
+    target: MyContainer,
+    tag: MyExtension,
+    schema: MySchema,
+    generics: [T, U],
+    bounds: [T: Clone, U: Default],
+);</code></pre></div>
+<h4 id="static"><a class="doc-anchor" href="#static">§</a>Static</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">empty_virtual_extension!</span>(
+    target: MyContainer,
+    tag: MyExtension,
+    schema: <span class="kw">static </span>MySchema,
+);</code></pre></div>
+<h3 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h3>
+<ul>
+<li><code>target</code>: container type (conceptual owner of the extension)</li>
+<li><code>tag</code>: discriminant identifying the extension</li>
+<li><code>schema</code>: schema type to implement</li>
+<li><code>generics</code> <em>(optional)</em>: generics for the impl</li>
+<li><code>bounds</code> <em>(optional)</em>: additional <code>where</code> constraints</li>
+</ul>
+<h3 id="behavior"><a class="doc-anchor" href="#behavior">§</a>Behavior</h3>
+<ul>
+<li>The extension is treated as non-existent</li>
+<li>Dynamic mode:
+<ul>
+<li>uses <code>Vec&lt;()&gt;</code> (always empty)</li>
+<li>returns <code>0</code> for all size queries</li>
+</ul>
+</li>
+<li>Static mode:
+<ul>
+<li>uses <code>[(); 0]</code> (zero-length array)</li>
+<li>fully resolved at compile time</li>
+</ul>
+</li>
+</ul>
+</div></details></section></div></main></body></html>

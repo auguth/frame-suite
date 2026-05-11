@@ -1,0 +1,66 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A virtual collector for values of type `T` under a discriminant."><title>VirtualCollector in frame_suite::virtuals - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Virtual<wbr>Collector</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#virtual-field-context" title="Virtual Field Context">Virtual Field Context</a></li><li><a href="#semantics" title="Semantics">Semantics</a></li><li><a href="#example-pattern" title="Example Pattern">Example Pattern</a></li><li><a href="#discriminant" title="Discriminant">Discriminant</a></li><li><a href="#when-to-use" title="When to Use">When to Use</a></li><li><a href="#default-discriminant" title="Default Discriminant">Default Discriminant</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>virtuals</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">virtuals</a></div><h1>Trait <span class="trait">VirtualCollector</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/virtuals.rs.html#2453-2456">Source</a> </span></div><pre class="rust item-decl"><code>pub trait VirtualCollector&lt;T, Discriminant: <a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a> = <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>&gt;: <a class="trait" href="trait.FromTag.html" title="trait frame_suite::virtuals::FromTag">FromTag</a>&lt;T, Discriminant&gt; + <a class="trait" href="trait.TryIntoTag.html" title="trait frame_suite::virtuals::TryIntoTag">TryIntoTag</a>&lt;T, Discriminant&gt; { }</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A virtual collector for values of type <code>T</code> under a discriminant.</p>
+<p>A <code>VirtualCollector</code> represents a type that can:</p>
+<ul>
+<li>collect a value <code>T</code> into itself (via <a href="trait.FromTag.html" title="trait frame_suite::virtuals::FromTag"><code>FromTag</code></a>)</li>
+<li>attempt to extract a value <code>T</code> back (via <a href="trait.TryIntoTag.html" title="trait frame_suite::virtuals::TryIntoTag"><code>TryIntoTag</code></a>)</li>
+</ul>
+<h3 id="virtual-field-context"><a class="doc-anchor" href="#virtual-field-context">§</a>Virtual Field Context</h3>
+<p>In the virtual system:</p>
+<ul>
+<li>values may be interpreted differently depending on their role</li>
+<li>tagged conversions (<code>FromTag</code>, <code>TryIntoTag</code>) define those interpretations</li>
+<li>this trait groups types that support bidirectional interaction with <code>T</code></li>
+</ul>
+<h3 id="semantics"><a class="doc-anchor" href="#semantics">§</a>Semantics</h3>
+<p>A <code>VirtualCollector</code> acts as a <em>tagged carrier</em> of <code>T</code>:</p>
+<ul>
+<li>
+<p><code>T -&gt; Self</code></p>
+<ul>
+<li>always succeeds (collection)</li>
+</ul>
+</li>
+<li>
+<p><code>Self -&gt; T</code></p>
+<ul>
+<li>may fail depending on structure (extraction)</li>
+</ul>
+</li>
+</ul>
+<p>This is commonly implemented by enums where a specific variant
+represents <code>T</code>.</p>
+<h3 id="example-pattern"><a class="doc-anchor" href="#example-pattern">§</a>Example Pattern</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">enum </span>Value {
+    Number(u32),
+    Text(String),
+}
+
+<span class="comment">// `Value` can act as a VirtualCollector&lt;u32&gt;</span></code></pre></div>
+<h3 id="discriminant"><a class="doc-anchor" href="#discriminant">§</a>Discriminant</h3>
+<p>The <code>Discriminant</code> ensures conversions remain unambiguous,
+even when <code>T</code> or <code>Self</code> are generic or not fully concrete.</p>
+<h3 id="when-to-use"><a class="doc-anchor" href="#when-to-use">§</a>When to Use</h3>
+<p>Use this trait when:</p>
+<ul>
+<li>a type can <em>collect</em> values of <code>T</code></li>
+<li>extraction may depend on internal structure</li>
+<li>tagged semantics are required for disambiguation</li>
+</ul>
+<h3 id="default-discriminant"><a class="doc-anchor" href="#default-discriminant">§</a>Default Discriminant</h3>
+<ul>
+<li><code>Discriminant = ()</code>: defines a single default interpretation,
+meaning one collection/extraction behavior is assumed.</li>
+</ul>
+</div></details><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-VirtualCollector%3CT,+Discriminant%3E-for-U" class="impl"><a class="src rightside" href="../../src/frame_suite/virtuals.rs.html#2469-2474">Source</a><a href="#impl-VirtualCollector%3CT,+Discriminant%3E-for-U" class="anchor">§</a><h3 class="code-header">impl&lt;T, Discriminant, U&gt; <a class="trait" href="trait.VirtualCollector.html" title="trait frame_suite::virtuals::VirtualCollector">VirtualCollector</a>&lt;T, Discriminant&gt; for U<div class="where">where
+    U: <a class="trait" href="trait.FromTag.html" title="trait frame_suite::virtuals::FromTag">FromTag</a>&lt;T, Discriminant&gt; + <a class="trait" href="trait.TryIntoTag.html" title="trait frame_suite::virtuals::TryIntoTag">TryIntoTag</a>&lt;T, Discriminant&gt;,
+    Discriminant: <a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a>,</div></h3><div class="docblock"><p>Blanket implementation for all types supporting bidirectional tagged
+conversion with <code>T</code>.</p>
+</div></section><div class="docblock"><p>Any type that:</p>
+<ul>
+<li>can be constructed from <code>T</code> via <a href="trait.FromTag.html" title="trait frame_suite::virtuals::FromTag"><code>FromTag</code></a></li>
+<li>can attempt to extract <code>T</code> via <a href="trait.TryIntoTag.html" title="trait frame_suite::virtuals::TryIntoTag"><code>TryIntoTag</code></a></li>
+</ul>
+<p>automatically implements <a href="trait.VirtualCollector.html" title="trait frame_suite::virtuals::VirtualCollector"><code>VirtualCollector</code></a>.</p>
+<p>This allows enums and similar container types to act as collectors
+without requiring explicit implementations.</p>
+</div></div><script src="../../trait.impl/frame_suite/virtuals/trait.VirtualCollector.js" async></script></section></div></main></body></html>

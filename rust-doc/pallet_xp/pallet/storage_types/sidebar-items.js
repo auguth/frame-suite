@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["InitXp","LockedXpOf","MinPulse","MinTimeStamp","PulseFactor","ReapedXp","ReservedXpOf","XpOf","XpOwners"]};

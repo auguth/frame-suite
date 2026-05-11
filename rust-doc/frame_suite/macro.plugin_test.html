@@ -1,0 +1,128 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Generates table-driven unit tests for plugin models."><title>plugin_test in frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">plugin_<wbr>test</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#features" title="Features">Features</a></li><li><a href="#supported-forms" title="Supported Forms">Supported Forms</a></li><li><a href="#syntax" title="Syntax">Syntax</a></li><li><a href="#notes" title="Notes">Notes</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">frame_suite</a></div><h1>Macro <span class="macro">plugin_test</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/plugins.rs.html#1430-1658">Source</a> </span></div><pre class="rust item-decl"><code>macro_rules! plugin_test {
+    (@output_ty $InputType:ty) =&gt; { ... };
+    (@output_ty $InputType:ty, $OutputType:ty) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: $InputTy:ty,
+        output: $OutputTy:ty,
+        context: $ContextTy:ty,
+        value: $ContextExpr:expr,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr)),* $(,)? }
+    ) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: $InputTy:ty,
+        context: $ContextTy:ty,
+        value: $ContextExpr:expr,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr)),* $(,)? }
+    ) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: $InputTy:ty,
+        output: $OutputTy:ty,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr)),* $(,)? }
+    ) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: $InputTy:ty,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr)),* $(,)? }
+    ) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: mut $InputTy:ty,
+        output: $OutputTy:ty,
+        context: $ContextTy:ty,
+        value: $ContextExpr:expr,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr $(, $expected_input:expr)?)),* $(,)? }
+    ) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: mut $InputTy:ty,
+        context: $ContextTy:ty,
+        value: $ContextExpr:expr,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr $(, $expected_input:expr)?)),* $(,)? }
+    ) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: mut $InputTy:ty,
+        output: $OutputTy:ty,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr $(, $expected_input:expr)?)),* $(,)? }
+    ) =&gt; { ... };
+    (
+        model: $ModelName:ty,
+        input: mut $InputTy:ty,
+        cases: { $(($test_name:ident, $input_expr:expr, $expected:expr $(, $expected_input:expr)?)),* $(,)? }
+    ) =&gt; { ... };
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Generates <strong>table-driven unit tests</strong> for plugin models.</p>
+<p>It supports both <strong>immutable</strong> and <strong>mutable</strong> models, with or without context,
+and with either explicit or inferred output types.</p>
+<p>For each test case, the macro:</p>
+<ul>
+<li>Instantiates the plugin model using <code>Default</code></li>
+<li>Constructs the required context (if any)</li>
+<li>Executes the model’s computation (<code>compute</code> for immutable models,
+<code>compute_mut</code> for mutable models)</li>
+<li>Asserts that the computed output matches the expected value</li>
+<li>Optionally asserts the final mutated input state for mutable models</li>
+</ul>
+<p>Each test case expands into an <strong>independent <code>#[test]</code> function</strong>, ensuring
+clear isolation and accurate failure reporting.</p>
+<h3 id="features"><a class="doc-anchor" href="#features">§</a>Features</h3>
+<ul>
+<li>Supports <strong>immutable</strong> (<code>PurePluginModel</code>) and <strong>mutable</strong> (<code>MutablePluginModel</code>) models</li>
+<li>Supports <strong>context-aware</strong> and <strong>context-free</strong> plugin models</li>
+<li>Supports <strong>explicit output types</strong> or <strong>implicit output = input</strong></li>
+<li>Optional assertion of the <strong>mutated input value</strong> for mutable models</li>
+<li>Generates one <code>#[test]</code> function per case</li>
+<li>Avoids boilerplate while preserving full type safety</li>
+<li>Mirrors the exact runtime execution contract of plugin models</li>
+</ul>
+<h3 id="supported-forms"><a class="doc-anchor" href="#supported-forms">§</a>Supported Forms</h3>
+<p>The macro supports the same four combinations for both immutable and mutable models:</p>
+<p>| Context | Output |
++—––+——+
+| Yes    | Explicit |
+| Yes    | Inferred (output = input) |
+| No     | Explicit |
+| No     | Inferred (output = input) |</p>
+<p>Mutable models are declared by using <code>input: mut Type</code>, which indicates that the
+model will receive <code>&amp;mut Type</code> and may transform the input in-place.</p>
+<h3 id="syntax"><a class="doc-anchor" href="#syntax">§</a>Syntax</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_test!</span> {
+    model: ModelType,              <span class="comment">// Plugin model type to test
+    </span>input: InputType | <span class="kw-2">mut </span>InputType, <span class="comment">// `mut` enables mutable model testing
+    </span>output: OutputType,            <span class="comment">// Optional: defaults to `InputType` if omitted
+    </span>context: ContextType,          <span class="comment">// Optional: required if model uses context
+    </span>value: context_expr,           <span class="comment">// Optional: expression constructing the context
+    </span>cases: {
+        (test_name, input_expr, expected_output),
+        (test_name_2, input_expr_2, expected_output_2, expected_mutated_input), <span class="comment">// mutable only
+    </span>}
+}</code></pre></div>
+<ul>
+<li><code>model</code>: Plugin model type implementing <code>PurePluginModel</code> or <code>MutablePluginModel</code></li>
+<li><code>input</code>: Input type consumed by the model (<code>mut</code> indicates in-place mutation)</li>
+<li><code>output</code>: Output type produced by the model (defaults to input type if omitted)</li>
+<li><code>context</code>: Context type required by the model (omit for <code>()</code>)</li>
+<li><code>value</code>: Expression that constructs the context instance</li>
+<li><code>cases</code>: List of test tuples</li>
+</ul>
+<p>Each case tuple has the form:</p>
+<ul>
+<li><code>(name, input, expected_output)</code> for immutable models</li>
+<li><code>(name, input, expected_output)</code> for mutable models when only output is asserted</li>
+<li><code>(name, input, expected_output, expected_mutated_input)</code> to also verify
+the final mutated state of the input</li>
+</ul>
+<p>When the fourth element is provided, the macro additionally checks that the
+input was correctly transformed in-place.</p>
+<h3 id="notes"><a class="doc-anchor" href="#notes">§</a>Notes</h3>
+<ul>
+<li>Each test case expands into a <strong>separate <code>#[test]</code> function</strong></li>
+<li>Context and input types must match the model’s trait implementation</li>
+<li>Output inference (<code>output = input</code>) follows the same rule as <code>plugin_model!</code></li>
+<li>Compilation fails if input, context, or output types are incompatible</li>
+</ul>
+<p>This macro is intended for <strong>testing plugin model logic in isolation</strong> and
+should not be used for testing pallet storage, dispatchables, or runtime configuration.</p>
+</div></details></section></div></main></body></html>

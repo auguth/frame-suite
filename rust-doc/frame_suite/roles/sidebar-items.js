@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["CompensateRoles","FundRoles","RoleActivity","RoleManager","RoleProbation"]};

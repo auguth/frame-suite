@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AuthorFunders","AuthorPenalties","AuthorRewards","AuthorsDigest","AuthorsMap","Elected","ForceMaxElected","IncreaseProbationBy","MaxElected","MaxExposure","MinCollateral","MinElected","MinFund","PenaltiesBuffer","PenaltiesUntil","ProbationPeriod","RecentElectedOn","ReduceProbationBy","RewardsBuffer","RewardsUntil"]};

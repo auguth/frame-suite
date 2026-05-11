@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A trait for computing influence, a normalized and comparable metric representing the relative power or importance of an entity."><title>Influence in frame_suite::elections - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Influence</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#key-properties" title="Key Properties">Key Properties</a></li><li><a href="#design" title="Design">Design</a></li><li><a href="#type-parameters" title="Type Parameters">Type Parameters</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Influence" title="Influence">Influence</a></li><li><a href="#associatedtype.InfluenceContext" title="InfluenceContext">InfluenceContext</a></li><li><a href="#associatedtype.InfluenceModel" title="InfluenceModel">InfluenceModel</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.influence" title="influence">influence</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>elections</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">elections</a></div><h1>Trait <span class="trait">Influence</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/elections.rs.html#257-305">Source</a> </span></div><pre class="rust item-decl"><code>pub trait Influence&lt;RawFrom&gt;<div class="where">where
+    RawFrom: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a>,</div>{
+    type <a href="#associatedtype.Influence" class="associatedtype">Influence</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a>;
+    type <a href="#associatedtype.InfluenceModel" class="associatedtype">InfluenceModel</a>: <a class="trait" href="../plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;RawFrom, &lt;Self::<a class="associatedtype" href="trait.Influence.html#associatedtype.InfluenceContext" title="type frame_suite::elections::Influence::InfluenceContext">InfluenceContext</a> as <a class="trait" href="../plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, Self::<a class="associatedtype" href="trait.Influence.html#associatedtype.Influence" title="type frame_suite::elections::Influence::Influence">Influence</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>;
+    type <a href="#associatedtype.InfluenceContext" class="associatedtype">InfluenceContext</a>: <a class="trait" href="../plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>;
+
+    // Provided method
+    fn <a href="#method.influence" class="fn">influence</a>(input: RawFrom) -&gt; Self::<a class="associatedtype" href="trait.Influence.html#associatedtype.Influence" title="type frame_suite::elections::Influence::Influence">Influence</a> { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A trait for computing <strong>influence</strong>, a normalized and comparable metric
+representing the relative power or importance of an entity.</p>
+<p>Influence is intended to capture <strong>non-transferable system weight</strong>,
+derived from various inputs such as votes, stake, participation,
+or other domain-specific factors.</p>
+<h3 id="key-properties"><a class="doc-anchor" href="#key-properties">§</a>Key Properties</h3>
+<ul>
+<li><strong>Non-transferable</strong>:
+Influence is a derived metric and must not be directly traded or transferred.</li>
+<li><strong>Model-dependent</strong>:
+Different systems may define influence differently based on their
+weighting rules or algorithms.</li>
+<li><strong>Deterministic</strong>:
+Given the same input and context, the computed influence should be consistent.</li>
+<li><strong>Comparable</strong>:
+Influence values must be bounded and comparable across entities.</li>
+</ul>
+<h3 id="design"><a class="doc-anchor" href="#design">§</a>Design</h3>
+<p>This trait follows a <a href="../plugins/index.html" title="mod frame_suite::plugins"><code>plugin</code></a>-based architecture:</p>
+<ul>
+<li>The computation logic is delegated to pluggable models.</li>
+<li>Different influence strategies can coexist without changing the trait.</li>
+<li>Runtime configuration is supported via context.</li>
+</ul>
+<h3 id="type-parameters"><a class="doc-anchor" href="#type-parameters">§</a>Type Parameters</h3>
+<ul>
+<li>
+<p><code>RawFrom</code>: The raw input type used to derive influence.</p>
+<p>This allows flexibility in supporting various input formats, such as:</p>
+<ul>
+<li>Numeric values (e.g., stake or balance)</li>
+<li>Account identifiers</li>
+<li>Structured or aggregated data</li>
+</ul>
+</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Influence" class="method"><a class="src rightside" href="../../src/frame_suite/elections.rs.html#262">Source</a><h4 class="code-header">type <a href="#associatedtype.Influence" class="associatedtype">Influence</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a></h4></section></summary><div class="docblock"><p>Type representing the computed influence.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.InfluenceModel" class="method"><a class="src rightside" href="../../src/frame_suite/elections.rs.html#264-288">Source</a><h4 class="code-header">type <a href="#associatedtype.InfluenceModel" class="associatedtype">InfluenceModel</a>: <a class="trait" href="../plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;RawFrom, &lt;Self::<a class="associatedtype" href="trait.Influence.html#associatedtype.InfluenceContext" title="type frame_suite::elections::Influence::InfluenceContext">InfluenceContext</a> as <a class="trait" href="../plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, Self::<a class="associatedtype" href="trait.Influence.html#associatedtype.Influence" title="type frame_suite::elections::Influence::Influence">Influence</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a></h4></section></summary><div class="docblock"><p>The plugin responsible for computing influence.</p>
+<p>This model defines how raw input is transformed into
+a bounded influence value.</p>
+<p>Different models may implement:</p>
+<ul>
+<li>Linear scaling</li>
+<li>Weighted aggregation</li>
+<li>Non-linear transformations (e.g., logarithmic influence)</li>
+</ul>
+</div></details><details class="toggle" open><summary><section id="associatedtype.InfluenceContext" class="method"><a class="src rightside" href="../../src/frame_suite/elections.rs.html#264-288">Source</a><h4 class="code-header">type <a href="#associatedtype.InfluenceContext" class="associatedtype">InfluenceContext</a>: <a class="trait" href="../plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a></h4></section></summary><div class="docblock"><p>Provides runtime configuration for <a href="trait.Influence.html#associatedtype.InfluenceModel"><code>Self::InfluenceModel</code></a>.</p>
+<p>This context supplies dynamic parameters such as:</p>
+<ul>
+<li>Scaling factors</li>
+<li>Thresholds</li>
+<li>External weights or modifiers</li>
+</ul>
+<p>This enables flexible and adaptive influence computation
+without hardcoding logic.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.influence" class="method"><a class="src rightside" href="../../src/frame_suite/elections.rs.html#290-304">Source</a><h4 class="code-header">fn <a href="#method.influence" class="fn">influence</a>(input: RawFrom) -&gt; Self::<a class="associatedtype" href="trait.Influence.html#associatedtype.Influence" title="type frame_suite::elections::Influence::Influence">Influence</a></h4></section></summary><div class="docblock"><p>Computes influence from a raw input using the configured plugin.</p>
+<p>This function:</p>
+<ul>
+<li>Delegates computation to <a href="trait.Influence.html#associatedtype.InfluenceModel"><code>Self::InfluenceModel</code></a></li>
+<li>Uses <a href="trait.Influence.html#associatedtype.InfluenceContext"><code>Self::InfluenceContext</code></a> for parameterization</li>
+</ul>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>A bounded influence value derived from the given input.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/elections/trait.Influence.js" async></script></section></div></main></body></html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ForceGenesisConfig","XpEligibility"],"struct":["Accumulator","GenesisAcc","IdXp","Stepper","Xp","XpProgress","XpState"],"type":["LockReason","ReserveReason","XpId","XpValue"]};

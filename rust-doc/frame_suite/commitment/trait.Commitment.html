@@ -1,0 +1,518 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Represents an atomic, immutable financial agreement between parties."><title>Commitment in frame_suite::commitment - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Commitment</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#key-concepts" title="Key Concepts">Key Concepts</a></li><li><a href="#why-commitment" title="Why Commitment?">Why Commitment?</a></li><li><a href="#properties" title="Properties">Properties</a></li><li><a href="#real-world-analogies" title="Real-World Analogies">Real-World Analogies</a></li><li><a href="#examples" title="Examples">Examples</a></li><li><a href="#invariants" title="Invariants">Invariants</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Digest" title="Digest">Digest</a></li><li><a href="#associatedtype.DigestSource" title="DigestSource">DigestSource</a></li><li><a href="#associatedtype.Intent" title="Intent">Intent</a></li><li><a href="#associatedtype.Limits" title="Limits">Limits</a></li><li><a href="#associatedtype.Reason" title="Reason">Reason</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.commit_exists" title="commit_exists">commit_exists</a></li><li><a href="#tymethod.digest_exists" title="digest_exists">digest_exists</a></li><li><a href="#tymethod.gen_digest" title="gen_digest">gen_digest</a></li><li><a href="#tymethod.get_commit_digest" title="get_commit_digest">get_commit_digest</a></li><li><a href="#tymethod.get_commit_value" title="get_commit_value">get_commit_value</a></li><li><a href="#tymethod.get_digest_value" title="get_digest_value">get_digest_value</a></li><li><a href="#tymethod.get_total_value" title="get_total_value">get_total_value</a></li><li><a href="#tymethod.place_commit" title="place_commit">place_commit</a></li><li><a href="#tymethod.raise_commit" title="raise_commit">raise_commit</a></li><li><a href="#tymethod.reap_digest" title="reap_digest">reap_digest</a></li><li><a href="#tymethod.resolve_commit" title="resolve_commit">resolve_commit</a></li><li><a href="#tymethod.set_digest_value" title="set_digest_value">set_digest_value</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.can_place_commit" title="can_place_commit">can_place_commit</a></li><li><a href="#method.can_raise_commit" title="can_raise_commit">can_raise_commit</a></li><li><a href="#method.can_resolve_commit" title="can_resolve_commit">can_resolve_commit</a></li><li><a href="#method.can_set_digest_value" title="can_set_digest_value">can_set_digest_value</a></li><li><a href="#method.digest_mint_limits" title="digest_mint_limits">digest_mint_limits</a></li><li><a href="#method.digest_reap_limits" title="digest_reap_limits">digest_reap_limits</a></li><li><a href="#method.on_commit_place" title="on_commit_place">on_commit_place</a></li><li><a href="#method.on_commit_raise" title="on_commit_raise">on_commit_raise</a></li><li><a href="#method.on_commit_resolve" title="on_commit_resolve">on_commit_resolve</a></li><li><a href="#method.on_digest_update" title="on_digest_update">on_digest_update</a></li><li><a href="#method.on_reap_digest" title="on_reap_digest">on_reap_digest</a></li><li><a href="#method.place_commit_limits" title="place_commit_limits">place_commit_limits</a></li><li><a href="#method.raise_commit_limits" title="raise_commit_limits">raise_commit_limits</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>commitment</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">commitment</a></div><h1>Trait <span class="trait">Commitment</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/commitment.rs.html#356-821">Source</a> </span></div><pre class="rust item-decl"><code>pub trait Commitment&lt;Proprietor&gt;: <a class="trait" href="trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt; + <a class="trait" href="trait.CommitErrorHandler.html" title="trait frame_suite::commitment::CommitErrorHandler">CommitErrorHandler</a> {
+    type <a href="#associatedtype.DigestSource" class="associatedtype">DigestSource</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a>;
+    type <a href="#associatedtype.Digest" class="associatedtype">Digest</a>: <a class="trait" href="../base/trait.Keyed.html" title="trait frame_suite::base::Keyed">Keyed</a>;
+    type <a href="#associatedtype.Reason" class="associatedtype">Reason</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a> + <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a>;
+    type <a href="#associatedtype.Intent" class="associatedtype">Intent</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a> + <a class="trait" href="../misc/trait.Directive.html" title="trait frame_suite::misc::Directive">Directive</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>;
+    type <a href="#associatedtype.Limits" class="associatedtype">Limits</a>: <a class="trait" href="../misc/trait.Extent.html" title="trait frame_suite::misc::Extent">Extent</a>&lt;Scalar = Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>&gt;;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 25 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.commit_exists" class="fn">commit_exists</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>, reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.digest_exists" class="fn">digest_exists</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_commit_digest" class="fn">get_commit_digest</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_total_value" class="fn">get_total_value</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_commit_value" class="fn">get_commit_value</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_digest_value" class="fn">get_digest_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.gen_digest" class="fn">gen_digest</a>(
+        via: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.DigestSource" title="type frame_suite::commitment::Commitment::DigestSource">DigestSource</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.place_commit" class="fn">place_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.resolve_commit" class="fn">resolve_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.raise_commit" class="fn">raise_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_digest_value" class="fn">set_digest_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reap_digest" class="fn">reap_digest</a>(
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    ) -&gt; DispatchResult;
+
+    // Provided methods
+    fn <a href="#method.can_place_commit" class="fn">can_place_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_raise_commit" class="fn">can_raise_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_resolve_commit" class="fn">can_resolve_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_set_digest_value" class="fn">can_set_digest_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.digest_mint_limits" class="fn">digest_mint_limits</a>(
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.place_commit_limits" class="fn">place_commit_limits</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.raise_commit_limits" class="fn">raise_commit_limits</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.digest_reap_limits" class="fn">digest_reap_limits</a>(
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_commit_place" class="fn">on_commit_place</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_commit_raise" class="fn">on_commit_raise</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_commit_resolve" class="fn">on_commit_resolve</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_digest_update" class="fn">on_digest_update</a>(
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_reap_digest" class="fn">on_reap_digest</a>(
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _dust: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Represents an <strong>atomic, immutable financial agreement</strong> between parties.</p>
+<p>It is anchored in:</p>
+<ul>
+<li>a <strong>Reason</strong> (category/purpose),</li>
+<li>a <strong>Digest</strong> (commitment context),</li>
+<li>and the act of committing a value.</li>
+</ul>
+<h3 id="key-concepts"><a class="doc-anchor" href="#key-concepts">§</a>Key Concepts</h3>
+<ul>
+<li><strong>Commitment</strong>: Locking or assigning an asset under agreed terms.</li>
+<li><strong>Reason</strong>: Purpose/category (e.g., staking, escrow, collateral,
+investment, betting).</li>
+<li><strong>Digest</strong>: Immutable reference to the commitment’s context or terms
+(often a cryptographic hash or a contextual identifier).</li>
+<li><strong>Proprietor</strong>: Entity responsible for holding/committing the asset.</li>
+<li><strong>Asset</strong>: Value being committed.</li>
+</ul>
+<h3 id="why-commitment"><a class="doc-anchor" href="#why-commitment">§</a>Why Commitment?</h3>
+<p>Many financial systems - staking, escrow, lending, betting, auctions - share
+a common pattern: one party proposes terms (digest), another commits a value
+under those terms, and both agree on the purpose (reason).</p>
+<p>Without a unifying abstraction, each system must reimplement logic for:</p>
+<ul>
+<li>Locking assets</li>
+<li>Ensuring immutability of terms</li>
+<li>Preventing double commitments</li>
+<li>Categorizing commitments by purpose</li>
+</ul>
+<p>The <code>Commitment</code> trait standardizes this pattern, enabling:</p>
+<ul>
+<li><strong>Consistency</strong>: Same behavior across different financial constructs.</li>
+<li><strong>Composability</strong>: Higher-level constructs (pools, indexes, markets) reuse
+the same rules.</li>
+<li><strong>Auditability</strong>: Commitments can be inspected and verified.</li>
+</ul>
+<h3 id="properties"><a class="doc-anchor" href="#properties">§</a>Properties</h3>
+<ul>
+<li><strong>Atomic</strong>: Commitments cannot be partially altered.</li>
+<li><strong>Immutable</strong>: Digest + Reason permanently define the commitment.</li>
+<li><strong>Category-driven</strong>: Reason defines interpretation.</li>
+<li><strong>Value-based</strong>: Always tied to a quantifiable asset.</li>
+</ul>
+<h3 id="real-world-analogies"><a class="doc-anchor" href="#real-world-analogies">§</a>Real-World Analogies</h3><div><table><thead><tr><th>Use Case</th><th>Reason</th><th>Digest</th><th>Commitment</th></tr></thead><tbody>
+<tr><td>Stake</td><td><code>"staking"</code></td><td>Conditions hash</td><td>Staked amount</td></tr>
+<tr><td>Escrow</td><td><code>"escrow"</code></td><td>Contract terms hash</td><td>Locked funds</td></tr>
+<tr><td>Collateral</td><td><code>"loan collateral"</code></td><td>Loan agreement hash</td><td>Pledged asset</td></tr>
+<tr><td>Betting</td><td><code>"bet"</code></td><td>Bet terms</td><td>Wagered asset</td></tr>
+<tr><td>Market position</td><td><code>"market trade"</code></td><td>Order terms</td><td>Locked funds</td></tr>
+<tr><td>Auction</td><td><code>"auction bid"</code></td><td>Bid terms</td><td>Bid amount</td></tr>
+</tbody></table>
+</div><h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
+<ul>
+<li>
+<p><strong>Staking</strong>: Alice stakes 100 tokens for reason <code>"staking"</code> with digest <code>"ant_pool_hash"</code>.</p>
+<ul>
+<li>Proprietor: Alice</li>
+<li>Reason: <code>"staking"</code></li>
+<li>Digest: <code>"ant_pool_hash"</code></li>
+<li>Asset: 100 tokens.</li>
+</ul>
+</li>
+<li>
+<p><strong>Betting</strong>: Bob places a bet of 50 tokens for reason <code>"bet_games"</code> with digest
+<code>"nfl_betting"</code>.</p>
+<ul>
+<li>Locks Bob’s stake until event outcome.</li>
+</ul>
+</li>
+<li>
+<p><strong>Escrow</strong>: Carol commits 1000 tokens into escrow for reason <code>"escrows"</code> with
+digest <code>"freelance"</code>.</p>
+<ul>
+<li>Funds locked until conditions are fulfilled.</li>
+</ul>
+</li>
+<li>
+<p><strong>Market Order</strong>: Dave places a buy order worth 500 tokens for reason
+<code>"market_orders"</code> with digest <code>"cryptocurrencies"</code>.</p>
+<ul>
+<li>Funds locked until order executes or cancels.</li>
+</ul>
+</li>
+</ul>
+<h3 id="invariants"><a class="doc-anchor" href="#invariants">§</a>Invariants</h3>
+<ul>
+<li>Proprietor can commit to <strong>only one digest per reason</strong>.</li>
+<li>Commitments are <strong>atomic</strong> and <strong>immutable</strong>.</li>
+<li>Commitment value may increase via <a href="trait.Commitment.html#tymethod.raise_commit" title="associated function frame_suite::commitment::Commitment::raise_commit"><code>Commitment::raise_commit</code></a> but cannot
+be decreased arbitrarily.</li>
+<li>Commitment values are dynamic, reflecting real-time state.</li>
+<li>Digest values may be updated by the reason provider via
+<a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a> and must propagate to all related commitments.</li>
+</ul>
+<p><strong>Summary:</strong><br />
+Commitment = locked asset,<br />
+Reason = purpose/category,<br />
+Digest = agreement terms hash,<br />
+Act of commitment = immutable financial agreement.</p>
+<p>Generics:</p>
+<ul>
+<li><strong>Proprietor</strong> - the entity that owns the asset and can make commitments.</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.DigestSource" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#358">Source</a><h4 class="code-header">type <a href="#associatedtype.DigestSource" class="associatedtype">DigestSource</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a></h4></section></summary><div class="docblock"><p>The source used to generate the digest.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Digest" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#365">Source</a><h4 class="code-header">type <a href="#associatedtype.Digest" class="associatedtype">Digest</a>: <a class="trait" href="../base/trait.Keyed.html" title="trait frame_suite::base::Keyed">Keyed</a></h4></section></summary><div class="docblock"><p>The immutable substance proposed by the first party - the “sealed deed content”.
+It represents the details of the deed or offer that expects a commitment.</p>
+<p>Digest is the core of a commitment: it proves what the commitment is tied to,
+and ensures it is fixed and immutable.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Reason" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#369">Source</a><h4 class="code-header">type <a href="#associatedtype.Reason" class="associatedtype">Reason</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a> + <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a></h4></section></summary><div class="docblock"><p>The category or type of the commitment.
+Provides meaning to the digest by placing it in context.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Intent" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#378">Source</a><h4 class="code-header">type <a href="#associatedtype.Intent" class="associatedtype">Intent</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a> + <a class="trait" href="../misc/trait.Directive.html" title="trait frame_suite::misc::Directive">Directive</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a></h4></section></summary><div class="docblock"><p>Represents the qualitative configuration of a commit operation.</p>
+<p>Encodes behavioral characteristics such as precision and fortitude,
+influencing how commitments are evaluated and executed. (e.g. exact
+vs approximate, polite vs forceful execution).</p>
+<p>Default is provided if in case no preference is provided.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Limits" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#387">Source</a><h4 class="code-header">type <a href="#associatedtype.Limits" class="associatedtype">Limits</a>: <a class="trait" href="../misc/trait.Extent.html" title="trait frame_suite::misc::Extent">Extent</a>&lt;Scalar = Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>&gt;</h4></section></summary><div class="docblock"><p>Provides optional advisory bounds for commitment and digest operations.</p>
+<p>These limits act as an additional validation layer on top of core
+invariants, helping prevent premature or extreme values without
+affecting correctness.</p>
+<p>Uses <a href="../misc/trait.Extent.html" title="trait frame_suite::misc::Extent"><code>Extent</code></a> to express minimum, maximum, or optimal values.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.commit_exists" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#398">Source</a><h4 class="code-header">fn <a href="#tymethod.commit_exists" class="fn">commit_exists</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>, reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether a commitment exists for the given proprietor and reason.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the commitment exists</li>
+<li><code>Err(DispatchError)</code> if no commitment is found</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.digest_exists" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#405">Source</a><h4 class="code-header">fn <a href="#tymethod.digest_exists" class="fn">digest_exists</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>, digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether a specific digest exists for the given reason.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the digest exists</li>
+<li><code>Err(DispatchError)</code> if the digest is not found</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_commit_digest" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#539-542">Source</a><h4 class="code-header">fn <a href="#tymethod.get_commit_digest" class="fn">get_commit_digest</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the digest tied to a proprietor’s commitment for the given reason.</p>
+<p>Since the system enforces only one digest per reason, its expected to be
+only a single digest or none.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Digest)</code> containing the commitment’s digest</li>
+<li><code>Err(DispatchError)</code> if no commitment exists for the reason</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_total_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#548">Source</a><h4 class="code-header">fn <a href="#tymethod.get_total_value" class="fn">get_total_value</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a></h4></section></summary><div class="docblock"><p>Retrieves the total aggregated value for all commitments under the given reason.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Self::Asset</code> containing the total value across all commitments for the reason</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_commit_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#560-563">Source</a><h4 class="code-header">fn <a href="#tymethod.get_commit_value" class="fn">get_commit_value</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the current real-time value of a proprietor’s commitment for the given reason.</p>
+<p>Returns the live committed value at the moment of calling, reflecting any
+changes to the underlying digest value since the commitment was initially
+placed. This is not a historical value but the actual current state, as
+digest values can be updated via <a href="trait.Commitment.html#tymethod.set_digest_value"><code>set_digest_value</code></a>.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the current commitment value</li>
+<li><code>Err(DispatchError)</code> if the commitment does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_digest_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#573-576">Source</a><h4 class="code-header">fn <a href="#tymethod.get_digest_value" class="fn">get_digest_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the current aggregated value for the given digest under the specified reason.</p>
+<p>Returns the real-time sum of all commitments tied to the digest.
+Useful for evaluating the full scope of commitments to a specific digest.</p>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the aggregated digest value</li>
+<li><code>Err(DispatchError)</code> if the digest does not exist or lookup fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.gen_digest" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#654">Source</a><h4 class="code-header">fn <a href="#tymethod.gen_digest" class="fn">gen_digest</a>(via: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.DigestSource" title="type frame_suite::commitment::Commitment::DigestSource">DigestSource</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Generates a unique digest from the provided source.</p>
+<p>Creates an immutable identifier that represents the commitment’s terms,
+ensuring collision-free digest generation across the system.</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Digest)</code> containing the generated unique digest</li>
+<li><code>Err(DispatchError)</code> if digest generation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.place_commit" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#673-679">Source</a><h4 class="code-header">fn <a href="#tymethod.place_commit" class="fn">place_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Places an immutable commitment for the specified digest and reason.</p>
+<p>Locks the specified value under the given digest and reason, creating
+an atomic commitment that cannot be reduced or partially withdrawn.</p>
+<p>The qualifier parameter enforces exactness or best-effort semantics,
+while also specifying whether the system must force achieving the
+commitment conditions.</p>
+<h6 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the actual value committed to the digest</li>
+<li><code>Err(DispatchError)</code> if placement fails due to insufficient funds or
+validation errors</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.resolve_commit" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#698-701">Source</a><h4 class="code-header">fn <a href="#tymethod.resolve_commit" class="fn">resolve_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Resolves and releases the commitment tied to the specified reason.</p>
+<p>Finalizes the commitment for the given proprietor and reason, releasing
+the locked value.</p>
+<p>Proprietors are enforced to commit to a <strong>single digest per reason</strong>,
+ensuring unambiguous resolution. Higher-level traits such as <a href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a>
+or <a href="trait.CommitPool.html" title="trait frame_suite::commitment::CommitPool"><code>CommitPool</code></a> can be built to allow indexed or pooled commitments on top of
+this invariant.</p>
+<p>The returned value may differ from the original deposit depending on the reason’s
+context and any adjustments made during the commitment’s lifetime possibly
+via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>.</p>
+<h6 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the fully resolved commitment value</li>
+<li><code>Err(DispatchError)</code> if the commitment does not exist or resolution fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.raise_commit" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#713-718">Source</a><h4 class="code-header">fn <a href="#tymethod.raise_commit" class="fn">raise_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Increases the value of an existing commitment.</p>
+<p>Adds the specified value to an existing commitment for the given reason.
+This operation can only be performed if a commitment already exists.</p>
+<p>The qualifier parameter control how the increase is applied.</p>
+<h6 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the increment actually added (not the total value)</li>
+<li><code>Err(DispatchError)</code> if the commitment does not exist or if the increase fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_digest_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#733-738">Source</a><h4 class="code-header">fn <a href="#tymethod.set_digest_value" class="fn">set_digest_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Sets or updates the aggregated value of the specified digest.</p>
+<p>Allows the reason provider (implementer) to adjust the digest’s value,
+which automatically propagates to all individual commitments tied to that
+digest.</p>
+<p>The <code>qualifier</code> defines how the update is applied (e.g., exact vs best-effort,
+forceful vs relaxed), and determines the execution semantics for the direction
+of change (increase or decrease relative to the current value).</p>
+<h6 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the actual value applied to the digest</li>
+<li><code>Err(DispatchError)</code> if the digest does not exist or update fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reap_digest" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#750">Source</a><h4 class="code-header">fn <a href="#tymethod.reap_digest" class="fn">reap_digest</a>(digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Removes a digest if it has no associated commitments.</p>
+<p>Permanently deletes the specified digest from the system if its aggregated
+value is zero, freeing resources and cleaning up unused entries.
+This is a maintenance operation and it should ensures no commitments exist
+for the digest before reaping.</p>
+<h6 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the digest is successfully removed</li>
+<li><code>Err(DispatchError)</code> if the digest does not exist or still has active commitments</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.can_place_commit" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#416-438">Source</a><h4 class="code-header">fn <a href="#method.can_place_commit" class="fn">can_place_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether a new commitment can be placed.</p>
+<p>Ensures that no existing commitment exists for the given reason (enforcing
+the “one digest per reason” invariant) and that the proprietor has sufficient
+available funds to cover the commitment value.</p>
+<h6 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if validation succeeds</li>
+<li><code>Err(DispatchError)</code> if a commitment already exists or insufficient funds are available</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_raise_commit" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#449-467">Source</a><h4 class="code-header">fn <a href="#method.can_raise_commit" class="fn">can_raise_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether an existing commitment can be increased.</p>
+<p>Ensures that a commitment for the given reason already exists and that
+the proprietor has sufficient available funds to increase the commitment
+by the specified value.</p>
+<h6 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if validation succeeds</li>
+<li><code>Err(DispatchError)</code> if any of the condition fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_resolve_commit" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#477-480">Source</a><h4 class="code-header">fn <a href="#method.can_resolve_commit" class="fn">can_resolve_commit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>, reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether an existing commitment can be resolved.</p>
+<p>Ensures that a commitment for the given reason exists before
+allowing resolution/closing.</p>
+<h6 id="returns-14"><a class="doc-anchor" href="#returns-14">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if validation succeeds</li>
+<li><code>Err(DispatchError)</code> if no such commitment exists</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_set_digest_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#493-525">Source</a><h4 class="code-header">fn <a href="#method.can_set_digest_value" class="fn">can_set_digest_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether a digest’s value can be set or updated.</p>
+<p>Ensures that the specified digest exists under the given reason,
+and that the intended value update respects advisory limits
+(mint or reap depending on direction).</p>
+<p>The <code>qualifier</code> may influence how limits are interpreted.</p>
+<h6 id="returns-15"><a class="doc-anchor" href="#returns-15">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if validation succeeds</li>
+<li><code>Err(DispatchError)</code> if the digest does not exist or limits are violated</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.digest_mint_limits" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#582-592">Source</a><h4 class="code-header">fn <a href="#method.digest_mint_limits" class="fn">digest_mint_limits</a>(
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Provides advisory bounds for increasing (minting) a digest’s value.</p>
+<p>Acts as an optional guard to prevent abrupt or excessive growth,
+complementing core digest update logic.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.place_commit_limits" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#598-609">Source</a><h4 class="code-header">fn <a href="#method.place_commit_limits" class="fn">place_commit_limits</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Provides advisory bounds for placing a new commitment.</p>
+<p>Acts as an optional pre-validation layer to prevent premature or
+undesirable commits by constraining value ranges.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.raise_commit_limits" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#615-625">Source</a><h4 class="code-header">fn <a href="#method.raise_commit_limits" class="fn">raise_commit_limits</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Provides advisory bounds for increasing an existing commitment.</p>
+<p>Acts as an optional guard to prevent excessive or premature raises,
+complementing core checks like existence and available funds.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.digest_reap_limits" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#631-640">Source</a><h4 class="code-header">fn <a href="#method.digest_reap_limits" class="fn">digest_reap_limits</a>(
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Provides advisory bounds for decreasing (reaping) a digest’s value.</p>
+<p>Acts as an optional guard to prevent aggressive or premature reductions,
+complementing core invariants that ensure correctness.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_commit_place" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#763-769">Source</a><h4 class="code-header">fn <a href="#method.on_commit_place" class="fn">on_commit_place</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a commitment is successfully placed.</p>
+<p>Provides an extension point for triggering side-effects such as events,
+logging, external state updates, or notifications when a new commitment
+is established.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_commit_raise" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#778-784">Source</a><h4 class="code-header">fn <a href="#method.on_commit_raise" class="fn">on_commit_raise</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a commitment is successfully raised (increased).</p>
+<p>Provides an extension point for triggering side-effects such as recalculations,
+notifications, event emissions, or external state synchronization when an
+existing commitment’s value is increased.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_commit_resolve" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#793-799">Source</a><h4 class="code-header">fn <a href="#method.on_commit_resolve" class="fn">on_commit_resolve</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a commitment is successfully resolved.</p>
+<p>Provides an extension point for performing cleanup, distributing rewards or
+penalties, audit logging, or triggering any finalization logic when a
+commitment is released.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_digest_update" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#808">Source</a><h4 class="code-header">fn <a href="#method.on_digest_update" class="fn">on_digest_update</a>(
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a digest’s value is updated.</p>
+<p>Provides an extension point for triggering recalculation of dependent
+commitments, propagating changes to related state, or emitting events
+when a digest’s aggregated value changes.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_reap_digest" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#820">Source</a><h4 class="code-header">fn <a href="#method.on_reap_digest" class="fn">on_reap_digest</a>(
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _dust: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a digest is reaped (removed).</p>
+<p>Provides an extension point for cleanup tasks, logging, freeing
+related resources, or triggering external notifications when a digest
+is permanently removed from the system.</p>
+<p><code>dust</code> represents any residual value that was unclaimable and
+effectively considered dead.</p>
+<p>Default implementation is a no-op.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/commitment/trait.Commitment.js" async></script></section></div></main></body></html>

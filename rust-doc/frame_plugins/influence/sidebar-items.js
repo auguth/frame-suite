@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BinaryModel","BinaryModelConfig","CappedLinearModel","CappedLinearModelConfig","ExponentialModel","ExponentialModelConfig","LinearModel","LogarithmicModel","QuadraticModel","SigmoidModel","SigmoidModelConfig","ThresholdModel","ThresholdModelConfig"]};

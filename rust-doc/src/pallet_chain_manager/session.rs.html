@@ -1,0 +1,383 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `pallets/chain-manager/src/session.rs`."><title>session.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_chain_manager" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">pallet_chain_manager/</div>session.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// SPDX-License-Identifier: MPL-2.0
+<a href=#2 id=2 data-nosnippet>2</a>//
+<a href=#3 id=3 data-nosnippet>3</a>// Part of Auguth Labs open-source softwares.
+<a href=#4 id=4 data-nosnippet>4</a>// Built for the Substrate framework.
+<a href=#5 id=5 data-nosnippet>5</a>//
+<a href=#6 id=6 data-nosnippet>6</a>// This Source Code Form is subject to the terms of the Mozilla Public
+<a href=#7 id=7 data-nosnippet>7</a>// License, v. 2.0. If a copy of the MPL was not distributed with this
+<a href=#8 id=8 data-nosnippet>8</a>// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+<a href=#9 id=9 data-nosnippet>9</a>//
+<a href=#10 id=10 data-nosnippet>10</a>// Copyright (c) 2026 Auguth Labs (OPC) Pvt Ltd, India
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a>// ===============================================================================
+<a href=#13 id=13 data-nosnippet>13</a>// ````````````````````````````` SESSION MANAGEMENT ``````````````````````````````
+<a href=#14 id=14 data-nosnippet>14</a>// ===============================================================================
+<a href=#15 id=15 data-nosnippet>15</a>
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="doccomment">//! Implements [`SessionManager`] for [`Pallet`].
+<a href=#17 id=17 data-nosnippet>17</a>//!
+<a href=#18 id=18 data-nosnippet>18</a>//! Session management logic for author rotation, reward settlement,
+<a href=#19 id=19 data-nosnippet>19</a>//! and session boundary coordination.
+<a href=#20 id=20 data-nosnippet>20</a>
+<a href=#21 id=21 data-nosnippet>21</a></span><span class="comment">// ===============================================================================
+<a href=#22 id=22 data-nosnippet>22</a>// ``````````````````````````````````` IMPORTS ```````````````````````````````````
+<a href=#23 id=23 data-nosnippet>23</a>// ===============================================================================
+<a href=#24 id=24 data-nosnippet>24</a>
+<a href=#25 id=25 data-nosnippet>25</a>// --- Local crate imports ---
+<a href=#26 id=26 data-nosnippet>26</a></span><span class="kw">use crate</span>::{
+<a href=#27 id=27 data-nosnippet>27</a>    types::<span class="kw-2">*</span>, Config, CurrentSession, ElectionRunnerPoints, ElectionRunnerPointsUpgrade,
+<a href=#28 id=28 data-nosnippet>28</a>    ElectsPreparedBy, Internals, Pallet, SessionStartAt,
+<a href=#29 id=29 data-nosnippet>29</a>};
+<a href=#30 id=30 data-nosnippet>30</a>
+<a href=#31 id=31 data-nosnippet>31</a><span class="comment">// --- FRAME Suite ---
+<a href=#32 id=32 data-nosnippet>32</a></span><span class="kw">use </span>frame_suite::{blockchain::<span class="kw-2">*</span>, roles::RoleManager};
+<a href=#33 id=33 data-nosnippet>33</a>
+<a href=#34 id=34 data-nosnippet>34</a><span class="comment">// --- External pallets ---
+<a href=#35 id=35 data-nosnippet>35</a></span><span class="kw">use </span>pallet_session::SessionManager;
+<a href=#36 id=36 data-nosnippet>36</a>
+<a href=#37 id=37 data-nosnippet>37</a><span class="comment">// --- Substrate primitives ---
+<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">use </span>sp_runtime::{
+<a href=#39 id=39 data-nosnippet>39</a>    traits::{Convert, Saturating, Zero},
+<a href=#40 id=40 data-nosnippet>40</a>    Vec,
+<a href=#41 id=41 data-nosnippet>41</a>};
+<a href=#42 id=42 data-nosnippet>42</a>
+<a href=#43 id=43 data-nosnippet>43</a><span class="comment">// ===============================================================================
+<a href=#44 id=44 data-nosnippet>44</a>// ```````````````````````````` SESSION-ID CONVERSION ````````````````````````````
+<a href=#45 id=45 data-nosnippet>45</a>// ===============================================================================
+<a href=#46 id=46 data-nosnippet>46</a>
+<a href=#47 id=47 data-nosnippet>47</a></span><span class="kw">impl</span>&lt;T: Config&gt; Convert&lt;AuthorOf&lt;T&gt;, <span class="prelude-ty">Option</span>&lt;SessionId&lt;T&gt;&gt;&gt; <span class="kw">for </span>Pallet&lt;T&gt; {
+<a href=#48 id=48 data-nosnippet>48</a>    <span class="doccomment">/// Converts a valid `Author` to an `Result&lt;SessionId, DispatchError&gt;`
+<a href=#49 id=49 data-nosnippet>49</a>    ///
+<a href=#50 id=50 data-nosnippet>50</a>    /// None if no SessionId found
+<a href=#51 id=51 data-nosnippet>51</a>    </span><span class="kw">fn </span>convert(a: AuthorOf&lt;T&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;SessionId&lt;T&gt;&gt; {
+<a href=#52 id=52 data-nosnippet>52</a>        <span class="comment">// Verify that the author has an existing role
+<a href=#53 id=53 data-nosnippet>53</a>        </span><span class="kw">let </span><span class="prelude-val">Ok</span>(<span class="kw">_</span>) = &lt;T::RoleAdapter <span class="kw">as </span>RoleManager&lt;AuthorOf&lt;T&gt;&gt;&gt;::role_exists(<span class="kw-2">&amp;</span>a) <span class="kw">else </span>{
+<a href=#54 id=54 data-nosnippet>54</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#55 id=55 data-nosnippet>55</a>        };
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span><span class="prelude-val">Ok</span>(id) = a.try_into() <span class="kw">else </span>{ <span class="kw">return </span><span class="prelude-val">None </span>};
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="prelude-val">Some</span>(id)
+<a href=#58 id=58 data-nosnippet>58</a>    }
+<a href=#59 id=59 data-nosnippet>59</a>}
+<a href=#60 id=60 data-nosnippet>60</a>
+<a href=#61 id=61 data-nosnippet>61</a><span class="comment">// ===============================================================================
+<a href=#62 id=62 data-nosnippet>62</a>// ``````````````````````````````` SESSION MANAGER ```````````````````````````````
+<a href=#63 id=63 data-nosnippet>63</a>// ===============================================================================
+<a href=#64 id=64 data-nosnippet>64</a>
+<a href=#65 id=65 data-nosnippet>65</a></span><span class="doccomment">/// Implementation of [`SessionManager`] for the pallet.
+<a href=#66 id=66 data-nosnippet>66</a>///
+<a href=#67 id=67 data-nosnippet>67</a>/// This implementation integrates **author election**, **reward settlement**,
+<a href=#68 id=68 data-nosnippet>68</a>/// and **session boundary tracking** into Substrate's session lifecycle.
+<a href=#69 id=69 data-nosnippet>69</a>///
+<a href=#70 id=70 data-nosnippet>70</a>/// It acts as the coordination layer between:
+<a href=#71 id=71 data-nosnippet>71</a>/// - Election resolution ([`ElectAuthors`])
+<a href=#72 id=72 data-nosnippet>72</a>/// - Reward scheduling ([`RewardAuthors`])
+<a href=#73 id=73 data-nosnippet>73</a>/// - Session metadata management ([`CurrentSession`], [`SessionStartAt`])
+<a href=#74 id=74 data-nosnippet>74</a>///
+<a href=#75 id=75 data-nosnippet>75</a>/// ## Design Notes
+<a href=#76 id=76 data-nosnippet>76</a>/// - Elections always target the *next* session.
+<a href=#77 id=77 data-nosnippet>77</a>/// - Rewards are settled for the *ending* session.
+<a href=#78 id=78 data-nosnippet>78</a>/// - Session state is updated deterministically at boundaries.
+<a href=#79 id=79 data-nosnippet>79</a>/// - No election logic or reward computation is performed here.
+<a href=#80 id=80 data-nosnippet>80</a>///
+<a href=#81 id=81 data-nosnippet>81</a>/// ## Implementation Notes
+<a href=#82 id=82 data-nosnippet>82</a>/// - This implementation assumes election results are already finalized
+<a href=#83 id=83 data-nosnippet>83</a>///   before `new_session` is invoked.
+<a href=#84 id=84 data-nosnippet>84</a>/// - All side effects are **session-boundary safe** and audit-friendly.
+<a href=#85 id=85 data-nosnippet>85</a></span><span class="kw">impl</span>&lt;T: Config&gt; SessionManager&lt;AuthorOf&lt;T&gt;&gt; <span class="kw">for </span>Pallet&lt;T&gt; {
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="doccomment">/// Prepares the author set for the upcoming session.
+<a href=#87 id=87 data-nosnippet>87</a>    ///
+<a href=#88 id=88 data-nosnippet>88</a>    /// ## Workflow
+<a href=#89 id=89 data-nosnippet>89</a>    /// - Reveal elected authors via [`ElectAuthors::reveal`].
+<a href=#90 id=90 data-nosnippet>90</a>    /// - Reward the election runner with additional block points
+<a href=#91 id=91 data-nosnippet>91</a>    ///   for the *previous* session.
+<a href=#92 id=92 data-nosnippet>92</a>    ///
+<a href=#93 id=93 data-nosnippet>93</a>    /// ## Semantics
+<a href=#94 id=94 data-nosnippet>94</a>    /// - Returns `None` if:
+<a href=#95 id=95 data-nosnippet>95</a>    ///   - No election was executed, or
+<a href=#96 id=96 data-nosnippet>96</a>    ///   - The elected author set is empty.
+<a href=#97 id=97 data-nosnippet>97</a>    /// - Election runner rewards are credited to the session
+<a href=#98 id=98 data-nosnippet>98</a>    ///   that is ending (`new_index - 1`).
+<a href=#99 id=99 data-nosnippet>99</a>    </span><span class="kw">fn </span>new_session(new_index: SessionIndex) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;AuthorOf&lt;T&gt;&gt;&gt; {
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="comment">// Reveal the elected authors for the upcoming session.
+<a href=#101 id=101 data-nosnippet>101</a>        </span><span class="kw">let </span><span class="prelude-val">Some</span>(authors) = &lt;Internals&lt;T&gt; <span class="kw">as </span>ElectAuthors&lt;AuthorOf&lt;T&gt;, ElectionVia&lt;T&gt;&gt;&gt;::reveal()
+<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">else </span>{
+<a href=#103 id=103 data-nosnippet>103</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#104 id=104 data-nosnippet>104</a>        };
+<a href=#105 id=105 data-nosnippet>105</a>
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="comment">// Materialize the elected set into a concrete vector.
+<a href=#107 id=107 data-nosnippet>107</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>elected: Vec&lt;AuthorOf&lt;T&gt;&gt; = Vec::new();
+<a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">for </span>author <span class="kw">in </span>authors.into_iter() {
+<a href=#109 id=109 data-nosnippet>109</a>            elected.push(author);
+<a href=#110 id=110 data-nosnippet>110</a>        }
+<a href=#111 id=111 data-nosnippet>111</a>
+<a href=#112 id=112 data-nosnippet>112</a>        <span class="comment">// Abort if the election yielded no authors.
+<a href=#113 id=113 data-nosnippet>113</a>        </span><span class="kw">if </span>elected.is_empty() {
+<a href=#114 id=114 data-nosnippet>114</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#115 id=115 data-nosnippet>115</a>        }
+<a href=#116 id=116 data-nosnippet>116</a>
+<a href=#117 id=117 data-nosnippet>117</a>        <span class="comment">// Reward the election runner in the session that is going to end.
+<a href=#118 id=118 data-nosnippet>118</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>((<span class="kw-2">ref </span>runner, _block)) = ElectsPreparedBy::&lt;T&gt;::get(new_index) {
+<a href=#119 id=119 data-nosnippet>119</a>            <span class="kw">let </span>runner_points = ElectionRunnerPoints::&lt;T&gt;::get();
+<a href=#120 id=120 data-nosnippet>120</a>            <span class="kw">let </span>points = T::PointsAdapter::points_of(runner).unwrap_or(Zero::zero());
+<a href=#121 id=121 data-nosnippet>121</a>            <span class="kw">let _ </span>= T::PointsAdapter::set_points(runner, points.saturating_add(runner_points));
+<a href=#122 id=122 data-nosnippet>122</a>        }
+<a href=#123 id=123 data-nosnippet>123</a>
+<a href=#124 id=124 data-nosnippet>124</a>        <span class="prelude-val">Some</span>(elected)
+<a href=#125 id=125 data-nosnippet>125</a>    }
+<a href=#126 id=126 data-nosnippet>126</a>
+<a href=#127 id=127 data-nosnippet>127</a>    <span class="doccomment">/// Finalizes the ending session.
+<a href=#128 id=128 data-nosnippet>128</a>    ///
+<a href=#129 id=129 data-nosnippet>129</a>    /// ## Workflow
+<a href=#130 id=130 data-nosnippet>130</a>    /// - Schedule rewards for authors based on accumulated points.
+<a href=#131 id=131 data-nosnippet>131</a>    /// - Apply any pending configuration upgrades related to
+<a href=#132 id=132 data-nosnippet>132</a>    ///   election runner incentives.
+<a href=#133 id=133 data-nosnippet>133</a>    ///
+<a href=#134 id=134 data-nosnippet>134</a>    /// ## Notes
+<a href=#135 id=135 data-nosnippet>135</a>    /// - Reward scheduling is deferred; no immediate transfers occur.
+<a href=#136 id=136 data-nosnippet>136</a>    /// - Configuration upgrades take effect atomically at session end.
+<a href=#137 id=137 data-nosnippet>137</a>    </span><span class="kw">fn </span>end_session(_end_index: SessionIndex) {
+<a href=#138 id=138 data-nosnippet>138</a>        <span class="comment">// Schedule rewards for authors of the ending session.
+<a href=#139 id=139 data-nosnippet>139</a>        </span>&lt;Internals&lt;T&gt; <span class="kw">as </span>RewardAuthors&lt;AuthorOf&lt;T&gt;, AssetOf&lt;T&gt;, T::Points&gt;&gt;::reward_authors();
+<a href=#140 id=140 data-nosnippet>140</a>
+<a href=#141 id=141 data-nosnippet>141</a>        <span class="comment">// Apply pending election runner point upgrades, if any.
+<a href=#142 id=142 data-nosnippet>142</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(update) = ElectionRunnerPointsUpgrade::&lt;T&gt;::get() {
+<a href=#143 id=143 data-nosnippet>143</a>            ElectionRunnerPoints::&lt;T&gt;::set(update);
+<a href=#144 id=144 data-nosnippet>144</a>            ElectionRunnerPointsUpgrade::&lt;T&gt;::set(<span class="prelude-val">None</span>);
+<a href=#145 id=145 data-nosnippet>145</a>        }
+<a href=#146 id=146 data-nosnippet>146</a>    }
+<a href=#147 id=147 data-nosnippet>147</a>
+<a href=#148 id=148 data-nosnippet>148</a>    <span class="doccomment">/// Initializes metadata for the newly started session.
+<a href=#149 id=149 data-nosnippet>149</a>    ///
+<a href=#150 id=150 data-nosnippet>150</a>    /// ## Workflow
+<a href=#151 id=151 data-nosnippet>151</a>    /// - Record the new session index.
+<a href=#152 id=152 data-nosnippet>152</a>    /// - Capture the block number at which the session begins.
+<a href=#153 id=153 data-nosnippet>153</a>    ///
+<a href=#154 id=154 data-nosnippet>154</a>    /// ## Invariants
+<a href=#155 id=155 data-nosnippet>155</a>    /// - Must be called exactly once per session start.
+<a href=#156 id=156 data-nosnippet>156</a>    /// - Session metadata is monotonic and never rewritten.
+<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">fn </span>start_session(start_index: SessionIndex) {
+<a href=#158 id=158 data-nosnippet>158</a>        CurrentSession::&lt;T&gt;::set(start_index);
+<a href=#159 id=159 data-nosnippet>159</a>        SessionStartAt::&lt;T&gt;::set(frame_system::Pallet::&lt;T&gt;::block_number());
+<a href=#160 id=160 data-nosnippet>160</a>    }
+<a href=#161 id=161 data-nosnippet>161</a>}
+<a href=#162 id=162 data-nosnippet>162</a>
+<a href=#163 id=163 data-nosnippet>163</a><span class="comment">// ===============================================================================
+<a href=#164 id=164 data-nosnippet>164</a>// ```````````````````````````````` SESSION TESTS ````````````````````````````````
+<a href=#165 id=165 data-nosnippet>165</a>// ===============================================================================
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a></span><span class="attr">#[cfg(test)]
+<a href=#168 id=168 data-nosnippet>168</a></span><span class="kw">mod </span>tests {
+<a href=#169 id=169 data-nosnippet>169</a>
+<a href=#170 id=170 data-nosnippet>170</a>    <span class="comment">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<a href=#171 id=171 data-nosnippet>171</a>    // ```````````````````````````````````` IMPORTS ``````````````````````````````````
+<a href=#172 id=172 data-nosnippet>172</a>    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<a href=#173 id=173 data-nosnippet>173</a>
+<a href=#174 id=174 data-nosnippet>174</a>    // --- Local crate imports ---
+<a href=#175 id=175 data-nosnippet>175</a>    </span><span class="kw">use </span><span class="kw">crate</span>::mock::<span class="kw-2">*</span>;
+<a href=#176 id=176 data-nosnippet>176</a>
+<a href=#177 id=177 data-nosnippet>177</a>    <span class="comment">// --- FRAME Suite ---
+<a href=#178 id=178 data-nosnippet>178</a>    </span><span class="kw">use </span>frame_suite::{blockchain::<span class="kw-2">*</span>, roles::<span class="kw-2">*</span>};
+<a href=#179 id=179 data-nosnippet>179</a>
+<a href=#180 id=180 data-nosnippet>180</a>    <span class="comment">// --- FRAME Support ---
+<a href=#181 id=181 data-nosnippet>181</a>    </span><span class="kw">use </span>frame_support::traits::tokens::{Fortitude, Precision};
+<a href=#182 id=182 data-nosnippet>182</a>
+<a href=#183 id=183 data-nosnippet>183</a>    <span class="comment">// --- External pallets ---
+<a href=#184 id=184 data-nosnippet>184</a>    </span><span class="kw">use </span>pallet_session::SessionManager;
+<a href=#185 id=185 data-nosnippet>185</a>
+<a href=#186 id=186 data-nosnippet>186</a>    <span class="comment">// --- Substrate primitives ---
+<a href=#187 id=187 data-nosnippet>187</a>    </span><span class="kw">use </span>sp_runtime::traits::Convert;
+<a href=#188 id=188 data-nosnippet>188</a>
+<a href=#189 id=189 data-nosnippet>189</a>    <span class="comment">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<a href=#190 id=190 data-nosnippet>190</a>    // ```````````````````````````````````` CONVERT ``````````````````````````````````
+<a href=#191 id=191 data-nosnippet>191</a>    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<a href=#192 id=192 data-nosnippet>192</a>
+<a href=#193 id=193 data-nosnippet>193</a>    </span><span class="attr">#[test]
+<a href=#194 id=194 data-nosnippet>194</a>    </span><span class="kw">fn </span>convert_returns_some() {
+<a href=#195 id=195 data-nosnippet>195</a>        chain_manager_test_ext().execute_with(|| {
+<a href=#196 id=196 data-nosnippet>196</a>            set_user_balance_and_hold(ALICE, <span class="number">250</span>, <span class="number">200</span>).unwrap();
+<a href=#197 id=197 data-nosnippet>197</a>            RoleAdapter::enroll(<span class="kw-2">&amp;</span>ALICE, <span class="number">150</span>, Fortitude::Force).unwrap();
+<a href=#198 id=198 data-nosnippet>198</a>            <span class="kw">let </span>session_id = Pallet::convert(ALICE);
+<a href=#199 id=199 data-nosnippet>199</a>            <span class="macro">assert!</span>(session_id.is_some());
+<a href=#200 id=200 data-nosnippet>200</a>        })
+<a href=#201 id=201 data-nosnippet>201</a>    }
+<a href=#202 id=202 data-nosnippet>202</a>
+<a href=#203 id=203 data-nosnippet>203</a>    <span class="attr">#[test]
+<a href=#204 id=204 data-nosnippet>204</a>    </span><span class="kw">fn </span>convert_returns_none() {
+<a href=#205 id=205 data-nosnippet>205</a>        chain_manager_test_ext().execute_with(|| {
+<a href=#206 id=206 data-nosnippet>206</a>            set_user_balance_and_hold(ALICE, <span class="number">250</span>, <span class="number">200</span>).unwrap();
+<a href=#207 id=207 data-nosnippet>207</a>            RoleAdapter::enroll(<span class="kw-2">&amp;</span>ALICE, <span class="number">150</span>, Fortitude::Force).unwrap();
+<a href=#208 id=208 data-nosnippet>208</a>            <span class="kw">let </span>session_id = Pallet::convert(BOB);
+<a href=#209 id=209 data-nosnippet>209</a>            <span class="macro">assert!</span>(session_id.is_none());
+<a href=#210 id=210 data-nosnippet>210</a>            <span class="macro">dbg!</span>(session_id);
+<a href=#211 id=211 data-nosnippet>211</a>        })
+<a href=#212 id=212 data-nosnippet>212</a>    }
+<a href=#213 id=213 data-nosnippet>213</a>
+<a href=#214 id=214 data-nosnippet>214</a>    <span class="comment">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<a href=#215 id=215 data-nosnippet>215</a>    // ``````````````````````````````` SESSION-MANAGER ```````````````````````````````
+<a href=#216 id=216 data-nosnippet>216</a>    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<a href=#217 id=217 data-nosnippet>217</a>
+<a href=#218 id=218 data-nosnippet>218</a>    </span><span class="attr">#[test]
+<a href=#219 id=219 data-nosnippet>219</a>    </span><span class="kw">fn </span>new_session_returns_authors_and_awards_election_runner_points() {
+<a href=#220 id=220 data-nosnippet>220</a>        chain_manager_test_ext().execute_with(|| {
+<a href=#221 id=221 data-nosnippet>221</a>            CurrentSession::put(<span class="number">0</span>);
+<a href=#222 id=222 data-nosnippet>222</a>            set_user_balance_and_hold(ALICE, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#223 id=223 data-nosnippet>223</a>            set_user_balance_and_hold(CHARLIE, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#224 id=224 data-nosnippet>224</a>            set_user_balance_and_hold(ALAN, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#225 id=225 data-nosnippet>225</a>            set_user_balance_and_hold(MIKE, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#226 id=226 data-nosnippet>226</a>            set_user_balance_and_hold(BOB, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#227 id=227 data-nosnippet>227</a>            set_user_balance_and_hold(NIX, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#228 id=228 data-nosnippet>228</a>
+<a href=#229 id=229 data-nosnippet>229</a>            RoleAdapter::enroll(<span class="kw-2">&amp;</span>ALICE, <span class="number">200</span>, Fortitude::Force).unwrap();
+<a href=#230 id=230 data-nosnippet>230</a>            RoleAdapter::enroll(<span class="kw-2">&amp;</span>BOB, <span class="number">200</span>, Fortitude::Force).unwrap();
+<a href=#231 id=231 data-nosnippet>231</a>            RoleAdapter::enroll(<span class="kw-2">&amp;</span>MIKE, <span class="number">200</span>, Fortitude::Force).unwrap();
+<a href=#232 id=232 data-nosnippet>232</a>
+<a href=#233 id=233 data-nosnippet>233</a>            RoleAdapter::fund(
+<a href=#234 id=234 data-nosnippet>234</a>                <span class="kw-2">&amp;</span>ALICE,
+<a href=#235 id=235 data-nosnippet>235</a>                <span class="kw-2">&amp;</span>Funder::Direct(CHARLIE),
+<a href=#236 id=236 data-nosnippet>236</a>                <span class="number">100</span>,
+<a href=#237 id=237 data-nosnippet>237</a>                Precision::Exact,
+<a href=#238 id=238 data-nosnippet>238</a>                Fortitude::Force,
+<a href=#239 id=239 data-nosnippet>239</a>            )
+<a href=#240 id=240 data-nosnippet>240</a>            .unwrap();
+<a href=#241 id=241 data-nosnippet>241</a>            RoleAdapter::fund(
+<a href=#242 id=242 data-nosnippet>242</a>                <span class="kw-2">&amp;</span>BOB,
+<a href=#243 id=243 data-nosnippet>243</a>                <span class="kw-2">&amp;</span>Funder::Direct(ALAN),
+<a href=#244 id=244 data-nosnippet>244</a>                <span class="number">150</span>,
+<a href=#245 id=245 data-nosnippet>245</a>                Precision::Exact,
+<a href=#246 id=246 data-nosnippet>246</a>                Fortitude::Force,
+<a href=#247 id=247 data-nosnippet>247</a>            )
+<a href=#248 id=248 data-nosnippet>248</a>            .unwrap();
+<a href=#249 id=249 data-nosnippet>249</a>            RoleAdapter::fund(
+<a href=#250 id=250 data-nosnippet>250</a>                <span class="kw-2">&amp;</span>MIKE,
+<a href=#251 id=251 data-nosnippet>251</a>                <span class="kw-2">&amp;</span>Funder::Direct(NIX),
+<a href=#252 id=252 data-nosnippet>252</a>                <span class="number">125</span>,
+<a href=#253 id=253 data-nosnippet>253</a>                Precision::Exact,
+<a href=#254 id=254 data-nosnippet>254</a>                Fortitude::Force,
+<a href=#255 id=255 data-nosnippet>255</a>            )
+<a href=#256 id=256 data-nosnippet>256</a>            .unwrap();
+<a href=#257 id=257 data-nosnippet>257</a>
+<a href=#258 id=258 data-nosnippet>258</a>            AffidavitKeys::insert((<span class="number">1</span>, AFFIDAVIT_KEY_A), ALICE);
+<a href=#259 id=259 data-nosnippet>259</a>            AffidavitKeys::insert((<span class="number">1</span>, AFFIDAVIT_KEY_B), BOB);
+<a href=#260 id=260 data-nosnippet>260</a>            AffidavitKeys::insert((<span class="number">1</span>, AFFIDAVIT_KEY_C), MIKE);
+<a href=#261 id=261 data-nosnippet>261</a>
+<a href=#262 id=262 data-nosnippet>262</a>            <span class="kw">let </span>affidavit_alice = Pallet::gen_affidavit(<span class="kw-2">&amp;</span>AFFIDAVIT_KEY_A).unwrap();
+<a href=#263 id=263 data-nosnippet>263</a>            Pallet::submit_affidavit(<span class="kw-2">&amp;</span>AFFIDAVIT_KEY_A, <span class="kw-2">&amp;</span>affidavit_alice).unwrap();
+<a href=#264 id=264 data-nosnippet>264</a>            <span class="kw">let </span>affidavit_bob = Pallet::gen_affidavit(<span class="kw-2">&amp;</span>AFFIDAVIT_KEY_B).unwrap();
+<a href=#265 id=265 data-nosnippet>265</a>            Pallet::submit_affidavit(<span class="kw-2">&amp;</span>AFFIDAVIT_KEY_B, <span class="kw-2">&amp;</span>affidavit_bob).unwrap();
+<a href=#266 id=266 data-nosnippet>266</a>            <span class="kw">let </span>affidavit_mike = Pallet::gen_affidavit(<span class="kw-2">&amp;</span>AFFIDAVIT_KEY_C).unwrap();
+<a href=#267 id=267 data-nosnippet>267</a>            Pallet::submit_affidavit(<span class="kw-2">&amp;</span>AFFIDAVIT_KEY_C, <span class="kw-2">&amp;</span>affidavit_mike).unwrap();
+<a href=#268 id=268 data-nosnippet>268</a>
+<a href=#269 id=269 data-nosnippet>269</a>            <span class="kw">let </span>candidates = Internals::prepare_candidates().unwrap();
+<a href=#270 id=270 data-nosnippet>270</a>            Internals::prepare_authors(candidates).unwrap();
+<a href=#271 id=271 data-nosnippet>271</a>
+<a href=#272 id=272 data-nosnippet>272</a>            <span class="comment">// Set up election runner for session 1
+<a href=#273 id=273 data-nosnippet>273</a>            </span>ElectsPreparedBy::insert(<span class="number">1</span>, (ALICE, <span class="number">100</span>));
+<a href=#274 id=274 data-nosnippet>274</a>            ElectionRunnerPoints::set(<span class="number">50</span>);
+<a href=#275 id=275 data-nosnippet>275</a>
+<a href=#276 id=276 data-nosnippet>276</a>            <span class="comment">// Simulate new_session call
+<a href=#277 id=277 data-nosnippet>277</a>            </span><span class="kw">let </span>result = Pallet::new_session(<span class="number">1</span>);
+<a href=#278 id=278 data-nosnippet>278</a>
+<a href=#279 id=279 data-nosnippet>279</a>            <span class="comment">// Verify that authors were returned
+<a href=#280 id=280 data-nosnippet>280</a>            </span><span class="macro">assert!</span>(result.is_some());
+<a href=#281 id=281 data-nosnippet>281</a>
+<a href=#282 id=282 data-nosnippet>282</a>            <span class="comment">// Election runner received bonus points for session 0
+<a href=#283 id=283 data-nosnippet>283</a>            </span><span class="kw">let </span>alice_points = PointsAdapter::points_of(<span class="kw-2">&amp;</span>ALICE).unwrap();
+<a href=#284 id=284 data-nosnippet>284</a>            <span class="macro">assert_eq!</span>(alice_points, <span class="number">50</span>);
+<a href=#285 id=285 data-nosnippet>285</a>        })
+<a href=#286 id=286 data-nosnippet>286</a>    }
+<a href=#287 id=287 data-nosnippet>287</a>
+<a href=#288 id=288 data-nosnippet>288</a>    <span class="attr">#[test]
+<a href=#289 id=289 data-nosnippet>289</a>    </span><span class="kw">fn </span>new_session_returns_none_when_reveal_fails() {
+<a href=#290 id=290 data-nosnippet>290</a>        chain_manager_test_ext().execute_with(|| {
+<a href=#291 id=291 data-nosnippet>291</a>            <span class="comment">// No election setup, so reveal will fail
+<a href=#292 id=292 data-nosnippet>292</a>            </span><span class="kw">let </span>result = Pallet::new_session(<span class="number">1</span>);
+<a href=#293 id=293 data-nosnippet>293</a>            <span class="macro">assert!</span>(result.is_none());
+<a href=#294 id=294 data-nosnippet>294</a>        })
+<a href=#295 id=295 data-nosnippet>295</a>    }
+<a href=#296 id=296 data-nosnippet>296</a>
+<a href=#297 id=297 data-nosnippet>297</a>    <span class="attr">#[test]
+<a href=#298 id=298 data-nosnippet>298</a>    </span><span class="kw">fn </span>end_session_rewards_authors() {
+<a href=#299 id=299 data-nosnippet>299</a>        chain_manager_test_ext().execute_with(|| {
+<a href=#300 id=300 data-nosnippet>300</a>            CurrentSession::put(<span class="number">1</span>);
+<a href=#301 id=301 data-nosnippet>301</a>            set_user_balance_and_hold(ALICE, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#302 id=302 data-nosnippet>302</a>            set_user_balance_and_hold(BOB, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#303 id=303 data-nosnippet>303</a>            set_user_balance_and_hold(ALAN, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#304 id=304 data-nosnippet>304</a>            set_user_balance_and_hold(MIKE, <span class="number">250</span>, <span class="number">250</span>).unwrap();
+<a href=#305 id=305 data-nosnippet>305</a>
+<a href=#306 id=306 data-nosnippet>306</a>            System::set_block_number(<span class="number">5</span>);
+<a href=#307 id=307 data-nosnippet>307</a>            RoleAdapter::enroll(<span class="kw-2">&amp;</span>ALICE, <span class="number">200</span>, Fortitude::Force).unwrap();
+<a href=#308 id=308 data-nosnippet>308</a>            RoleAdapter::enroll(<span class="kw-2">&amp;</span>BOB, <span class="number">150</span>, Fortitude::Force).unwrap();
+<a href=#309 id=309 data-nosnippet>309</a>            RoleAdapter::fund(
+<a href=#310 id=310 data-nosnippet>310</a>                <span class="kw-2">&amp;</span>ALICE,
+<a href=#311 id=311 data-nosnippet>311</a>                <span class="kw-2">&amp;</span>Funder::Direct(ALAN),
+<a href=#312 id=312 data-nosnippet>312</a>                <span class="number">150</span>,
+<a href=#313 id=313 data-nosnippet>313</a>                Precision::Exact,
+<a href=#314 id=314 data-nosnippet>314</a>                Fortitude::Force,
+<a href=#315 id=315 data-nosnippet>315</a>            )
+<a href=#316 id=316 data-nosnippet>316</a>            .unwrap();
+<a href=#317 id=317 data-nosnippet>317</a>            RoleAdapter::fund(
+<a href=#318 id=318 data-nosnippet>318</a>                <span class="kw-2">&amp;</span>BOB,
+<a href=#319 id=319 data-nosnippet>319</a>                <span class="kw-2">&amp;</span>Funder::Direct(MIKE),
+<a href=#320 id=320 data-nosnippet>320</a>                <span class="number">125</span>,
+<a href=#321 id=321 data-nosnippet>321</a>                Precision::Exact,
+<a href=#322 id=322 data-nosnippet>322</a>                Fortitude::Force,
+<a href=#323 id=323 data-nosnippet>323</a>            )
+<a href=#324 id=324 data-nosnippet>324</a>            .unwrap();
+<a href=#325 id=325 data-nosnippet>325</a>
+<a href=#326 id=326 data-nosnippet>326</a>            Pallet::add_point(<span class="kw-2">&amp;</span>ALICE).unwrap();
+<a href=#327 id=327 data-nosnippet>327</a>            Pallet::add_point(<span class="kw-2">&amp;</span>ALICE).unwrap();
+<a href=#328 id=328 data-nosnippet>328</a>            Pallet::add_point(<span class="kw-2">&amp;</span>BOB).unwrap();
+<a href=#329 id=329 data-nosnippet>329</a>            Pallet::add_point(<span class="kw-2">&amp;</span>BOB).unwrap();
+<a href=#330 id=330 data-nosnippet>330</a>            Pallet::add_point(<span class="kw-2">&amp;</span>BOB).unwrap();
+<a href=#331 id=331 data-nosnippet>331</a>            Pallet::add_point(<span class="kw-2">&amp;</span>ALICE).unwrap();
+<a href=#332 id=332 data-nosnippet>332</a>            Pallet::add_point(<span class="kw-2">&amp;</span>ALICE).unwrap();
+<a href=#333 id=333 data-nosnippet>333</a>            Pallet::add_point(<span class="kw-2">&amp;</span>ALICE).unwrap();
+<a href=#334 id=334 data-nosnippet>334</a>
+<a href=#335 id=335 data-nosnippet>335</a>            ElectionRunnerPointsUpgrade::put(<span class="prelude-val">Some</span>(<span class="number">50</span>));
+<a href=#336 id=336 data-nosnippet>336</a>            <span class="kw">let </span>election_runner_points = ElectionRunnerPoints::get();
+<a href=#337 id=337 data-nosnippet>337</a>            <span class="macro">assert_eq!</span>(election_runner_points, <span class="number">10</span>);
+<a href=#338 id=338 data-nosnippet>338</a>
+<a href=#339 id=339 data-nosnippet>339</a>            System::set_block_number(<span class="number">590</span>);
+<a href=#340 id=340 data-nosnippet>340</a>            Pallet::end_session(<span class="number">1</span>);
+<a href=#341 id=341 data-nosnippet>341</a>
+<a href=#342 id=342 data-nosnippet>342</a>            <span class="kw">let </span>election_runner_points = ElectionRunnerPoints::get();
+<a href=#343 id=343 data-nosnippet>343</a>            <span class="macro">assert_eq!</span>(election_runner_points, <span class="number">50</span>);
+<a href=#344 id=344 data-nosnippet>344</a>            <span class="macro">assert!</span>(ElectionRunnerPointsUpgrade::get().is_none());
+<a href=#345 id=345 data-nosnippet>345</a>
+<a href=#346 id=346 data-nosnippet>346</a>            <span class="kw">let </span>rewards_of_alice = RoleAdapter::get_rewards_of(<span class="kw-2">&amp;</span>ALICE).unwrap();
+<a href=#347 id=347 data-nosnippet>347</a>            <span class="kw">let </span>rewards_of_bob = RoleAdapter::get_rewards_of(<span class="kw-2">&amp;</span>BOB).unwrap();
+<a href=#348 id=348 data-nosnippet>348</a>
+<a href=#349 id=349 data-nosnippet>349</a>            <span class="kw">let </span>expected_alice_rewards = <span class="macro">vec!</span>[(<span class="number">592</span>, <span class="number">62</span>)];
+<a href=#350 id=350 data-nosnippet>350</a>            <span class="kw">let </span>expected_bob_rewards = <span class="macro">vec!</span>[(<span class="number">592</span>, <span class="number">38</span>)];
+<a href=#351 id=351 data-nosnippet>351</a>
+<a href=#352 id=352 data-nosnippet>352</a>            <span class="macro">assert_eq!</span>(rewards_of_alice, expected_alice_rewards);
+<a href=#353 id=353 data-nosnippet>353</a>            <span class="macro">assert_eq!</span>(rewards_of_bob, expected_bob_rewards);
+<a href=#354 id=354 data-nosnippet>354</a>        })
+<a href=#355 id=355 data-nosnippet>355</a>    }
+<a href=#356 id=356 data-nosnippet>356</a>
+<a href=#357 id=357 data-nosnippet>357</a>    <span class="attr">#[test]
+<a href=#358 id=358 data-nosnippet>358</a>    </span><span class="kw">fn </span>end_session_does_not_upgrade_when_none() {
+<a href=#359 id=359 data-nosnippet>359</a>        chain_manager_test_ext().execute_with(|| {
+<a href=#360 id=360 data-nosnippet>360</a>            ElectionRunnerPoints::set(<span class="number">50</span>);
+<a href=#361 id=361 data-nosnippet>361</a>            ElectionRunnerPointsUpgrade::set(<span class="prelude-val">None</span>);
+<a href=#362 id=362 data-nosnippet>362</a>
+<a href=#363 id=363 data-nosnippet>363</a>            Pallet::end_session(<span class="number">1</span>);
+<a href=#364 id=364 data-nosnippet>364</a>
+<a href=#365 id=365 data-nosnippet>365</a>            <span class="macro">assert_eq!</span>(ElectionRunnerPoints::get(), <span class="number">50</span>);
+<a href=#366 id=366 data-nosnippet>366</a>            <span class="macro">assert_eq!</span>(ElectionRunnerPointsUpgrade::get(), <span class="prelude-val">None</span>);
+<a href=#367 id=367 data-nosnippet>367</a>        })
+<a href=#368 id=368 data-nosnippet>368</a>    }
+<a href=#369 id=369 data-nosnippet>369</a>
+<a href=#370 id=370 data-nosnippet>370</a>    <span class="attr">#[test]
+<a href=#371 id=371 data-nosnippet>371</a>    </span><span class="kw">fn </span>start_session_updates_current_session_and_block_number() {
+<a href=#372 id=372 data-nosnippet>372</a>        chain_manager_test_ext().execute_with(|| {
+<a href=#373 id=373 data-nosnippet>373</a>            System::set_block_number(<span class="number">500</span>);
+<a href=#374 id=374 data-nosnippet>374</a>            CurrentSession::put(<span class="number">0</span>);
+<a href=#375 id=375 data-nosnippet>375</a>            SessionStartsAt::put(<span class="number">0</span>);
+<a href=#376 id=376 data-nosnippet>376</a>
+<a href=#377 id=377 data-nosnippet>377</a>            Pallet::start_session(<span class="number">5</span>);
+<a href=#378 id=378 data-nosnippet>378</a>
+<a href=#379 id=379 data-nosnippet>379</a>            <span class="macro">assert_eq!</span>(CurrentSession::get(), <span class="number">5</span>);
+<a href=#380 id=380 data-nosnippet>380</a>            <span class="macro">assert_eq!</span>(SessionStartsAt::get(), <span class="number">500</span>);
+<a href=#381 id=381 data-nosnippet>381</a>        })
+<a href=#382 id=382 data-nosnippet>382</a>    }
+<a href=#383 id=383 data-nosnippet>383</a>}</code></pre></div></section></main></body></html>

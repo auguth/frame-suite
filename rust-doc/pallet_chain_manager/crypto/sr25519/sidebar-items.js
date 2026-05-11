@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["app_sr25519"],"struct":["AffidavitCryptoSr25519"],"type":["AffidavitPair","AffidavitPublic","AffidavitSignature"]};

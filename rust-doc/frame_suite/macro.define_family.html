@@ -1,0 +1,224 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Declares a concrete plugin family implementation for a given family root."><title>define_family in frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">define_<wbr>family</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#syntax" title="Syntax">Syntax</a><ul><li><a href="#family-with-context" title="Family With Context">Family With Context</a></li><li><a href="#family-without-context" title="Family Without Context">Family Without Context</a></li></ul></li><li><a href="#lifetimes-and-generics" title="Lifetimes and Generics">Lifetimes and Generics</a></li><li><a href="#example" title="Example">Example</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">frame_suite</a></div><h1>Macro <span class="macro">define_family</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/plugins.rs.html#2669-3035">Source</a> </span></div><pre class="rust item-decl"><code>macro_rules! define_family {
+    (@output_ty $Input:tt) =&gt; { ... };
+    (@output_ty $Input:tt, $Output:tt) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: $Input:ident,
+        $(output: $Output:ident ,)?
+        context: $Context:ty,
+        $(marker: [$($marker_gen:ident),* $(,)?],)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: $Input:ident,
+        $(output: ($($Output:ident),+) ,)?
+        context: $Context:ty,
+        $(marker: [$($marker_gen:ident),* $(,)?],)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: ($($Input:ident),+),
+        $(output: $Output:ident ,)?
+        context: $Context:ty,
+        $(marker: [$($marker_gen:ident),* $(,)?],)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: ($($Input:ident),+),
+        $(output: ($($Output:ident),+) ,)?
+        context: $Context:ty,
+        $(marker: [$($marker_gen:ident),* $(,)?],)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: $Input:ident,
+        $(output: $Output:ident ,)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: $Input:ident,
+        $(output: ($($Output:ident),+) ,)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: ($($Input:ident),+),
+        $(output: $Output:ident ,)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+    (
+        root: $Root:ident,
+        $(#[$meta:meta])*
+        family: $vis:vis $Name:ident,
+        $(borrow: [$($borrow_lt:lifetime),* $(,)?],)?
+        input: ($($Input:ident),+),
+        $(output: ($($Output:ident),+) ,)?
+        $(bounds: [$($bounds:tt)*],)?
+        child: [
+            $($child:ident =&gt; $model:ty,)+
+        $(,)? ] $(,)?
+    ) =&gt; { ... };
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Declares a concrete <strong>plugin family implementation</strong> for a given family root.</p>
+<p>This macro generates:</p>
+<ol>
+<li>A <strong>family marker struct</strong> representing a concrete implementation of a
+plugin family.</li>
+<li>An implementation of the <strong>family root trait</strong> mapping each declared
+child operation to a concrete plugin model.</li>
+</ol>
+<p>The generated family struct is purely a <strong>type-level marker</strong> and contains
+no runtime data. It is used to bind concrete plugin models to a specific
+<code>(FamilyType, Child)</code> combination through associated types.</p>
+<p>When <code>borrow</code> are specified, the generated family marker stores them
+in <code>PhantomData</code> fields so the type system correctly tracks them
+without affecting runtime behavior.</p>
+<h3 id="syntax"><a class="doc-anchor" href="#syntax">§</a>Syntax</h3><h4 id="family-with-context"><a class="doc-anchor" href="#family-with-context">§</a>Family With Context</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">define_family!</span> {
+    root: FamilyRoot,             <span class="comment">// Required: family root trait
+
+    </span>family: <span class="kw">pub </span>MyFamily,         <span class="comment">// Required: visibility and concrete family marker struct
+    </span>borrow: [<span class="lifetime">'a</span>],                 <span class="comment">// Optional: lifetime parameters for family marker
+
+    </span>input: Input,                 <span class="comment">// Required: input type parameter
+    </span>output: Output,               <span class="comment">// Optional: output type (defaults to input if omitted)
+
+    </span>context: MyContext,           <span class="comment">// Required: context type
+    </span>marker: [T],                  <span class="comment">// Optional: generic parameters for the context
+
+    </span>bounds: [T: Clone],           <span class="comment">// Optional: trait bounds for the generated impl
+
+    </span>child: [                      <span class="comment">// Required: child -&gt; model mapping
+        </span>OperationA =&gt; ModelA,
+        OperationB =&gt; ModelB,
+    ]
+}</code></pre></div>
+<h4 id="family-without-context"><a class="doc-anchor" href="#family-without-context">§</a>Family Without Context</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">define_family!</span> {
+    root: FamilyRoot,           <span class="comment">// Required: family root trait
+
+    </span>family: <span class="kw">pub </span>MyFamily,       <span class="comment">// Required: visibility and concrete family marker struct
+    </span>borrow: [<span class="lifetime">'a</span>],               <span class="comment">// Optional: lifetime parameters for family marker
+
+    </span>input: Input,               <span class="comment">// Required: input type parameter
+    </span>output: Output,             <span class="comment">// Optional: output type (defaults to input if omitted)
+
+    </span>bounds: [T: Clone],         <span class="comment">// Optional: trait bounds for the generated impl
+
+    </span>child: [                    <span class="comment">// Required: child -&gt; model mapping
+        </span>OperationA =&gt; ModelA,
+        OperationB =&gt; ModelB,
+    ]
+}</code></pre></div>
+<p>In the second form, the context parameter of the root trait defaults to <code>()</code>.</p>
+<h3 id="lifetimes-and-generics"><a class="doc-anchor" href="#lifetimes-and-generics">§</a>Lifetimes and Generics</h3>
+<ul>
+<li><code>borrow</code> apply to the <strong>family marker type</strong>
+<ul>
+<li>used to model execution-time borrowing</li>
+<li>stored via <code>PhantomData</code></li>
+</ul>
+</li>
+</ul>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>borrow: [<span class="lifetime">'a</span>]</code></pre></div>
+<ul>
+<li><code>marker</code> apply only when a <code>context</code> is specified
+<ul>
+<li>used to parameterize the <strong>context type</strong></li>
+<li>introduced on the generated <code>impl</code>, not the family struct</li>
+</ul>
+</li>
+</ul>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>context: MyContext,
+marker: [T]</code></pre></div>
+<p>When no <code>context</code> is provided:</p>
+<ul>
+<li>the context defaults to <code>()</code></li>
+<li><code>marker</code> is not used</li>
+</ul>
+<h3 id="example"><a class="doc-anchor" href="#example">§</a>Example</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>
+<span class="comment">// ----- Crate A ------
+
+</span><span class="macro">declare_family!</span> {
+    root: <span class="kw">pub </span>VotingFamily,
+    child: [Phragmen, STV]
+}
+
+<span class="comment">// ----- Crate B ------
+
+</span><span class="macro">plugin_model!</span> {
+    name: PhragmenModel,
+    ...
+}
+
+<span class="macro">plugin_model!</span> {
+    name: STVModel,
+    ...
+}
+
+<span class="macro">define_family!</span> {
+    root: VotingFamily,
+
+    family: <span class="kw">pub </span>RuntimeVoting,
+    input: AccountId,
+    output: Balance,
+    context: RuntimeContext,
+
+    child: [
+        Phragmen =&gt; PhragmenModel,
+        STV =&gt; STVModel,
+    ]
+}</code></pre></div>
+<p>This binds the <code>Phragmen</code> and <code>Approval</code> operations of the
+<code>VotingFamily</code> root to concrete plugin models for the
+<code>RuntimeVoting</code> family implementation.</p>
+</div></details></section></div></main></body></html>

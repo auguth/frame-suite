@@ -1,0 +1,365 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines the core operations for managing commitments within digest models."><title>CommitOps in pallet_commitment::traits - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_commitment" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_commitment/index.html">pallet_<wbr>commitment</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Commit<wbr>Ops</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#generics" title="Generics">Generics</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.place_commit_of" title="place_commit_of">place_commit_of</a></li><li><a href="#tymethod.place_digest_commit" title="place_digest_commit">place_digest_commit</a></li><li><a href="#tymethod.place_index_commit" title="place_index_commit">place_index_commit</a></li><li><a href="#tymethod.place_pool_commit" title="place_pool_commit">place_pool_commit</a></li><li><a href="#tymethod.raise_commit_of" title="raise_commit_of">raise_commit_of</a></li><li><a href="#tymethod.raise_digest_commit" title="raise_digest_commit">raise_digest_commit</a></li><li><a href="#tymethod.raise_index_commit" title="raise_index_commit">raise_index_commit</a></li><li><a href="#tymethod.raise_pool_commit" title="raise_pool_commit">raise_pool_commit</a></li><li><a href="#tymethod.resolve_commit_of" title="resolve_commit_of">resolve_commit_of</a></li><li><a href="#tymethod.resolve_digest_commit" title="resolve_digest_commit">resolve_digest_commit</a></li><li><a href="#tymethod.resolve_index_commit" title="resolve_index_commit">resolve_index_commit</a></li><li><a href="#tymethod.resolve_pool_commit" title="resolve_pool_commit">resolve_pool_commit</a></li><li><a href="#tymethod.set_total_value" title="set_total_value">set_total_value</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.add_to_total_value" title="add_to_total_value">add_to_total_value</a></li><li><a href="#method.sub_from_total_value" title="sub_from_total_value">sub_from_total_value</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In pallet_<wbr>commitment::<wbr>traits</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_commitment</a>::<wbr><a href="index.html">traits</a></div><h1>Trait <span class="trait">CommitOps</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_commitment/traits.rs.html#408-722">Source</a> </span></div><pre class="rust item-decl"><code>pub trait CommitOps&lt;Proprietor, Pallet&gt;<div class="where">where
+    Pallet: <a class="trait" href="../../frame_suite/assets/trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&lt;Asset = &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, Variant = Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>, Id = Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>&gt; + <a class="trait" href="../../frame_suite/commitment/trait.DigestModel.html" title="trait frame_suite::commitment::DigestModel">DigestModel</a>&lt;Proprietor&gt; + <a class="trait" href="../../frame_suite/commitment/trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant">CommitVariant</a>&lt;Proprietor&gt;,</div>{
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 15 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.place_commit_of" class="fn">place_commit_of</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest_model: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.DigestModel.html#associatedtype.Model" title="type frame_suite::commitment::DigestModel::Model">Model</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.place_digest_commit" class="fn">place_digest_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.place_index_commit" class="fn">place_index_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.place_pool_commit" class="fn">place_pool_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.raise_commit_of" class="fn">raise_commit_of</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest_model: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.DigestModel.html#associatedtype.Model" title="type frame_suite::commitment::DigestModel::Model">Model</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.raise_digest_commit" class="fn">raise_digest_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.raise_index_commit" class="fn">raise_index_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.raise_pool_commit" class="fn">raise_pool_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.resolve_commit_of" class="fn">resolve_commit_of</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest_model: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.DigestModel.html#associatedtype.Model" title="type frame_suite::commitment::DigestModel::Model">Model</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.resolve_digest_commit" class="fn">resolve_digest_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.resolve_index_commit" class="fn">resolve_index_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.resolve_pool_commit" class="fn">resolve_pool_commit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_total_value" class="fn">set_total_value</a>(
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    );
+
+    // Provided methods
+    fn <a href="#method.add_to_total_value" class="fn">add_to_total_value</a>(
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.sub_from_total_value" class="fn">sub_from_total_value</a>(
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) -&gt; DispatchResult { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines the core operations for managing commitments within digest models.</p>
+<p>This trait provides a unified interface for placing, raising, and resolving
+commitments across all digest variants - direct, index, and pool.</p>
+<p>This trait defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking these
+functions.</p>
+<h4 id="generics"><a class="doc-anchor" href="#generics">§</a>Generics</h4>
+<ul>
+<li><strong>Proprietor</strong> - the entity (e.g. account, vault, or manager)
+controlling the asset.</li>
+<li><strong>Pallet</strong> - the public struct implementing <a href="../../frame_suite/commitment/trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> traits
+and <a href="../../frame_suite/assets/trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance"><code>LazyBalance</code></a>, ensuring consistent asset accounting across the
+commitment system.</li>
+</ul>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.place_commit_of" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#431-438">Source</a><h4 class="code-header">fn <a href="#tymethod.place_commit_of" class="fn">place_commit_of</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest_model: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.DigestModel.html#associatedtype.Model" title="type frame_suite::commitment::DigestModel::Model">Model</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Places a commitment using a fully resolved/wrapped digest model and
+a specified digest’s balance variant.</p>
+<p>This function assumes the digest has already been found-valid and wrapped
+appropriately, so it directly handles the act of <strong>only committing</strong> the
+given value under the specified reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the committed amount</li>
+<li><code>Err(DispatchError)</code> if the commitment fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.place_digest_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#454-461">Source</a><h4 class="code-header">fn <a href="#tymethod.place_digest_commit" class="fn">place_digest_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Places a commitment for a <strong>direct digest</strong> under a given reason and variant.</p>
+<p>This function handles the placement of a commitment when the digest is a
+valid, single, direct item (not an index or pool). It records the committed
+value associated with the specific reason and digest, respecting the
+commitment rules.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the committed amount</li>
+<li><code>Err(DispatchError)</code> if the commitment fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.place_index_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#478-485">Source</a><h4 class="code-header">fn <a href="#tymethod.place_index_commit" class="fn">place_index_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Places a commitment for a <strong>index digest</strong> under a given reason
+and variant.</p>
+<p>This function handles the placement of a commitment when the digest
+is a index. It records the committed value associated respecting
+the commitment rules - “One Reason, One Digest Commit” and uses high
+level structures to bypass it safely.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the committed amount</li>
+<li><code>Err(DispatchError)</code> if the commitment fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.place_pool_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#502-509">Source</a><h4 class="code-header">fn <a href="#tymethod.place_pool_commit" class="fn">place_pool_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Places a commitment for a <strong>pool digest</strong> under a given
+reason and variant.</p>
+<p>This function handles the placement of a commitment when
+the digest is a pool. It records the committed value associated
+respecting the commitment rules- “One Reason, One Digest Commit”
+and uses high level structures to bypass it safely.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the committed amount</li>
+<li><code>Err(DispatchError)</code> if the commitment fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.raise_commit_of" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#526-532">Source</a><h4 class="code-header">fn <a href="#tymethod.raise_commit_of" class="fn">raise_commit_of</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest_model: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.DigestModel.html#associatedtype.Model" title="type frame_suite::commitment::DigestModel::Model">Model</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Raises an existing commitment by adding a new commitment
+instance.</p>
+<p>Commitments are immutable; each raise adds a new commit
+instance - by shareing semantics with existing commit of the reason.
+How accumulation is handled depends on the context: direct digest,
+index, or pool.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the raised amount</li>
+<li><code>Err(DispatchError)</code> if the raise operation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.raise_digest_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#547-553">Source</a><h4 class="code-header">fn <a href="#tymethod.raise_digest_commit" class="fn">raise_digest_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Adds a new instance of a commitment for a direct digest.</p>
+<p>Commitments are immutable and cannot be changed once created. This
+enforces invariants by adding new commit instances to the same
+digest and reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the raised amount</li>
+<li><code>Err(DispatchError)</code> if the raise operation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.raise_index_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#568-574">Source</a><h4 class="code-header">fn <a href="#tymethod.raise_index_commit" class="fn">raise_index_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Adds a new instance of a commitment for an index digest.</p>
+<p>Commitments are immutable and cannot be changed once created. This
+enforces invariants by adding new commit instances to the same
+index digest and reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the raised amount</li>
+<li><code>Err(DispatchError)</code> if the raise operation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.raise_pool_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#590-596">Source</a><h4 class="code-header">fn <a href="#tymethod.raise_pool_commit" class="fn">raise_pool_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Adds a new instance of a commitment for a pool digest.</p>
+<p>The pool should release and recover itself, adding the raised value.
+It may also record instances of commits for the proprietor to the pool rather
+than to its slot digest, since it collectively manages funds for commitments by
+the pool itself acting like a pseudo-proprietor.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the raised amount</li>
+<li><code>Err(DispatchError)</code> if the raise operation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.resolve_commit_of" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#610-614">Source</a><h4 class="code-header">fn <a href="#tymethod.resolve_commit_of" class="fn">resolve_commit_of</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest_model: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.DigestModel.html#associatedtype.Model" title="type frame_suite::commitment::DigestModel::Model">Model</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Resolves and finalizes a commitment for a fully resolved digest model.</p>
+<p>This method closes the commitment and provides the final withdrawn asset value
+from the commitment to the reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the resolved commitment value</li>
+<li><code>Err(DispatchError)</code> if resolution fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.resolve_digest_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#628-632">Source</a><h4 class="code-header">fn <a href="#tymethod.resolve_digest_commit" class="fn">resolve_digest_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Resolves and finalizes a commitment for a direct digest.</p>
+<p>This method closes the direct digest commitment and provides the
+final withdrawn asset value from the commitment to the reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the resolved commitment value</li>
+<li><code>Err(DispatchError)</code> if resolution fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.resolve_index_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#646-650">Source</a><h4 class="code-header">fn <a href="#tymethod.resolve_index_commit" class="fn">resolve_index_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Resolves and finalizes a commitment for an index digest.</p>
+<p>This method closes the index digest commitment and provides the
+final withdrawn asset value from the commitment to the reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the resolved commitment value</li>
+<li><code>Err(DispatchError)</code> if resolution fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.resolve_pool_commit" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#664-668">Source</a><h4 class="code-header">fn <a href="#tymethod.resolve_pool_commit" class="fn">resolve_pool_commit</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;&lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Resolves and finalizes a commitment for a pool digest.</p>
+<p>This method closes the pool digest commitment and provides the
+final withdrawn asset value from the commitment to the reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the resolved commitment value</li>
+<li><code>Err(DispatchError)</code> if resolution fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_total_value" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#675">Source</a><h4 class="code-header">fn <a href="#tymethod.set_total_value" class="fn">set_total_value</a>(
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Sets the total asset value for a given reason.</p>
+<p>This is a <strong>low-level function</strong> and should only be used
+when equilibrium is maintained, meaning the value being set must
+correctly reflect the committed state of the system for the reason.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.add_to_total_value" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#686-697">Source</a><h4 class="code-header">fn <a href="#method.add_to_total_value" class="fn">add_to_total_value</a>(
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Adds a given asset value to the total value for the specified reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the addition succeeds</li>
+<li><code>Err(DispatchError)</code> with <code>Overflow</code> if adding causes overflow</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.sub_from_total_value" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#710-721">Source</a><h4 class="code-header">fn <a href="#method.sub_from_total_value" class="fn">sub_from_total_value</a>(
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    value: &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Subtracts a given asset value from the total value for the
+specified reason.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking
+this function.</p>
+<h6 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the subtraction succeeds</li>
+<li><code>Err(DispatchError)</code> with <code>Underflow</code> if subtraction would
+underflow</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-CommitOps%3C%3CT+as+Config%3E::AccountId,+Pallet%3CT,+I%3E%3E-for-CommitHelpers%3CT,+I%3E" class="impl"><a class="src rightside" href="../../src/pallet_commitment/helpers.rs.html#1193-1562">Source</a><a href="#impl-CommitOps%3C%3CT+as+Config%3E::AccountId,+Pallet%3CT,+I%3E%3E-for-CommitHelpers%3CT,+I%3E" class="anchor">§</a><h3 class="code-header">impl&lt;T: <a class="trait" href="../pallet/trait.Config.html" title="trait pallet_commitment::pallet::Config">Config</a>&lt;I&gt;, I: 'static&gt; <a class="trait" href="trait.CommitOps.html" title="trait pallet_commitment::traits::CommitOps">CommitOps</a>&lt;&lt;T as Config&gt;::AccountId, <a class="struct" href="../pallet/struct.Pallet.html" title="struct pallet_commitment::pallet::Pallet">Pallet</a>&lt;T, I&gt;&gt; for <a class="struct" href="../pallet/struct.CommitHelpers.html" title="struct pallet_commitment::pallet::CommitHelpers">CommitHelpers</a>&lt;T, I&gt;</h3><div class="docblock"><p>Implements the <a href="trait.CommitOps.html" title="trait pallet_commitment::traits::CommitOps"><code>CommitOps</code></a> trait for the pallet</p>
+</div></section><div class="docblock"><p>Provides low-level (not-lowest, but still unchecked) write functionalities for digests, indexes,
+and pools within the commitment system. This may utilize other commit-helper trait methods</p>
+</div></div><script src="../../trait.impl/pallet_commitment/traits/trait.CommitOps.js" async></script></section></div></main></body></html>

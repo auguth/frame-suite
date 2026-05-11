@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["back","confirm","create_index","create_pool","demit","enlist","exit","force_genesis_config","my_author_fund","my_collateral","my_fund","refill","shed_penalties","shed_rewards","transfer_pool","update_commission","update_entry_shares","update_slot_shares"]};

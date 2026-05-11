@@ -1,0 +1,200 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Extends `RoleManager` to introduce funding and backing mechanics for role-based systems."><title>FundRoles in frame_suite::roles - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Fund<wbr>Roles</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#type-parameters" title="Type Parameters">Type Parameters</a></li><li><a href="#invariants" title="Invariants">Invariants</a></li><li><a href="#example-implementations" title="Example Implementations">Example Implementations</a><ul><li><a href="#example-1-nominated-validator-system" title="Example 1: Nominated Validator System">Example 1: Nominated Validator System</a></li><li><a href="#example-2-governance-role-backing" title="Example 2: Governance Role Backing">Example 2: Governance Role Backing</a></li></ul></li><li><a href="#usage" title="Usage">Usage</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Backer" title="Backer">Backer</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.backed_for" title="backed_for">backed_for</a></li><li><a href="#tymethod.backed_value" title="backed_value">backed_value</a></li><li><a href="#tymethod.backers_of" title="backers_of">backers_of</a></li><li><a href="#tymethod.can_draw" title="can_draw">can_draw</a></li><li><a href="#tymethod.can_fund" title="can_fund">can_fund</a></li><li><a href="#tymethod.draw" title="draw">draw</a></li><li><a href="#tymethod.fund" title="fund">fund</a></li><li><a href="#tymethod.get_fund" title="get_fund">get_fund</a></li><li><a href="#tymethod.has_funds" title="has_funds">has_funds</a></li><li><a href="#tymethod.max_exposure" title="max_exposure">max_exposure</a></li><li><a href="#tymethod.min_fund" title="min_fund">min_fund</a></li><li><a href="#tymethod.total_backing" title="total_backing">total_backing</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.on_drawn" title="on_drawn">on_drawn</a></li><li><a href="#method.on_funded" title="on_funded">on_funded</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>roles</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">roles</a></div><h1>Trait <span class="trait">FundRoles</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/roles.rs.html#362-505">Source</a> </span></div><pre class="rust item-decl"><code>pub trait FundRoles&lt;Candidate&gt;: <a class="trait" href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager">RoleManager</a>&lt;Candidate&gt; {
+    type <a href="#associatedtype.Backer" class="associatedtype">Backer</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a>;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 14 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.has_funds" class="fn">has_funds</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.can_fund" class="fn">can_fund</a>(
+        by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+        to: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+        precision: Precision,
+        force: Fortitude,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.can_draw" class="fn">can_draw</a>(by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, from: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.max_exposure" class="fn">max_exposure</a>(
+        from: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+        towards: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        precision: Precision,
+        force: Fortitude,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.min_fund" class="fn">min_fund</a>(
+        from: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+        towards: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        precision: Precision,
+        force: Fortitude,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.backed_value" class="fn">backed_value</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.backers_of" class="fn">backers_of</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.backed_for" class="fn">backed_for</a>(
+        by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Candidate, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.total_backing" class="fn">total_backing</a>() -&gt; Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_fund" class="fn">get_fund</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.fund" class="fn">fund</a>(
+        to: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+        value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+        precision: Precision,
+        force: Fortitude,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.draw" class="fn">draw</a>(
+        from: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+        by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;;
+
+    // Provided methods
+    fn <a href="#method.on_funded" class="fn">on_funded</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, _value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_drawn" class="fn">on_drawn</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, _value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Extends <a href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager"><code>RoleManager</code></a> to introduce <strong>funding and backing mechanics</strong>
+for role-based systems.</p>
+<p>This trait defines a common interface for <em>roles that require financial
+support or collateralization from external entities</em> (called <strong>backers</strong>).
+It models relationships  where one or more backers provide funds to a candidate
+in exchange for shared exposure, yield, or delegated influence.</p>
+<p>Typical applications include:</p>
+<ul>
+<li><strong>Validator nomination systems</strong> - nominators/delegators (backers) stake
+funds behind validators (candidates).</li>
+<li><strong>DAO or governance roles</strong> - community members back representatives or
+proposal leaders.</li>
+<li><strong>DeFi-style credit systems</strong> - where backers fund loan candidates, or
+insurance underwriters provide coverage.</li>
+<li><strong>Service networks</strong> - e.g., oracle or relayer pools where reputation and
+collateral are pooled.</li>
+</ul>
+<h3 id="type-parameters"><a class="doc-anchor" href="#type-parameters">§</a>Type Parameters</h3>
+<ul>
+<li><code>Candidate</code>: The entity or account being backed.</li>
+</ul>
+<h3 id="invariants"><a class="doc-anchor" href="#invariants">§</a>Invariants</h3>
+<ul>
+<li>Each backer must fund with at least <a href="trait.FundRoles.html#tymethod.min_fund"><code>Self::min_fund</code></a> units of asset.</li>
+<li>When a <code>Candidate</code> is <strong>not available</strong> (See <a href="trait.RoleManager.html#tymethod.is_available" title="associated function frame_suite::roles::RoleManager::is_available"><code>RoleManager::is_available</code></a>),
+backers may withdraw all or some of their stake (context-basis).</li>
+<li><a href="trait.FundRoles.html#tymethod.fund"><code>Self::fund</code></a> and <a href="trait.FundRoles.html#tymethod.draw"><code>Self::draw</code></a> operations must maintain <strong>consistent
+accounting symmetry</strong> between <a href="trait.FundRoles.html#tymethod.backers_of"><code>Self::backers_of</code></a> and <a href="trait.FundRoles.html#tymethod.backed_for"><code>Self::backed_for</code></a>.</li>
+</ul>
+<h3 id="example-implementations"><a class="doc-anchor" href="#example-implementations">§</a>Example Implementations</h3><h4 id="example-1-nominated-validator-system"><a class="doc-anchor" href="#example-1-nominated-validator-system">§</a>Example 1: Nominated Validator System</h4>
+<p>In a nominated staking system:</p>
+<ul>
+<li>Candidates are validators who receive backing from multiple nominators (backers).</li>
+<li>Each backer must meet a minimum funding requirement when supporting a candidate.</li>
+<li>The total funding for a candidate cannot exceed a maximum exposure limit.</li>
+<li>Funding increases the candidate’s active collateral, while drawing allows backers
+to withdraw.</li>
+<li>This example shows how the trait enforces eligibility, updates backing relationships,
+and maintains real-time funded values.</li>
+</ul>
+<h4 id="example-2-governance-role-backing"><a class="doc-anchor" href="#example-2-governance-role-backing">§</a>Example 2: Governance Role Backing</h4>
+<p>In a governance system where community members can financially support representatives:</p>
+<ul>
+<li>Candidates are council members or proposal leads.</li>
+<li>Backers provide funds to indicate confidence and to incentivize participation.</li>
+<li>The trait ensures backers cannot overexpose themselves or fund below minimum thresholds.</li>
+<li>Candidates may become defaulted if they violate rules or fail to perform, triggering
+potential fund loss.</li>
+<li>Rewards, penalties, or collateral adjustments can be layered on top, creating a
+dynamic funding ecosystem.</li>
+</ul>
+<p>These examples illustrate how <code>FundRoles</code> can handle <strong>different backing scenarios</strong>,
+from staking and validator support to governance funding, while maintaining <strong>real-time
+tracking</strong> of funds and enforcing role-related invariants.</p>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<p>Implement this trait for any role that allows external capital participation or support.
+Higher-level logic such as slashing, reward distribution, or governance power weighting
+can be layered on top by combining <a href="trait.CompensateRoles.html" title="trait frame_suite::roles::CompensateRoles"><code>CompensateRoles</code></a> or custom traits.</p>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Backer" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#364">Source</a><h4 class="code-header">type <a href="#associatedtype.Backer" class="associatedtype">Backer</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a></h4></section></summary><div class="docblock"><p>Type representing the entity providing funding or backing support.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.has_funds" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#373">Source</a><h4 class="code-header">fn <a href="#tymethod.has_funds" class="fn">has_funds</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether the <code>Candidate</code> currently holds any funds or active backing relationships.</p>
+<p>Returns <code>Ok(())</code> if funds exist, otherwise a <code>DispatchError</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.can_fund" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#384-390">Source</a><h4 class="code-header">fn <a href="#tymethod.can_fund" class="fn">can_fund</a>(
+    by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+    to: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+    precision: Precision,
+    force: Fortitude,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether a <code>Backer</code> can fund a <code>Candidate</code> with the specified amount.</p>
+<p>This performs <strong>only validation</strong>, not mutation.</p>
+<p>The <code>precision</code> parameter defines proportional allocation or best behavior.
+The <code>force</code> parameter defines enforcement principle of this funding operation.</p>
+<p>Should verify minimum and maximum exposure constraints possibly
+via <a href="trait.FundRoles.html#tymethod.min_fund"><code>Self::min_fund</code></a> and <a href="trait.FundRoles.html#tymethod.max_exposure"><code>Self::max_exposure</code></a>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.can_draw" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#395">Source</a><h4 class="code-header">fn <a href="#tymethod.can_draw" class="fn">can_draw</a>(by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, from: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether a <code>Backer</code> can draw its funds backed to a <code>Candidate</code>.</p>
+<p>This performs <strong>only validation</strong>, not mutation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.max_exposure" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#407-412">Source</a><h4 class="code-header">fn <a href="#tymethod.max_exposure" class="fn">max_exposure</a>(
+    from: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+    towards: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    precision: Precision,
+    force: Fortitude,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns the <strong>maximum exposure</strong> (total backable amount) allowed for this <code>Candidate</code>.</p>
+<p>This acts as an upper cap on all active fundings combined.</p>
+<p>The <code>precision</code> and <code>force</code> parameters simulate a funding attempt under
+the given directive, determining the effective exposure limits.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.min_fund" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#418-423">Source</a><h4 class="code-header">fn <a href="#tymethod.min_fund" class="fn">min_fund</a>(
+    from: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+    towards: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    precision: Precision,
+    force: Fortitude,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns the <strong>minimum funding amount</strong> required for a <code>Backer</code> to participate.</p>
+<p>The <code>precision</code> and <code>force</code> parameters simulate a funding attempt under
+the given directive, determining the effective minimum requirement.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.backed_value" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#435">Source</a><h4 class="code-header">fn <a href="#tymethod.backed_value" class="fn">backed_value</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns the real-time total <strong>value of funds currently backing</strong> the given <code>Candidate</code>.</p>
+<p>This reflects the <strong>latest on-chain state</strong>, meaning the value may vary over time
+due to dynamic adjustments such as:</p>
+<ul>
+<li>Collateral revaluation or slashing</li>
+<li>Partial withdrawals or new backings</li>
+<li>Protocol-driven rewards or penalties</li>
+</ul>
+<p>Implementations should compute or retrieve this value <em>at the moment of call</em>,
+ensuring it reflects the candidate’s <strong>live backing exposure</strong>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.backers_of" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#443">Source</a><h4 class="code-header">fn <a href="#tymethod.backers_of" class="fn">backers_of</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns all <code>Backer</code>s currently funding the specified <code>Candidate</code>,
+along with each backer’s <strong>real-time effective contribution</strong>.</p>
+<p>Note that returned contribution values are <strong>not static</strong> - they represent the
+candidate’s current funding snapshot and may change due to slashing,
+rebalancing, or collateral mutation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.backed_for" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#451">Source</a><h4 class="code-header">fn <a href="#tymethod.backed_for" class="fn">backed_for</a>(
+    by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Candidate, Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns all <code>Candidate</code>s that the given <code>Backer</code> is funding,
+along with each <strong>real-time funded amount</strong>.</p>
+<p>The returned data represents the backer’s <strong>current live exposure</strong>, not a
+historical record. Implementations should resolve these dynamically from
+the latest runtime state.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.total_backing" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#454">Source</a><h4 class="code-header">fn <a href="#tymethod.total_backing" class="fn">total_backing</a>() -&gt; Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a></h4></section></summary><div class="docblock"><p>Retrieves the real-time amount of funds currently funded for all the <code>Candidate</code>s.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_fund" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#461">Source</a><h4 class="code-header">fn <a href="#tymethod.get_fund" class="fn">get_fund</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the <strong>current effective funded amount</strong> that <code>by</code> has provided to <code>who</code>.</p>
+<p>This is a <em>real-time query</em> that reflects the live value of the fund relationship,
+factoring in any protocol-driven adjustments (e.g., penalties, rewards,
+partial draws, or slashes).</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.fund" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#474-480">Source</a><h4 class="code-header">fn <a href="#tymethod.fund" class="fn">fund</a>(
+    to: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+    value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>,
+    precision: Precision,
+    force: Fortitude,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Performs the <strong>funding operation</strong>, locking the given value of asset
+from the <code>Backer</code> in support of the <code>Candidate</code>.</p>
+<p>The <code>precision</code> parameter defines proportional allocation or best behavior.
+The <code>force</code> parameter defines enforcement principle of this funding operation.</p>
+<p>Returns the actual funded amount.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.draw" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#486">Source</a><h4 class="code-header">fn <a href="#tymethod.draw" class="fn">draw</a>(
+    from: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>,
+    by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Allows the <code>Backer</code> to <strong>draw back</strong> (withdraw) their previously funded assets
+from a <code>Candidate</code>.</p>
+<p>Returns the amount successfully withdrawn.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.on_funded" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#497">Source</a><h4 class="code-header">fn <a href="#method.on_funded" class="fn">on_funded</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, _value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)</h4></section></summary><div class="docblock"><p>Hook triggered when a funding action is completed.</p>
+<p>Can be used to emit events, update metrics, or notify off-chain logic.</p>
+<p>Default is no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_drawn" class="method"><a class="src rightside" href="../../src/frame_suite/roles.rs.html#504">Source</a><h4 class="code-header">fn <a href="#method.on_drawn" class="fn">on_drawn</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Candidate</a>, _by: &amp;Self::<a class="associatedtype" href="trait.FundRoles.html#associatedtype.Backer" title="type frame_suite::roles::FundRoles::Backer">Backer</a>, _value: Self::<a class="associatedtype" href="trait.RoleManager.html#associatedtype.Asset" title="type frame_suite::roles::RoleManager::Asset">Asset</a>)</h4></section></summary><div class="docblock"><p>Hook triggered when funds are drawn or withdrawn.</p>
+<p>Use this for cleanup or balance reallocation tasks.</p>
+<p>Default is no-op.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/roles/trait.FundRoles.js" async></script></section></div></main></body></html>

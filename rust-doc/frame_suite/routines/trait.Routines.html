@@ -1,0 +1,102 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Structured execution interface for offchain routines."><title>Routines in frame_suite::routines - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Routines</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#why-structured-routines-are-needed" title="Why structured routines are needed">Why structured routines are needed</a></li><li><a href="#execution-model" title="Execution model">Execution model</a></li><li><a href="#failure-semantics" title="Failure semantics">Failure semantics</a></li><li><a href="#arranging-multiple-routines" title="Arranging multiple routines">Arranging multiple routines</a></li><li><a href="#logging-and-observability" title="Logging and observability">Logging and observability</a></li><li><a href="#example-usage" title="Example usage">Example usage</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.can_run" title="can_run">can_run</a></li><li><a href="#tymethod.run_service" title="run_service">run_service</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.on_ran_service" title="on_ran_service">on_ran_service</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>routines</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">routines</a></div><h1>Trait <span class="trait">Routines</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/routines.rs.html#2163-2194">Source</a> </span></div><pre class="rust item-decl"><code>pub trait Routines&lt;TimeStamp&gt;: <a class="trait" href="trait.Logging.html" title="trait frame_suite::routines::Logging">Logging</a>&lt;TimeStamp&gt;<div class="where">where
+    TimeStamp: <a class="trait" href="../base/trait.Time.html" title="trait frame_suite::base::Time">Time</a>,</div>{
+    // Required methods
+    fn <a href="#tymethod.can_run" class="fn">can_run</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.run_service" class="fn">run_service</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;;
+
+    // Provided method
+    fn <a href="#method.on_ran_service" class="fn">on_ran_service</a>(&amp;self) { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p><strong>Structured execution interface for offchain routines</strong>.</p>
+<p><code>Routines</code> provides a <strong>disciplined execution model</strong> for offchain workers,
+replacing ad-hoc logic with explicit phases and well-defined failure
+semantics.</p>
+<h3 id="why-structured-routines-are-needed"><a class="doc-anchor" href="#why-structured-routines-are-needed">§</a>Why structured routines are needed</h3>
+<p>Offchain workers are fundamentally different from runtime calls:</p>
+<div><table><thead><tr><th>Runtime calls</th><th>Offchain workers</th></tr></thead><tbody>
+<tr><td>Transactional</td><td>Best-effort</td></tr>
+<tr><td>Automatic rollback on error</td><td>No rollback</td></tr>
+<tr><td>State changes are atomic</td><td>Partial execution is possible</td></tr>
+<tr><td>Errors bubble naturally</td><td>Errors must be handled manually</td></tr>
+</tbody></table>
+</div>
+<p>As a result, offchain logic <strong>must be structured explicitly</strong> to ensure:</p>
+<ul>
+<li>invariants are checked before execution,</li>
+<li>routines run to <em>intentional completion</em>,</li>
+<li>partial state does not silently corrupt future runs,</li>
+<li>failures are observable and diagnosable.</li>
+</ul>
+<p>The <code>Routines</code> trait enforces this structure.</p>
+<h3 id="execution-model"><a class="doc-anchor" href="#execution-model">§</a>Execution model</h3><div class="example-wrap"><pre class="language-text"><code>|-------------|
+| can_run()   |  &lt;- check invariants, prerequisites
+|-----|-------|
+      |
+      V
+|-------------|
+| run_service |  &lt;- perform the operation
+|-----|-------|
+      |
+      V
+|-------------|
+| on_ran_*    |  &lt;- bookkeeping, metrics, logging
+|-------------|</code></pre></div>
+<p>Each phase has a distinct responsibility, making offchain logic easier
+to reason about, test, and evolve.</p>
+<h3 id="failure-semantics"><a class="doc-anchor" href="#failure-semantics">§</a>Failure semantics</h3>
+<ul>
+<li>Any failure is <strong>logged</strong> via <a href="trait.Logging.html" title="trait frame_suite::routines::Logging"><code>Logging</code></a> and returned as <code>Logger</code>.</li>
+<li>Callers must treat failures as <em>hard stops</em> for the current routine.</li>
+<li>Subsequent routines may or may not execute, depending on orchestration.</li>
+</ul>
+<p>This explicit handling avoids implicit control flow and makes routine
+dependencies visible.</p>
+<h3 id="arranging-multiple-routines"><a class="doc-anchor" href="#arranging-multiple-routines">§</a>Arranging multiple routines</h3>
+<p>Structured routines compose naturally into pipelines:</p>
+<div class="example-wrap"><pre class="language-text"><code>Example
+-------
+Init -&gt; Declare -&gt; Rotate -&gt; Elect</code></pre></div>
+<p>Each routine:</p>
+<ul>
+<li>validates its own prerequisites,</li>
+<li>executes independently,</li>
+<li>leaves the system in a well-defined state.</li>
+</ul>
+<p>This allows offchain workers to act as <strong>deterministic coordinators</strong>
+rather than monolithic scripts.</p>
+<h3 id="logging-and-observability"><a class="doc-anchor" href="#logging-and-observability">§</a>Logging and observability</h3>
+<p>Because routines run outside the runtime’s transactional model,
+<strong>logging is the primary observability mechanism</strong>.</p>
+<p>By integrating with <a href="trait.Logging.html" title="trait frame_suite::routines::Logging"><code>Logging</code></a>:</p>
+<ul>
+<li>all errors are logged exactly once,</li>
+<li>routine boundaries are visible in logs,</li>
+<li>execution can be traced across blocks.</li>
+</ul>
+<p>This makes post-mortem debugging and operational monitoring feasible.</p>
+<h3 id="example-usage"><a class="doc-anchor" href="#example-usage">§</a>Example usage</h3><div class="example-wrap"><pre class="language-text"><code>let routine = MyRoutine { at: block };
+
+if routine.can_run().is_ok() {
+    routine.run_service()?;
+    routine.on_ran_service();
+}</code></pre></div></div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.can_run" class="method"><a class="src rightside" href="../../src/frame_suite/routines.rs.html#2176">Source</a><h4 class="code-header">fn <a href="#tymethod.can_run" class="fn">can_run</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Checks whether the routine is allowed to run.</p>
+<p>This method must:</p>
+<ul>
+<li>validate prerequisites,</li>
+<li>check invariants,</li>
+<li>avoid mutating state.</li>
+</ul>
+<p>It exists to prevent partial execution in environments without
+rollback guarantees.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.run_service" class="method"><a class="src rightside" href="../../src/frame_suite/routines.rs.html#2182">Source</a><h4 class="code-header">fn <a href="#tymethod.run_service" class="fn">run_service</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Executes the routine’s core logic.</p>
+<p>Implementations should assume that <code>can_run</code> has already succeeded
+and focus solely on performing the intended operation.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.on_ran_service" class="method"><a class="src rightside" href="../../src/frame_suite/routines.rs.html#2193">Source</a><h4 class="code-header">fn <a href="#method.on_ran_service" class="fn">on_ran_service</a>(&amp;self)</h4></section></summary><div class="docblock"><p>Hook invoked after successful execution.</p>
+<p>This method is intended for:</p>
+<ul>
+<li>logging,</li>
+<li>metrics,</li>
+<li>bookkeeping,</li>
+<li>or emitting side effects that must only occur on success.</li>
+</ul>
+<p>The default implementation is a no-op.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/routines/trait.Routines.js" async></script></section></div></main></body></html>

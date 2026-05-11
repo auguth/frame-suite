@@ -1,0 +1,346 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="`CommitVariant` extends `Commitment` by introducing variant-based commitments - allowing each commitment to represent a specific position or type, such as positive/negative, long/short, or other directional states."><title>CommitVariant in frame_suite::commitment - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Commit<wbr>Variant</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#purpose" title="Purpose">Purpose</a></li><li><a href="#core-principles" title="Core Principles">Core Principles</a></li><li><a href="#example-use-cases" title="Example Use Cases">Example Use Cases</a></li><li><a href="#summary" title="Summary">Summary</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Position" title="Position">Position</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.get_commit_variant" title="get_commit_variant">get_commit_variant</a></li><li><a href="#tymethod.get_digest_variant_value" title="get_digest_variant_value">get_digest_variant_value</a></li><li><a href="#tymethod.place_commit_of_variant" title="place_commit_of_variant">place_commit_of_variant</a></li><li><a href="#tymethod.set_digest_variant_value" title="set_digest_variant_value">set_digest_variant_value</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.can_place_commit_of_variant" title="can_place_commit_of_variant">can_place_commit_of_variant</a></li><li><a href="#method.can_set_digest_variant_value" title="can_set_digest_variant_value">can_set_digest_variant_value</a></li><li><a href="#method.digest_mint_limits_of_variant" title="digest_mint_limits_of_variant">digest_mint_limits_of_variant</a></li><li><a href="#method.digest_reap_limits_of_variant" title="digest_reap_limits_of_variant">digest_reap_limits_of_variant</a></li><li><a href="#method.on_place_commit_on_variant" title="on_place_commit_on_variant">on_place_commit_on_variant</a></li><li><a href="#method.on_set_commit_variant" title="on_set_commit_variant">on_set_commit_variant</a></li><li><a href="#method.on_set_digest_variant" title="on_set_digest_variant">on_set_digest_variant</a></li><li><a href="#method.place_commit_limits_of_variant" title="place_commit_limits_of_variant">place_commit_limits_of_variant</a></li><li><a href="#method.set_commit_variant" title="set_commit_variant">set_commit_variant</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>commitment</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">commitment</a></div><h1>Trait <span class="trait">CommitVariant</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/commitment.rs.html#1968-2288">Source</a> </span></div><pre class="rust item-decl"><code>pub trait CommitVariant&lt;Proprietor&gt;: <a class="trait" href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment">Commitment</a>&lt;Proprietor&gt; {
+    type <a href="#associatedtype.Position" class="associatedtype">Position</a>: <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a> + <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a>;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 13 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.get_commit_variant" class="fn">get_commit_variant</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_digest_variant_value" class="fn">get_digest_variant_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_digest_variant_value" class="fn">set_digest_variant_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.place_commit_of_variant" class="fn">place_commit_of_variant</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+
+    // Provided methods
+    fn <a href="#method.can_set_digest_variant_value" class="fn">can_set_digest_variant_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_place_commit_of_variant" class="fn">can_place_commit_of_variant</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.digest_mint_limits_of_variant" class="fn">digest_mint_limits_of_variant</a>(
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.digest_reap_limits_of_variant" class="fn">digest_reap_limits_of_variant</a>(
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.place_commit_limits_of_variant" class="fn">place_commit_limits_of_variant</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.set_commit_variant" class="fn">set_commit_variant</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_place_commit_on_variant" class="fn">on_place_commit_on_variant</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_set_commit_variant" class="fn">on_set_commit_variant</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_set_digest_variant" class="fn">on_set_digest_variant</a>(
+        _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+        _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    ) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p><code>CommitVariant</code> extends <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> by introducing <strong>variant-based commitments</strong> -
+allowing each commitment to represent a specific <em>position</em> or <em>type</em>,
+such as positive/negative, long/short, or other directional states.</p>
+<p>This abstraction is useful in financial systems where commitments
+can have opposing or complementary meanings (e.g., bets, trades, or hedges),
+and where such <strong>variants</strong> must be consistently classified and tracked
+under the same digest or reason.</p>
+<h3 id="purpose"><a class="doc-anchor" href="#purpose">§</a>Purpose</h3>
+<p>In standard <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a>, each digest represents a single locked or committed value.
+However, many financial instruments carry a <strong>semantic variant</strong>, such as:</p>
+<ul>
+<li>Positive / Negative exposure</li>
+<li>Long / Short position</li>
+<li>Buy / Sell order</li>
+<li>For / Against vote</li>
+</ul>
+<p><code>CommitVariant</code> provides an abstract way to encode and manage such distinctions
+without altering the base commitment model.</p>
+<h3 id="core-principles"><a class="doc-anchor" href="#core-principles">§</a>Core Principles</h3>
+<ol>
+<li>
+<p><strong>Variant as classification</strong></p>
+<ul>
+<li>Each commitment may declare a variant indicating its nature or direction.</li>
+<li>Variants are accounted for directly under the commitment’s digest.</li>
+</ul>
+</li>
+<li>
+<p><strong>Digest-level association</strong></p>
+<ul>
+<li>A commitment’s digest uniquely identifies both its value and variant.</li>
+<li>Variants must be recorded or derivable from the digest state.</li>
+</ul>
+</li>
+<li>
+<p><strong>Financial semantics</strong></p>
+<ul>
+<li>Designed for use in scenarios like betting, derivatives, prediction markets,
+and financial trilemmas where commitments can oppose or complement each other.</li>
+</ul>
+</li>
+</ol>
+<h3 id="example-use-cases"><a class="doc-anchor" href="#example-use-cases">§</a>Example Use Cases</h3>
+<ul>
+<li><strong>Betting systems</strong>: Represent “for” and “against” commitments.</li>
+<li><strong>Trading platforms</strong>: Track “long” and “short” positions.</li>
+<li><strong>Hedging mechanisms</strong>: Manage opposing commitments under one reason.</li>
+<li><strong>Voting protocols</strong>: Represent affirmative and negative stake commitments.</li>
+</ul>
+<h3 id="summary"><a class="doc-anchor" href="#summary">§</a>Summary</h3>
+<p><code>CommitVariant</code> offers an abstract and extensible layer over <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a>,
+enabling richer semantics and directionality (positive/negative or other variants)
+to be embedded into financial commitment logic in a consistent, trustless manner.</p>
+<p>Generics:</p>
+<ul>
+<li><strong>Proprietor</strong> - the entity that owns the asset and can make commitments.</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Position" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1970">Source</a><h4 class="code-header">type <a href="#associatedtype.Position" class="associatedtype">Position</a>: <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a> + <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a></h4></section></summary><div class="docblock"><p>The type representing a commitment’s position or variant.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.get_commit_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2074-2077">Source</a><h4 class="code-header">fn <a href="#tymethod.get_commit_variant" class="fn">get_commit_variant</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the position/variant of a proprietor’s commitment for
+the given reason.</p>
+<p>Returns the active variant under which the proprietor’s commitment
+is currently classified. Since each proprietor can have only <strong>one
+commitment per reason</strong> (base trait invariant), they also have only
+<strong>one active variant per reason</strong>.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Position)</code> containing the commitment’s current variant</li>
+<li><code>Err(DispatchError)</code> if no commitment exists for the reason</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_digest_variant_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2092-2096">Source</a><h4 class="code-header">fn <a href="#tymethod.get_digest_variant_value" class="fn">get_digest_variant_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the aggregated value for a specific digest and variant combination.</p>
+<p>Returns the real-time sum of all commitments to the given digest that are
+classified under the specified variant. This enables querying variant-specific
+exposure across all proprietors.</p>
+<p>When both <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> and <code>CommitVariant</code> are implemented:</p>
+<ul>
+<li><a href="trait.Commitment.html#tymethod.get_digest_value" title="associated function frame_suite::commitment::Commitment::get_digest_value"><code>Commitment::get_digest_value</code></a> returns the aggregate across <strong>all variants</strong></li>
+<li>This method returns the aggregate for <strong>a specific variant</strong></li>
+</ul>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the variant-specific aggregated value</li>
+<li><code>Err(DispatchError)</code> if the digest or variant does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_digest_variant_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2171-2177">Source</a><h4 class="code-header">fn <a href="#tymethod.set_digest_variant_value" class="fn">set_digest_variant_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Sets or updates the aggregated value for a specific digest and variant.</p>
+<p>Updates the value associated with a particular variant of a digest,
+propagating changes to all commitments tied to that digest-variant pair.</p>
+<p>When both <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> and <a href="trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant"><code>CommitVariant</code></a> are utilized in a system:</p>
+<ul>
+<li><a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a> may set the <strong>default variant</strong>.</li>
+<li>This method updates <strong>the specified variant</strong>.</li>
+</ul>
+<p>The <code>qualifier</code> defines how the update is applied (e.g., exact vs best-effort,
+forceful vs bounded), and may influence the final value that is actually set.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the actual value applied to the specified digest-variant</li>
+<li><code>Err(DispatchError)</code> if the digest, variant, or reason is invalid, or update fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.place_commit_of_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2232-2239">Source</a><h4 class="code-header">fn <a href="#tymethod.place_commit_of_variant" class="fn">place_commit_of_variant</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Places a commitment under a specific variant.</p>
+<p>Creates a new commitment with explicit variant classification, enabling
+directional or positional semantics from the moment of placement.</p>
+<p>This extends <a href="trait.Commitment.html#tymethod.place_commit" title="associated function frame_suite::commitment::Commitment::place_commit"><code>Commitment::place_commit</code></a> by adding variant specification.
+When both traits are implemented:</p>
+<ul>
+<li><a href="trait.Commitment.html#tymethod.place_commit" title="associated function frame_suite::commitment::Commitment::place_commit"><code>Commitment::place_commit</code></a> may use a <strong>default variant</strong></li>
+<li>This method allows <strong>explicit variant selection</strong></li>
+</ul>
+<p>The method must:</p>
+<ul>
+<li>Record the commitment under the specified variant</li>
+<li>Associate the variant with the digest at the commitment level</li>
+<li>Respect qualifier parameters</li>
+<li>Return the actual committed value after any adjustments</li>
+</ul>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the actual value committed under the variant</li>
+<li><code>Err(DispatchError)</code> if placement fails.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.can_set_digest_variant_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1985-2018">Source</a><h4 class="code-header">fn <a href="#method.can_set_digest_variant_value" class="fn">can_set_digest_variant_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether a specific digest variant’s value can be set or updated.</p>
+<p>Ensures that:</p>
+<ul>
+<li>The variant is initialized (has a balance entry)</li>
+<li>The intended update respects mint/reap advisory limits</li>
+</ul>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if validation succeeds</li>
+<li><code>Err(DispatchError)</code> if the digest/variant is invalid or limits are violated</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_place_commit_of_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2033-2057">Source</a><h4 class="code-header">fn <a href="#method.can_place_commit_of_variant" class="fn">can_place_commit_of_variant</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Validates whether a new commitment can be placed for a specific variant.</p>
+<p>Ensures that no existing commitment exists for the given reason (enforcing
+the “one digest per reason” invariant) and that the proprietor has sufficient
+available funds to cover the commitment value.</p>
+<p>Additionally validates that the value satisfies variant-specific placement
+limits derived from the lazy balance model.</p>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if validation succeeds</li>
+<li><code>Err(DispatchError)</code> if a commitment already exists, insufficient funds are available,
+or the value violates variant-specific limits</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.digest_mint_limits_of_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2103-2114">Source</a><h4 class="code-header">fn <a href="#method.digest_mint_limits_of_variant" class="fn">digest_mint_limits_of_variant</a>(
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Provides advisory bounds for increasing (minting) a digest’s
+specific variant-balance.</p>
+<p>Acts as an optional guard to prevent abrupt or excessive growth,
+complementing core digest update logic.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.digest_reap_limits_of_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2121-2131">Source</a><h4 class="code-header">fn <a href="#method.digest_reap_limits_of_variant" class="fn">digest_reap_limits_of_variant</a>(
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Provides advisory bounds for decreasing (reaping) a digest’s
+specific variant-balance.</p>
+<p>Acts as an optional guard to prevent aggressive or premature reductions,
+complementing core invariants that ensure correctness.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.place_commit_limits_of_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2138-2150">Source</a><h4 class="code-header">fn <a href="#method.place_commit_limits_of_variant" class="fn">place_commit_limits_of_variant</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    _qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Limits" title="type frame_suite::commitment::Commitment::Limits">Limits</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Provides advisory bounds for placing a new commitment
+under a given variant.</p>
+<p>Acts as an optional pre-validation layer to prevent premature or
+undesirable commits by constraining value ranges.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_commit_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2196-2211">Source</a><h4 class="code-header">fn <a href="#method.set_commit_variant" class="fn">set_commit_variant</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    qualifier: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Intent" title="type frame_suite::commitment::Commitment::Intent">Intent</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Changes the variant of an existing commitment.</p>
+<p>Transitions a commitment from its current variant to a new variant while
+preserving the committed value. Since commitments are immutable, this
+operation uses the <strong>resolve-and-replace pattern</strong>.</p>
+<p>Ensures that variant changes maintain consistency with the underlying
+commitment state and respect the semantics of the commitment system.</p>
+<p>In case if the variant already exists, the function safely returns.</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the variant is successfully changed</li>
+<li><code>Err(DispatchError)</code> if:
+<ul>
+<li>No commitment exists for the reason</li>
+<li>New variant matches current variant</li>
+<li>Commitment resolution or placement fails</li>
+</ul>
+</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_place_commit_on_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2251-2258">Source</a><h4 class="code-header">fn <a href="#method.on_place_commit_on_variant" class="fn">on_place_commit_on_variant</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after placing a commitment under a specific variant.</p>
+<p>Provides an extension point for triggering custom side-effects when a new
+variant-based commitment is placed.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_set_commit_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2267-2274">Source</a><h4 class="code-header">fn <a href="#method.on_set_commit_variant" class="fn">on_set_commit_variant</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a commitment’s variant is changed.</p>
+<p>Provides an extension point for responding to variant transitions.
+Receives both the digest and value to enable comprehensive
+state management and analytics.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_set_digest_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2281-2287">Source</a><h4 class="code-header">fn <a href="#method.on_set_digest_variant" class="fn">on_set_digest_variant</a>(
+    _digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _value: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    _variant: &amp;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a digest’s variant value is updated.</p>
+<p>Provides an extension point for reacting to variant-specific value changes.</p>
+<p>Default implementation is a no-op.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/commitment/trait.CommitVariant.js" async></script></section></div></main></body></html>

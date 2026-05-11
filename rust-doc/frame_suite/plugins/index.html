@@ -1,0 +1,568 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Pluggable, type-safe execution framework for composing runtime behavior via plugin models and families."><title>frame_suite::plugins - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module plugins</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#plugin-model" title="Plugin Model">Plugin Model</a><ul><li><a href="#motivation" title="Motivation">Motivation</a></li><li><a href="#behaviour-model" title="Behaviour Model">Behaviour Model</a></li><li><a href="#benefits" title="Benefits">Benefits</a></li><li><a href="#example-sorter-plugin" title="Example: Sorter Plugin">Example: Sorter Plugin</a></li></ul></li><li><a href="#plugin-families" title="Plugin Families">Plugin Families</a><ul><li><a href="#motivation-1" title="Motivation">Motivation</a></li><li><a href="#state-machine-style-logical-plugin" title="State-Machine Style Logical Plugin">State-Machine Style Logical Plugin</a></li><li><a href="#plugin-family-as-a-logical-plugin-state-machine" title="Plugin Family as a Logical Plugin State Machine">Plugin Family as a Logical Plugin State Machine</a></li><li><a href="#declaration-model" title="Declaration Model">Declaration Model</a></li><li><a href="#immutable-vs-mutable-operational-variants" title="Immutable vs Mutable Operational Variants">Immutable vs Mutable Operational Variants</a></li><li><a href="#example-family-based-model-resolution" title="Example: Family-Based Model Resolution">Example: Family-Based Model Resolution</a></li></ul></li></ul><h3><a href="#traits">Module Items</a></h3><ul class="block"><li><a href="#traits" title="Traits">Traits</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a></div><h1>Module <span>plugins</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/plugins.rs.html#16-4762">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Pluggable, type-safe execution framework for composing runtime behavior via plugin
+models and families.</p>
+<p>This module offers two complementary abstractions for extensible, type-safe
+runtime behaviour:</p>
+<ul>
+<li>
+<p>Read <a href="#plugin-model">Plugin Model</a> to understand the <strong>fundamental unit</strong>
+of computation - a single operation plugin, analogous to a pure function
+or a procedure that may mutate its input and produce an output.</p>
+</li>
+<li>
+<p>Read <a href="#plugin-families">Plugin Families</a> when modelling a <strong>cohesive
+state-machine-like component</strong> composed of multiple related operations
+(methods). A family groups several operation-specific plugin models under
+one logical root, while the concrete implementation variant of each
+operation is plugged via a single family model.</p>
+</li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> Plugin families are built on top of plugin models.<br />
+To correctly design or use families, one must first understand the
+plugin model abstraction, since families internally orchestrate multiple
+models as their operational building blocks.</p>
+</blockquote>
+<p>In short:</p>
+<div class="example-wrap"><pre class="language-text"><code>Simple, single-step transformation?                 -&gt; Plugin Model
+Multi-operation logical component / state machine? -&gt; Plugin Family (built from Plugin Models)</code></pre></div>
+<p>Both approaches share the same execution infrastructure and compile-time
+type-safety guarantees, but differ in how behaviour is structured,
+composed, and ultimately resolved.</p>
+<h2 id="plugin-model"><a class="doc-anchor" href="#plugin-model">§</a>Plugin Model</h2>
+<p>A <strong>plugin model</strong> is a type-safe, swappable unit of computation with optional
+context. It enables deterministic, composable, and runtime-configurable behavior.</p>
+<p>Each model:</p>
+<ul>
+<li>Implements <a href="trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel"><code>PurePluginModel&lt;Input, Context, Output&gt;</code></a> or
+<a href="trait.MutablePluginModel.html" title="trait frame_suite::plugins::MutablePluginModel"><code>MutablePluginModel&lt;Input, Context, Output&gt;</code></a></li>
+<li>Produces an output from input (and optional context)</li>
+</ul>
+<p>Execution:</p>
+<ul>
+<li><code>compute(input, &amp;context) -&gt; output</code></li>
+<li><code>compute_mut(&amp;mut input, &amp;context) -&gt; output</code></li>
+</ul>
+<p>Context:</p>
+<ul>
+<li>Provided via <a href="trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext"><code>ModelContext</code></a></li>
+<li>Defined using <a href="../macro.plugin_context.html" title="macro frame_suite::plugin_context"><code>plugin_context</code></a></li>
+</ul>
+<p>Tooling:</p>
+<ul>
+<li>Declare via <a href="../macro.plugin_types.html" title="macro frame_suite::plugin_types"><code>plugin_types</code></a></li>
+<li>Define via <a href="../macro.plugin_model.html" title="macro frame_suite::plugin_model"><code>plugin_model</code></a></li>
+<li>Execute via <a href="../macro.plugin_output.html" title="macro frame_suite::plugin_output"><code>plugin_output</code></a></li>
+<li>Test with <a href="../macro.plugin_test.html" title="macro frame_suite::plugin_test"><code>plugin_test</code></a></li>
+</ul>
+<h3 id="motivation"><a class="doc-anchor" href="#motivation">§</a>Motivation</h3>
+<p>Conventional trait-based designs couple the <strong>contract</strong> and the
+<strong>implementation</strong> into a single resolution step:</p>
+<div class="example-wrap"><pre class="language-text"><code>Sub-set Contract (Trait Bounds)
+       |
+       v
+Concrete Type (Implementation)</code></pre></div>
+<p>The implementation is chosen first, and the contract is something it must
+satisfy. Any <strong>stronger bounds or richer behavior</strong> remain internal to the
+concrete type and cannot be independently selected or composed.</p>
+<p>This leads to key limitations:</p>
+<ul>
+<li>Behavior is fixed once the type is chosen</li>
+<li>Stronger capabilities cannot be surfaced or selected explicitly</li>
+<li>Context-driven or configuration-based behavior becomes difficult</li>
+</ul>
+<h3 id="behaviour-model"><a class="doc-anchor" href="#behaviour-model">§</a>Behaviour Model</h3>
+<p>Plugin models treat behavior as a <strong>compatibility problem between two
+independent entities</strong>:</p>
+<div class="example-wrap"><pre class="language-text"><code>Sub-set Contract (Pallet)
+       &lt;-&gt;
+Super-set Capability (Model + Bounds + Context)</code></pre></div>
+<p>These are defined independently and only come together through
+<strong>compatibility matching</strong>.</p>
+<p>Matching rule:</p>
+<ul>
+<li>The super-set must satisfy all requirements of the sub-set</li>
+<li>The sub-set must allow the super-set’s stronger bounds</li>
+</ul>
+<p>Only when both conditions hold does a valid composition exist.</p>
+<h3 id="benefits"><a class="doc-anchor" href="#benefits">§</a>Benefits</h3>
+<ul>
+<li>Decoupled contract and behavior</li>
+<li>Multiple interchangeable implementations</li>
+<li>Context-driven execution</li>
+<li>Late selection via configuration</li>
+<li>Full compile-time verification</li>
+</ul>
+<p>Behaviour is not implemented, it is resolved by matching a sub-set contract
+with a compatible super-set capability.</p>
+<h3 id="example-sorter-plugin"><a class="doc-anchor" href="#example-sorter-plugin">§</a>Example: Sorter Plugin</h3>
+<p>This example shows how a pallet can dynamically select sorting strategies
+at runtime via plugin types.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>
+<span class="comment">// ----- Support Crate -------
+
+</span><span class="doccomment">/// A generic sorter plugin trait.
+///
+/// This trait defines a plugin point where the actual sorting logic
+/// is provided by an associated plugin model and its context.
+</span><span class="kw">pub trait </span>Sorter&lt;Input&gt; {
+    <span class="doccomment">/// The output type produced by the sorter.
+    </span><span class="kw">type </span>Output;
+
+    <span class="comment">// Declare the associated plugin model and context types.
+    // These will be supplied by downstream crates (e.g., pallets or runtime).
+    </span><span class="macro">plugin_types!</span> {
+        input: Input,
+        output: <span class="self">Self</span>::Output,
+        model: Model,
+        context: Context,
+    }
+
+    <span class="macro">plugin_output!</span> {
+        <span class="doccomment">/// Execute the sorting logic using the injected plugin model.
+        ///
+        /// The actual implementation is resolved at compile time based on
+        /// the associated `Model` and `Context` types.
+        </span><span class="kw">fn </span>sort
+        input: values,
+        model: <span class="self">Self</span>::Model,
+        context: <span class="self">Self</span>::Context,
+    }
+}
+
+<span class="comment">// ----- Pallet Crate -------
+
+</span><span class="doccomment">/// Pallet configuration exposing plugin hook points.
+///
+/// The runtime will decide which concrete model and context to use.
+</span><span class="kw">pub trait </span>Config: frame_system::Config {
+    <span class="doccomment">/// Input type consumed by the sorter plugin.
+    </span><span class="kw">type </span>InputX;
+
+    <span class="doccomment">/// Output type produced by the sorter plugin.
+    </span><span class="kw">type </span>OutputX;
+
+    <span class="comment">// Declare pallet-level plugin types that must satisfy the plugin contract.
+    </span><span class="macro">plugin_types!</span> {
+        input: <span class="self">Self</span>::InputX,
+        output: <span class="self">Self</span>::OutputX,
+        model: ModelX,     <span class="comment">// Concrete model chosen by the runtime
+        </span>context: ContextX, <span class="comment">// Concrete context provider chosen by the runtime
+    </span>}
+}
+
+<span class="doccomment">/// Implement the generic sorter plugin for the pallet.
+///
+/// The pallet simply forwards execution to the configured model.
+</span><span class="kw">impl</span>&lt;T: Config&gt; Sorter&lt;T::InputX&gt; <span class="kw">for </span>Pallet&lt;T&gt; {
+    <span class="kw">type </span>Output = T::OutputX;
+    <span class="kw">type </span>Model = T::ModelX;
+    <span class="kw">type </span>Context = T::ContextX;
+}
+
+<span class="doccomment">/// Helper function demonstrating how the plugin is executed generically.
+</span><span class="kw">fn </span>try_sort&lt;T: Config&gt;(values: <span class="kw-2">&amp;</span>T::InputX) -&gt; T::OutputX {
+    &lt;Pallet&lt;T&gt; <span class="kw">as </span>Sorter&lt;T::InputX&gt;&gt;::sort(values)
+}
+
+<span class="comment">// ----- Runtime Crate -------
+
+</span><span class="doccomment">/// Define a generic plugin model.
+/// This model sorts the generic type `Vector` in ascending order and then
+/// purges all elements greater than the runtime `until` threshold.
+/// Such many models like this can live in plugin-registries
+</span><span class="macro">plugin_model!</span> {
+    name: CappedSort,
+    input: Vector,
+    output: Vector,
+    context: UntilConfig&lt;Number&gt;,
+    others: [Number],
+    bounds: [
+        <span class="comment">// Elements must be comparable and clonable
+        </span>Number: Unsigned + Clone + Ord,
+        <span class="comment">// Vector must be iterable and rebuildable after filtering
+        </span>Vector: IntoIterator&lt;Item = Number&gt; + FromIterator&lt;Number&gt; + Clone,
+    ],
+    compute: |values, ctx| {
+        <span class="comment">// Clone input so original remains unchanged
+        </span><span class="kw">let </span><span class="kw-2">mut </span>v: Vector = values.clone();
+
+        <span class="comment">// Retrieve runtime threshold from context
+        </span><span class="kw">let </span>until = ctx.<span class="number">0</span>.clone();
+
+        <span class="comment">// Sort from small to large
+        </span><span class="kw">let </span><span class="kw-2">mut </span>temp: Vec&lt;Number&gt; = v.into_iter().collect();
+        temp.sort();
+
+        <span class="comment">// Find first element greater than `until`
+        // Purge that element and everything after it
+        </span><span class="kw">let </span>filtered = temp
+            .into_iter()
+            .take_while(|x| <span class="kw-2">*</span>x &lt;= until)
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+        <span class="comment">// Rebuild the output vector from the filtered values
+        </span>filtered.into_iter().collect()
+    }
+}
+
+<span class="doccomment">/// Context data structure holding the threshold value.
+/// Such many models's contexts like this can live in
+/// plugin-registries, as models and its contexts are tightly coupled
+</span><span class="kw">struct </span>UntilConfig&lt;Number&gt;(Number);
+
+<span class="doccomment">/// Define a concrete context provider supplying the threshold.
+</span><span class="macro">plugin_context!</span> {
+    name: MyContext,
+    context: UntilConfig&lt;u8&gt;,
+    value: UntilConfig(<span class="number">10</span>),
+}
+
+<span class="doccomment">/// Inject the concrete model and context into the runtime configuration.
+</span><span class="kw">impl </span>Config <span class="kw">for </span>Runtime {
+    <span class="kw">type </span>InputX = Vec&lt;u8&gt;;
+    <span class="kw">type </span>OutputX = Vec&lt;u8&gt;;
+    <span class="kw">type </span>ModelX = CappedSort;   <span class="comment">// Uses capped sorting logic
+    </span><span class="kw">type </span>ContextX = MyContext;  <span class="comment">// Provides the `until` threshold
+</span>}
+
+<span class="comment">// Example behavior:
+// Input:  vec![12, 3, 8, 25, 5]
+// Sorted: [3, 5, 8, 12, 25]
+// until = 10
+// Output: [3, 5, 8]   // elements &gt; 10 are purged
+</span></code></pre></div>
+<p>The pallet only assumes a generic “sorter” transformation. The runtime injects
+<code>CappedSort</code>, which sorts values ascending and purges elements greater than a
+contextual <code>until</code> threshold. The pallet sees only the minimal contract,
+while the runtime provides richer, context-driven logic.</p>
+<h2 id="plugin-families"><a class="doc-anchor" href="#plugin-families">§</a>Plugin Families</h2>
+<p>A <strong>plugin family</strong> extends a single plugin model into a <strong>unified logical
+plugin</strong> with multiple related operations.</p>
+<p>Unlike a model (one computation), a family represents a cohesive component
+(e.g., state machine or service) whose operations are selected via <em>child</em>
+markers, while a <strong>family type</strong> maps them to concrete models.</p>
+<p>This lets callers use a single interface while deferring implementation
+choice to runtime configuration.</p>
+<h3 id="motivation-1"><a class="doc-anchor" href="#motivation-1">§</a>Motivation</h3>
+<p>A single model fits simple transformations:</p>
+<div class="example-wrap"><pre class="language-text"><code>Model   -&gt; Implementation
+Context -&gt; Parameters</code></pre></div>
+<p>But real systems need:</p>
+<ul>
+<li>Multiple related operations</li>
+<li>Multiple strategy variants</li>
+<li>Configurable behaviour</li>
+</ul>
+<p>A <strong>plugin family</strong> groups these operations under one unit, where:</p>
+<ul>
+<li>Children = operations</li>
+<li>Family type = model mapping</li>
+</ul>
+<p>Result: structured, state-machine-like design with compile-time resolution.</p>
+<h3 id="state-machine-style-logical-plugin"><a class="doc-anchor" href="#state-machine-style-logical-plugin">§</a>State-Machine Style Logical Plugin</h3>
+<p>A plugin family acts as a logical component exposing multiple operations,
+similar to a state machine or service:</p>
+<div class="example-wrap"><pre class="language-text"><code>Family Root (Unified Interface)
+  |-- Child A -&gt; Operation A
+  |-- Child B -&gt; Operation B
+  |-- Child C -&gt; Operation C -&gt; Concrete Model (via Family Type)</code></pre></div>
+<ul>
+<li><strong>Root</strong>: unified special-interface</li>
+<li><strong>Child</strong>: operation selector</li>
+<li><strong>Family type</strong>: maps each operation to a concrete model</li>
+</ul>
+<p>Calling a child is equivalent to invoking a method on the plugin.
+The concrete model is resolved by the family type, with context passed
+through to execution.</p>
+<h4 id="family-contract-consistency"><a class="doc-anchor" href="#family-contract-consistency">§</a>Family Contract Consistency</h4>
+<p>All models within a <strong>family type</strong> are expected to share the same
+execution contract:</p>
+<div class="example-wrap"><pre class="language-text"><code>Input   -&gt; shared
+Output  -&gt; shared
+Context -&gt; shared</code></pre></div>
+<p>This allows the family to behave as a <strong>uniform pluggable component</strong>,
+where operations can be invoked without knowledge of the underlying model.</p>
+<div class="example-wrap"><pre class="language-text"><code>Family Type
+  |-- Child A -&gt; ModelA&lt;Input, Context, Output&gt;
+  |-- Child B -&gt; ModelB&lt;Input, Context, Output&gt;
+  |-- Child C -&gt; ModelC&lt;Input, Context, Output&gt;</code></pre></div>
+<p>With a consistent <code>(Input, Output, Context)</code> signature, callers interact
+through the root interface while the compiler resolves the concrete model.</p>
+<p>While not strictly enforced, consistent contracts are recommended for
+clarity and interchangeability.</p>
+<h4 id="trait-bound-consistency"><a class="doc-anchor" href="#trait-bound-consistency">§</a>Trait Bound Consistency</h4>
+<p>Plugin models define <code>(Input, Output, Context)</code> generically via trait bounds.</p>
+<p>Within a <strong>family type</strong>, the concrete types must satisfy the <strong>combined
+bounds</strong> of all possible models.</p>
+<div class="example-wrap"><pre class="language-text"><code>ModelA requires: Input: Ord
+ModelB requires: Input: Clone</code></pre></div>
+<p>-&gt; Caller must provide:</p>
+<div class="example-wrap"><pre class="language-text"><code>Input: Ord + Clone</code></pre></div>
+<p>The family contract therefore reflects the <strong>union of required bounds</strong>:</p>
+<div class="example-wrap"><pre class="language-text"><code>Family Contract
+  Input: Ord + Clone
+  Output: ...</code></pre></div>
+<p>This guarantees that any selected model can be resolved safely at compile time.</p>
+<h3 id="plugin-family-as-a-logical-plugin-state-machine"><a class="doc-anchor" href="#plugin-family-as-a-logical-plugin-state-machine">§</a>Plugin Family as a Logical Plugin State Machine</h3><div class="example-wrap"><pre class="language-text"><code>                        +---------------------------------------+
+                        |           FAMILY ROOT                  |
+                        |   Unified logical plugin interface    |
+                        +--------------------+------------------+
+                                             |
+                                     Concrete Family Type
+                                             |
+         +-----------------------------------+-----------------------------------+
+         |                                   |                                   |
+  +--------------+                    +--------------+                    +--------------+
+  |   Child A    |                    |   Child B    |                    |   Child C    |
+  | Operation A  |                    | Operation B  |                    | Operation C  |
+  +------+-------+                    +------+-------+                    +------+-------+
+         |                                   |                                   |
+  +------+-------+                    +------+-------+                    +------+-------+
+  |   Model A    |                    |   Model B    |                    |   Model C    |
+  | selected by  |                    | selected by  |                    | selected by  |
+  | Family Type  |                    | Family Type  |                    | Family Type  |
+  +------+-------+                    +------+-------+                    +------+-------+
+         |                                   |                                   |
+         +---------------------------- Context ----------------------------------+
+                                  (shared across models)</code></pre></div>
+<p>In this structure:</p>
+<ul>
+<li>The <strong>family root</strong> represents the unified logical plugin interface.</li>
+<li>Each <strong>child marker</strong> represents one operation of that interface.</li>
+<li>The <strong>family type</strong> determines which concrete model implements each
+operation.</li>
+</ul>
+<p>All models belonging to the same family share the <strong>same context type</strong>.
+The context is therefore represented as a single input flowing into the
+resolved model during execution.</p>
+<h4 id="resolution-flow"><a class="doc-anchor" href="#resolution-flow">§</a>Resolution Flow</h4><div class="example-wrap"><pre class="language-text"><code>Caller invokes:
+  FamilyRoot + FamilyType + ChildX
+
+Compiler resolves:
+  (FamilyType, ChildX) -&gt; ConcreteModel
+
+Execution:
+  ConcreteModel.compute(input, context)</code></pre></div>
+<p>This allows callers to treat the family as a single logical plugin while
+the compiler statically resolves the concrete model for each operation.</p>
+<h3 id="declaration-model"><a class="doc-anchor" href="#declaration-model">§</a>Declaration Model</h3>
+<p>A plugin family is constructed using three complementary macros:</p>
+<ul>
+<li><a href="../macro.declare_family.html" title="macro frame_suite::declare_family"><code>declare_family</code></a></li>
+<li><a href="../macro.plugin_model.html" title="macro frame_suite::plugin_model"><code>plugin_model</code></a></li>
+<li><a href="../macro.define_family.html" title="macro frame_suite::define_family"><code>define_family</code></a></li>
+</ul>
+<p>Together they define the <strong>operations</strong>, <strong>models</strong>, and <strong>family
+implementation</strong> that make up a plugin family.</p>
+<h4 id="1-declaring-the-family-interface"><a class="doc-anchor" href="#1-declaring-the-family-interface">§</a>1. Declaring the Family Interface</h4>
+<p>The <a href="../macro.declare_family.html" title="macro frame_suite::declare_family"><code>declare_family</code></a> macro defines the <strong>family
+root trait</strong> and a set of <strong>child marker types</strong> representing operations
+of the logical plugin.</p>
+<div class="example-wrap"><pre class="language-text"><code>Family Root
+  |-- ChildA
+  |-- ChildB
+  |-- ChildC</code></pre></div>
+<p>The root trait represents the unified plugin interface, while each child
+marker identifies one operation that the family exposes.</p>
+<h4 id="2-defining-plugin-models"><a class="doc-anchor" href="#2-defining-plugin-models">§</a>2. Defining Plugin Models</h4>
+<p>Concrete behaviour is implemented using <a href="../macro.plugin_model.html" title="macro frame_suite::plugin_model"><code>plugin_model</code></a>.</p>
+<p>Each plugin model implements a specific <code>(Input, Context, Output)</code>
+computation and can later be attached to a family operation.</p>
+<div class="example-wrap"><pre class="language-text"><code>ModelA&lt;Input, Context, Output&gt;
+ModelB&lt;Input, Context, Output&gt;
+ModelC&lt;Input, Context, Output&gt;</code></pre></div>
+<p>Models remain independent units of computation and can be reused across
+different families.</p>
+<h4 id="3-defining-the-family-implementation"><a class="doc-anchor" href="#3-defining-the-family-implementation">§</a>3. Defining the Family Implementation</h4>
+<p>The <a href="../macro.define_family.html" title="macro frame_suite::define_family"><code>define_family</code></a> macro creates a <strong>concrete
+family type</strong> that binds each child operation to a specific model.</p>
+<div class="example-wrap"><pre class="language-text"><code>FamilyType
+  |-- ChildA -&gt; ModelA
+  |-- ChildB -&gt; ModelB
+  |-- ChildC -&gt; ModelC</code></pre></div>
+<p>This family type represents a concrete implementation of the family root
+and determines which models are used for each operation.</p>
+<h4 id="resolution-model"><a class="doc-anchor" href="#resolution-model">§</a>Resolution Model</h4>
+<p>When a caller invokes an operation, it refers only to the <strong>family root</strong>
+and a <strong>child marker</strong>.</p>
+<p>The compiler then resolves the concrete model using the configured
+family type:</p>
+<div class="example-wrap"><pre class="language-text"><code>(FamilyType, Child) -&gt; ConcreteModel</code></pre></div>
+<p>The resolved model is then executed using the provided <code>(Input, Context)</code>
+values.</p>
+<p>This design allows callers to interact with the family as a single logical
+plugin while the runtime configuration determines the concrete behaviour
+through the selected <strong>family type</strong>.</p>
+<h3 id="immutable-vs-mutable-operational-variants"><a class="doc-anchor" href="#immutable-vs-mutable-operational-variants">§</a>Immutable vs Mutable Operational Variants</h3>
+<p>A family may host immutable (<code>PurePluginModel</code>) and/or mutable
+(<code>MutablePluginModel</code>) variants for its operations. However, mutability forms
+part of the execution contract:</p>
+<ul>
+<li>Immutable execution resolves only to pure models.</li>
+<li>Mutable execution resolves only to mutable models.</li>
+</ul>
+<p>Even if both coexist in the same family hierarchy, they are not
+interchangeable at the usage site because the caller’s expected execution
+semantics are part of the type-level interface.</p>
+<h3 id="example-family-based-model-resolution"><a class="doc-anchor" href="#example-family-based-model-resolution">§</a>Example: Family-Based Model Resolution</h3>
+<p>This example demonstrates how a plugin <strong>family</strong> defines a semantic
+extension point on a caller trait and how concrete models attach
+themselves to that family. The runtime then selects the active model
+by supplying an appropriate context.</p>
+<p>In this design the <strong>family is declared by the caller trait</strong>, because
+the trait owns the extension point. Concrete plugin models merely
+register themselves under that family.</p>
+<h4 id="caller-trait---declaring-the-plugin-family"><a class="doc-anchor" href="#caller-trait---declaring-the-plugin-family">§</a>Caller Trait - Declaring the Plugin Family</h4>
+<p>The caller trait defines the <strong>plugin contract</strong> and declares the family
+that models may attach to.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">declare_family!</span> {
+    root: <span class="kw">pub </span>MathFamilyRoot,
+    child: [MaybePlusOne]
+}
+
+<span class="kw">pub trait </span>MathTrait {
+    <span class="kw">type </span>Input: AtLeast8BitUnsigned;
+    <span class="kw">type </span>Output: AtLeast8BitUnsigned;
+
+    <span class="macro">plugin_types!</span> {
+        input: <span class="self">Self</span>::Input,
+        output: <span class="self">Self</span>::Output,
+        root: MathFamilyRoot,
+        family: MathFamily
+        context: MathContext,
+    }
+
+    <span class="macro">plugin_output!</span> {
+        <span class="kw">fn </span>request,
+        input: <span class="self">Self</span>::Input,
+        output: <span class="self">Self</span>::Output,
+        root: MathFamilyRoot,
+        family: <span class="self">Self</span>::MathFamily
+        child: MaybePlusOne,
+        context: <span class="self">Self</span>::MathContext,
+    }
+}</code></pre></div>
+<p>Here:</p>
+<ul>
+<li><code>MathFamily</code> defines the semantic plugin domain.</li>
+<li><code>MaybePlusOne</code> acts as a <strong>child selector</strong>, representing an optional
+increment strategy.</li>
+</ul>
+<p>The trait itself does <strong>not specify which model is used</strong>.</p>
+<h4 id="plugin-models---registering-implementations"><a class="doc-anchor" href="#plugin-models---registering-implementations">§</a>Plugin Models - Registering Implementations</h4>
+<p>Plugin models implement behavior for a specific <code>(Family, Child, Context)</code>
+combination. Multiple models may attach to the same child selector.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub struct </span>AddOneContext;
+
+<span class="macro">plugin_model!</span> {
+    name: AddOne,
+    input: Value,
+    context: AddOneContext,
+    bounds: [Value: AtLeast8BitUnsigned],
+    compute: |v, _ctx| {
+        v.clone().saturating_add(One::one())
+    }
+}
+
+<span class="macro">define_family!</span> {
+    root: MathFamilyRoot,
+    family: OneFamily,
+    input: Value,
+    context: AddOneContext
+    bounds: [Value: AtLeast8BitUnsigned]
+    child: [                      
+        MaybePlusOne =&gt; AddOne,
+    ],
+}</code></pre></div>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub struct </span>AddNothingContext;
+
+<span class="macro">plugin_model!</span> {
+    name: AddNothing,
+    input: <span class="kw-2">mut </span>Value,
+    context: AddNothingContext,
+    bounds: [Value: Clone],
+    compute: |v, _ctx| {
+        v.clone()
+    }
+}
+
+<span class="macro">define_family!</span> {
+    root: MathFamilyRoot,
+    family: NoneFamily,
+    input: Value,
+    context: AddNothingContext
+    bounds: [Value: Clone]
+    child: [                      
+        MaybePlusOne =&gt; AddNothing,
+    ],
+}</code></pre></div>
+<p>Both models attach to the same family and child selector but differ
+in unified family type, context and execution behavior.</p>
+<h4 id="pallet-wiring---remaining-generic"><a class="doc-anchor" href="#pallet-wiring---remaining-generic">§</a>Pallet Wiring - Remaining Generic</h4>
+<p>The pallet implements the caller trait without committing to a concrete
+model. It simply forwards the family and context from its configuration.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">struct </span>Pallet&lt;T: Config&gt;(PhantomData&lt;T&gt;);
+
+<span class="kw">impl</span>&lt;T: Config&gt; MathTrait <span class="kw">for </span>Pallet&lt;T&gt; {
+    <span class="kw">type </span>Input = T::XInput;
+    <span class="kw">type </span>Output = T::XOutput;
+    <span class="kw">type </span>MathFamily = T::XMathFamily;
+    <span class="kw">type </span>MathContext = T::XMathContext;
+}</code></pre></div>
+<p>This keeps the pallet generic and reusable across runtimes.</p>
+<h4 id="runtime-injection---selecting-the-active-model"><a class="doc-anchor" href="#runtime-injection---selecting-the-active-model">§</a>Runtime Injection - Selecting the Active Model</h4>
+<p>The runtime chooses the concrete behavior by supplying a context that
+matches one of the registered models.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub trait </span>Config {
+    <span class="kw">type </span>XInput: AtLeast8BitUnsigned;
+    <span class="kw">type </span>XOutput: AtLeast8BitUnsigned;
+
+    <span class="macro">plugin_types!</span> {
+        input: <span class="self">Self</span>::XInput,
+        output: <span class="self">Self</span>::XOutput,
+        root: MathFamilyRoot,
+        family: XMathFamily,
+        context: XMathContext,
+    }
+}
+
+<span class="macro">plugin_context!</span> {
+    name: MyContext,
+    context: AddOneContext,
+    value: AddOneContext,
+}
+
+<span class="kw">pub struct </span>Runtime;
+
+<span class="kw">impl </span>Config <span class="kw">for </span>Runtime {
+    <span class="kw">type </span>XInput = u8;
+    <span class="kw">type </span>XOutput = u8;
+    <span class="kw">type </span>XMathFamily = OneFamily;
+    <span class="kw">type </span>XMathContext = AddOneContext;
+
+    <span class="comment">// Also can be plugged towards
+    // type XMathFamily = NoneFamily;
+    // type XMathContext = AddNothingContext;
+</span>}</code></pre></div>
+<h4 id="resolution-flow-1"><a class="doc-anchor" href="#resolution-flow-1">§</a>Resolution Flow</h4><div class="example-wrap"><pre class="language-text"><code>Runtime selects:
+  Family  = OneFamily
+  Child   = MaybePlusOne
+  Context = AddOneContext
+
+Matching Model:
+  AddOne&lt;Input=u8, Context=AddOneContext, Output=u8&gt;</code></pre></div>
+<p>If the runtime instead supplied <code>NoneFamily</code> &amp; <code>AddNothingContext</code>, the alternative model
+would be selected automatically.</p>
+<p>The caller trait never names a concrete model. Instead, the compiler resolves
+the correct implementation purely from the type-level contract:</p>
+<div class="example-wrap"><pre class="language-text"><code>(Family, Child, Context) -&gt; Model</code></pre></div>
+<p>This enables fully static, type-safe plugin resolution without runtime
+dispatch or registration tables.</p>
+</div></details><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">Model<wbr>Context</a></dt><dd>Represents a source of context for models.</dd><dt><a class="trait" href="trait.MutablePluginModel.html" title="trait frame_suite::plugins::MutablePluginModel">Mutable<wbr>Plugin<wbr>Model</a></dt><dd>Trait implemented by <strong>mutable plugin models</strong> that may transform their
+input in-place while still producing an output.</dd><dt><a class="trait" href="trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">Pure<wbr>Plugin<wbr>Model</a></dt><dd>Core trait implemented by all <strong>immutable plugin models</strong>.</dd></dl></section></div></main></body></html>

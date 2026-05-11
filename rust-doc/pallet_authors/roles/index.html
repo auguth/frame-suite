@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Provides the concrete runtime implementation of the Author subsystem, translating abstract `role traits` into operational logic governing authors’ funding, rewards/penalties, and lifecycle within the runtime."><title>pallet_authors::roles - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_authors" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_authors/index.html">pallet_<wbr>authors</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module roles</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#purpose" title="Purpose">Purpose</a></li><li><a href="#role-implementations" title="Role Implementations">Role Implementations</a><ul><li><a href="#1-funding-fundrolesauthor" title="1. Funding (`FundRoles&#60;Author&#62;`)">1. Funding (<code>FundRoles&lt;Author&gt;</code>)</a></li><li><a href="#2-compensation-compensaterolesauthor" title="2. Compensation (`CompensateRoles&#60;Author&#62;`)">2. Compensation (<code>CompensateRoles&lt;Author&gt;</code>)</a></li><li><a href="#3-probation--permanence-roleprobationauthor" title="3. Probation &#38; Permanence (`RoleProbation&#60;Author&#62;`)">3. Probation &amp; Permanence (<code>RoleProbation&lt;Author&gt;</code>)</a></li></ul></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate pallet_<wbr>authors</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_authors</a></div><h1>Module <span>roles</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_authors/roles.rs.html#16-5630">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Provides the <strong>concrete runtime implementation</strong> of the Author subsystem,
+translating abstract <a href="../../frame_suite/roles/index.html" title="mod frame_suite::roles"><code>role traits</code></a> into operational
+logic governing authors’ funding, rewards/penalties, and lifecycle
+within the runtime.</p>
+<h3 id="purpose"><a class="doc-anchor" href="#purpose">§</a>Purpose</h3>
+<p>Authors are key participants whose behavior, backing, and status directly affect
+<strong>network security and correctness</strong>. While the role traits define <em>what</em> is required
+of authors, this module defines <em>how</em> those requirements are enforced in a
+<strong>safe, predictable, and auditable</strong> manner.</p>
+<h3 id="role-implementations"><a class="doc-anchor" href="#role-implementations">§</a>Role Implementations</h3><h4 id="1-funding-fundrolesauthor"><a class="doc-anchor" href="#1-funding-fundrolesauthor">§</a>1. Funding (<a href="../../frame_suite/roles/trait.FundRoles.html" title="trait frame_suite::roles::FundRoles"><code>FundRoles&lt;Author&gt;</code></a>)</h4>
+<ul>
+<li>Enables authors to operate with external economic backing, ensuring
+<strong>skin-in-the-game</strong> and accountability.</li>
+<li>Protects backers by enforcing correct fund allocation via digests and
+commitment checks (<a href="../../frame_suite/commitment/trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a>).</li>
+<li>Supports multiple funding models (direct, index-based, pooled) while
+maintaining a <strong>uniform, auditable interface</strong> through the
+<a href="../pallet/trait.Config.html#associatedtype.CommitmentAdapter" title="associated type pallet_authors::pallet::Config::CommitmentAdapter"><code>Config::CommitmentAdapter</code></a>.</li>
+</ul>
+<h4 id="2-compensation-compensaterolesauthor"><a class="doc-anchor" href="#2-compensation-compensaterolesauthor">§</a>2. Compensation (<a href="../../frame_suite/roles/trait.CompensateRoles.html" title="trait frame_suite::roles::CompensateRoles"><code>CompensateRoles&lt;Author&gt;</code></a>)</h4>
+<ul>
+<li>Aligns author incentives through rewards and penalties.</li>
+<li>Enforces <strong>temporal separation</strong>: obligations are scheduled for future blocks
+to ensure deterministic execution and prevent immediate exploitation.</li>
+<li>Preserves <strong>hold consistency</strong>, ensuring collateral and external funds are always
+accurately reflected in an author’s total hold.</li>
+</ul>
+<h4 id="3-probation--permanence-roleprobationauthor"><a class="doc-anchor" href="#3-probation--permanence-roleprobationauthor">§</a>3. Probation &amp; Permanence (<a href="../../frame_suite/roles/trait.RoleProbation.html" title="trait frame_suite::roles::RoleProbation"><code>RoleProbation&lt;Author&gt;</code></a>)</h4>
+<ul>
+<li>Prevents immediate permanence by enforcing a <strong>probation window</strong> for behavioral
+observation.</li>
+<li>Allows authors to be marked <strong>temporarily unsafe</strong> without irreversible removal,
+enabling adaptive risk management.</li>
+<li>Ensures clear promotion and revocation rules, preventing bypass of safety
+invariants or accountability mechanisms.</li>
+</ul>
+<p>By concretely implementing these role traits, this module transforms abstract role
+definitions into <strong>runtime-safe, economically secure, and auditable author governance</strong>.</p>
+</div></details></section></div></main></body></html>

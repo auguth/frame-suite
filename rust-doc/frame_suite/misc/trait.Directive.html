@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A trait expressing the execution directive of an operation."><title>Directive in frame_suite::misc - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Directive</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#interpretation" title="Interpretation">Interpretation</a></li><li><a href="#design-notes" title="Design Notes">Design Notes</a></li><li><a href="#default-discriminant" title="Default Discriminant">Default Discriminant</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.fortitude" title="fortitude">fortitude</a></li><li><a href="#tymethod.new" title="new">new</a></li><li><a href="#tymethod.precision" title="precision">precision</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>misc</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">misc</a></div><h1>Trait <span class="trait">Directive</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/misc.rs.html#159-171">Source</a> </span></div><pre class="rust item-decl"><code>pub trait Directive&lt;Discriminant: <a class="trait" href="../virtuals/trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a> = <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>&gt;: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a> {
+    // Required methods
+    fn <a href="#tymethod.precision" class="fn">precision</a>(&amp;self) -&gt; Precision;
+<span class="item-spacer"></span>    fn <a href="#tymethod.fortitude" class="fn">fortitude</a>(&amp;self) -&gt; Fortitude;
+<span class="item-spacer"></span>    fn <a href="#tymethod.new" class="fn">new</a>(precision: Precision, fortitude: Fortitude) -&gt; Self;
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A trait expressing the execution directive of an operation.</p>
+<p><code>Directive</code> defines <em>how an action should be carried out</em>, independent of
+the value or state it operates on. It captures two orthogonal dimensions:</p>
+<ul>
+<li>
+<p>[<code>Precision</code>]: The required exactness of the operation.</p>
+<ul>
+<li><code>Exact</code>: The operation must satisfy strict conditions.</li>
+<li><code>BestEffort</code>: The operation may proceed with relaxed or partial fulfillment.</li>
+</ul>
+</li>
+<li>
+<p>[<code>Fortitude</code>]: The strength or authority of execution.</p>
+<ul>
+<li><code>Polite</code>: The operation should respect constraints and may yield.</li>
+<li><code>Force</code>: The operation must be enforced regardless of resistance.</li>
+</ul>
+</li>
+</ul>
+<h3 id="interpretation"><a class="doc-anchor" href="#interpretation">§</a>Interpretation</h3><div><table><thead><tr><th>Precision</th><th>Fortitude</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>BestEffort</td><td>Polite</td><td>Soft, optional attempt</td></tr>
+<tr><td>Exact</td><td>Polite</td><td>Strict but non-forcing</td></tr>
+<tr><td>BestEffort</td><td>Force</td><td>Enforced but flexible execution</td></tr>
+<tr><td>Exact</td><td>Force</td><td>Strict and mandatory execution</td></tr>
+</tbody></table>
+</div><h3 id="design-notes"><a class="doc-anchor" href="#design-notes">§</a>Design Notes</h3>
+<ul>
+<li>Encodes <strong>intent</strong>, not state or value</li>
+<li>Fully domain-agnostic</li>
+<li>Separates <em>what to do</em> from <em>how to do it</em></li>
+<li>Enables consistent execution behavior across systems</li>
+</ul>
+<p>Implementations should ensure that <code>from_directive</code> produces a value whose
+behavior reflects the specified execution semantics.</p>
+<h3 id="default-discriminant"><a class="doc-anchor" href="#default-discriminant">§</a>Default Discriminant</h3>
+<ul>
+<li><code>Discriminant = ()</code>: defines a single default directive,
+meaning one unique set of directions is assumed.</li>
+</ul>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.precision" class="method"><a class="src rightside" href="../../src/frame_suite/misc.rs.html#161">Source</a><h4 class="code-header">fn <a href="#tymethod.precision" class="fn">precision</a>(&amp;self) -&gt; Precision</h4></section></summary><div class="docblock"><p>Returns the required precision of the operation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.fortitude" class="method"><a class="src rightside" href="../../src/frame_suite/misc.rs.html#164">Source</a><h4 class="code-header">fn <a href="#tymethod.fortitude" class="fn">fortitude</a>(&amp;self) -&gt; Fortitude</h4></section></summary><div class="docblock"><p>Returns the enforcement strength of the operation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.new" class="method"><a class="src rightside" href="../../src/frame_suite/misc.rs.html#170">Source</a><h4 class="code-header">fn <a href="#tymethod.new" class="fn">new</a>(precision: Precision, fortitude: Fortitude) -&gt; Self</h4></section></summary><div class="docblock"><p>Constructs a value from execution semantics.</p>
+<p>The resulting value should embody how the operation behaves
+in terms of strictness and enforcement.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/misc/trait.Directive.js" async></script></section></div></main></body></html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Declares a plugin model family using marker types."><title>declare_family in frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">declare_<wbr>family</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#parameters" title="Parameters">Parameters</a></li><li><a href="#syntax" title="Syntax">Syntax</a></li><li><a href="#generated-types" title="Generated Types">Generated Types</a></li><li><a href="#example" title="Example">Example</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">frame_suite</a></div><h1>Macro <span class="macro">declare_family</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/plugins.rs.html#2480-2532">Source</a> </span></div><pre class="rust item-decl"><code>macro_rules! declare_family {
+    (
+        $(#[$meta:meta])*
+        root: $vis:vis $Root:ident,
+        child: [
+            $(
+                $(#[$child_meta:meta])*
+                $Child:ident
+            ),+ $(,)?
+        ]
+    ) =&gt; { ... };
+    (
+        $(#[$meta:meta])*
+        root: mut $vis:vis $Root:ident,
+        child: [
+            $(
+                $(#[$child_meta:meta])*
+                $Child:ident
+            ),+ $(,)?
+        ]
+    ) =&gt; { ... };
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Declares a plugin model family using marker types.</p>
+<p>This macro generates a <strong>family root trait</strong> and one or more <strong>child markers</strong>
+used to represent operations within that family.</p>
+<p>The generated markers are purely type-level and contain no runtime data.
+Concrete plugin implementations attach to a <code>(Root, Child)</code> pair via
+<a href="macro.plugin_model.html" title="macro frame_suite::plugin_model"><code>plugin_model!</code></a>, allowing models to be selected later through context
+and trait bounds.</p>
+<h3 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h3>
+<ul>
+<li><code>root</code>: Declares the <strong>family root trait</strong>.
+<ul>
+<li>Can include a visibility modifier (<code>pub</code>, <code>pub(crate)</code>, etc.).</li>
+<li>The same visibility is applied to all child marker structs.</li>
+<li>Prefix with <code>mut</code> to create a mutable plugin family.</li>
+</ul>
+</li>
+<li><code>child</code>: A list of <strong>child marker types</strong> representing operations
+within the family.</li>
+</ul>
+<h3 id="syntax"><a class="doc-anchor" href="#syntax">§</a>Syntax</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">declare_family!</span> {
+    root: <span class="kw">pub </span>FamilyRoot,
+    child: [OperationA, OperationB, OperationC]
+}</code></pre></div>
+<p>Mutable families use the <code>mut</code> keyword:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">declare_family!</span> {
+    root: <span class="kw-2">mut </span><span class="kw">pub </span>FamilyRoot,
+    child: [OperationA, OperationB]
+}</code></pre></div>
+<h3 id="generated-types"><a class="doc-anchor" href="#generated-types">§</a>Generated Types</h3>
+<p>The macro generates:</p>
+<ul>
+<li>A <strong>child marker struct</strong> for each entry in <code>child</code>.</li>
+<li>A <strong>family root trait</strong> defining associated plugin model types
+for each child operation.</li>
+</ul>
+<p>The child marker structs are zero-sized types used purely as
+identifiers for operations within the family.</p>
+<p>The root trait declares an associated model type per child:</p>
+<ul>
+<li>Immutable families require models implementing <a href="plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel"><code>PurePluginModel</code></a>.</li>
+<li>Mutable families require models implementing <a href="plugins/trait.MutablePluginModel.html" title="trait frame_suite::plugins::MutablePluginModel"><code>MutablePluginModel</code></a>.</li>
+</ul>
+<p>Each associated type corresponds to a concrete plugin implementation
+bound to that operation.</p>
+<p>These associated model types are later used by <a href="macro.plugin_model.html" title="macro frame_suite::plugin_model"><code>plugin_model!</code></a> to bind
+concrete implementations to specific <code>(Root, Child)</code> combinations.</p>
+<h3 id="example"><a class="doc-anchor" href="#example">§</a>Example</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">declare_family!</span> {
+    root: <span class="kw">pub </span>VotingFamily,
+    child: [Phragmen, STV]
+}</code></pre></div>
+<p>Expands roughly to:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub struct </span>Phragmen;
+<span class="kw">pub struct </span>STV;
+
+<span class="kw">pub trait </span>VotingFamily&lt;Input, Context, Output&gt; {
+    <span class="kw">type </span>Phragmen: PurePluginModel&lt;Input, Context, Output&gt;;
+    <span class="kw">type </span>STV: PurePluginModel&lt;Input, Context, Output&gt;;
+}</code></pre></div>
+<p>Mutable family example:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">declare_family!</span> {
+    root: <span class="kw-2">mut </span><span class="kw">pub </span>StorageFamily,
+    child: [Insert, Remove]
+}</code></pre></div>
+<p>Expands roughly to:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub struct </span>Insert;
+<span class="kw">pub struct </span>Remove;
+
+<span class="kw">pub trait </span>StorageFamily&lt;Input, Context, Output&gt; {
+    <span class="kw">type </span>Insert: MutablePluginModel&lt;Input, Context, Output&gt;;
+    <span class="kw">type </span>Remove: MutablePluginModel&lt;Input, Context, Output&gt;;
+}</code></pre></div>
+</div></details></section></div></main></body></html>

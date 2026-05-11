@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Constraint for delegating a virtual extension to an external schema."><title>DelegateVirtualDynExtension in frame_suite::virtuals - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Delegate<wbr>Virtual<wbr>DynExtension</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#roles" title="Roles">Roles</a></li><li><a href="#representation" title="Representation">Representation</a></li><li><a href="#default-discriminant" title="Default Discriminant">Default Discriminant</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>virtuals</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">virtuals</a></div><h1>Trait <span class="trait">DelegateVirtualDynExtension</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/virtuals.rs.html#2331-2338">Source</a> </span></div><pre class="rust item-decl"><code>pub trait DelegateVirtualDynExtension&lt;Provider, Discriminant = <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>&gt;: <a class="trait" href="trait.VirtualDynExtension.html" title="trait frame_suite::virtuals::VirtualDynExtension">VirtualDynExtension</a>&lt;Discriminant&gt;<div class="where">where
+    Provider: <a class="trait" href="trait.VirtualDynExtensionSchema.html" title="trait frame_suite::virtuals::VirtualDynExtensionSchema">VirtualDynExtensionSchema</a>&lt;Discriminant&gt;,
+    Discriminant: <a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a>,
+    Self: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div>{ }</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Constraint for delegating a virtual extension to an external schema.</p>
+<p>This trait ties a container to an externally provided
+<a href="trait.VirtualDynExtensionSchema.html" title="trait frame_suite::virtuals::VirtualDynExtensionSchema"><code>VirtualDynExtensionSchema</code></a>, without requiring the container
+to define the extension’s type or representation itself.</p>
+<h3 id="roles"><a class="doc-anchor" href="#roles">§</a>Roles</h3>
+<ul>
+<li>
+<p><strong>Container (<code>Self</code>)</strong></p>
+<ul>
+<li>stores the extension representation</li>
+</ul>
+</li>
+<li>
+<p><strong>Schema (<code>Provider</code>)</strong></p>
+<ul>
+<li>defines the element type and representation</li>
+</ul>
+</li>
+<li>
+<p><strong>Caller</strong></p>
+<ul>
+<li>selects the extension via the <code>Discriminant</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="representation"><a class="doc-anchor" href="#representation">§</a>Representation</h3>
+<p>The delegated schema is dynamic:</p>
+<ul>
+<li><code>Many</code> has vector-like semantics</li>
+<li>size and bounds are resolved at runtime (within limits)</li>
+</ul>
+<h3 id="default-discriminant"><a class="doc-anchor" href="#default-discriminant">§</a>Default Discriminant</h3>
+<ul>
+<li><code>Discriminant = ()</code>: delegates a single default extension,
+meaning one dynamic extension is assumed.</li>
+</ul>
+</div></details><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-DelegateVirtualDynExtension%3CProvider,+Discriminant%3E-for-T" class="impl"><a class="src rightside" href="../../src/frame_suite/virtuals.rs.html#2342-2348">Source</a><a href="#impl-DelegateVirtualDynExtension%3CProvider,+Discriminant%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;Provider, Discriminant, T&gt; <a class="trait" href="trait.DelegateVirtualDynExtension.html" title="trait frame_suite::virtuals::DelegateVirtualDynExtension">DelegateVirtualDynExtension</a>&lt;Provider, Discriminant&gt; for T<div class="where">where
+    T: <a class="trait" href="trait.VirtualDynExtension.html" title="trait frame_suite::virtuals::VirtualDynExtension">VirtualDynExtension</a>&lt;Discriminant&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,
+    Discriminant: <a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a>,
+    Provider: <a class="trait" href="trait.VirtualDynExtensionSchema.html" title="trait frame_suite::virtuals::VirtualDynExtensionSchema">VirtualDynExtensionSchema</a>&lt;Discriminant&gt;,</div></h3><div class="docblock"><p>Blanket implementation enabling all types to delegate
+extension schema resolution.</p>
+</div></section></div><script src="../../trait.impl/frame_suite/virtuals/trait.DelegateVirtualDynExtension.js" async></script></section></div></main></body></html>

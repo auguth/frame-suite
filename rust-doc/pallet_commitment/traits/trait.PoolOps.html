@@ -1,0 +1,136 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines operational behavior for managing pooled balances within a commitment system."><title>PoolOps in pallet_commitment::traits - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_commitment" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_commitment/index.html">pallet_<wbr>commitment</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">PoolOps</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#generics" title="Generics">Generics</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.PoolBalance" title="PoolBalance">PoolBalance</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.recover_pool" title="recover_pool">recover_pool</a></li><li><a href="#tymethod.release_pool" title="release_pool">release_pool</a></li><li><a href="#tymethod.remove_pool_slot" title="remove_pool_slot">remove_pool_slot</a></li><li><a href="#tymethod.set_pool_slot" title="set_pool_slot">set_pool_slot</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In pallet_<wbr>commitment::<wbr>traits</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_commitment</a>::<wbr><a href="index.html">traits</a></div><h1>Trait <span class="trait">PoolOps</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_commitment/traits.rs.html#887-988">Source</a> </span></div><pre class="rust item-decl"><code>pub trait PoolOps&lt;Proprietor, Pallet&gt;<div class="where">where
+    Pallet: <a class="trait" href="../../frame_suite/assets/trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&lt;Asset = &lt;Pallet as <a class="trait" href="../../frame_suite/commitment/trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">InspectAsset</a>&lt;Proprietor&gt;&gt;::<a class="associatedtype" href="../../frame_suite/commitment/trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, Variant = Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>, Id = Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>&gt; + <a class="trait" href="../../frame_suite/commitment/trait.PoolVariant.html" title="trait frame_suite::commitment::PoolVariant">PoolVariant</a>&lt;Proprietor&gt;,</div>{
+    type <a href="#associatedtype.PoolBalance" class="associatedtype">PoolBalance</a>;
+
+    // Required methods
+    fn <a href="#tymethod.release_pool" class="fn">release_pool</a>(
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.PoolOps.html#associatedtype.PoolBalance" title="type pallet_commitment::traits::PoolOps::PoolBalance">PoolBalance</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.recover_pool" class="fn">recover_pool</a>(
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        balance: &amp;Self::<a class="associatedtype" href="trait.PoolOps.html#associatedtype.PoolBalance" title="type pallet_commitment::traits::PoolOps::PoolBalance">PoolBalance</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_pool_slot" class="fn">remove_pool_slot</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        slot_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_pool_slot" class="fn">set_pool_slot</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        slot_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        shares: Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+        variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    ) -&gt; DispatchResult;
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines operational behavior for managing pooled balances within a commitment system.</p>
+<p>A <code>PoolOps</code> implementation extends <a href="../../frame_suite/commitment/trait.PoolVariant.html" title="trait frame_suite::commitment::PoolVariant"><code>PoolVariant</code></a> to provide concrete
+management logic for a proprietor’s pooled balances, where a pool may act
+as a <em>single committing authority</em> maintaining aggregate or managed funds.</p>
+<p>Unlike indexes (which represent discrete digests committed on behalf of a proprietor),
+pools aggregate balances and resolve them collectively, acting as a unified
+resource manager.</p>
+<p>This trait defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking these
+functions.</p>
+<h4 id="generics"><a class="doc-anchor" href="#generics">§</a>Generics</h4>
+<ul>
+<li><strong>Proprietor</strong> - the entity (e.g. account, vault, or manager)
+controlling the asset.</li>
+<li><strong>Pallet</strong> - the public struct implementing <a href="../../frame_suite/commitment/trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> traits
+and <a href="../../frame_suite/assets/trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance"><code>LazyBalance</code></a>, ensuring consistent asset accounting across the
+commitment system.</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.PoolBalance" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#896">Source</a><h4 class="code-header">type <a href="#associatedtype.PoolBalance" class="associatedtype">PoolBalance</a></h4></section></summary><div class="docblock"><p>The balance type associated with the pool.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.release_pool" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#915-918">Source</a><h4 class="code-header">fn <a href="#tymethod.release_pool" class="fn">release_pool</a>(
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.PoolOps.html#associatedtype.PoolBalance" title="type pallet_commitment::traits::PoolOps::PoolBalance">PoolBalance</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Releases a pool’s balance, resetting it to its default state.</p>
+<p>Releasing a pool means resolving all active commit digests from this single balance,
+similar in concept to resolving a commit.</p>
+<ul>
+<li>The release-recovery should be <strong>immediate</strong> at the calling site - safety must
+be ensured by the caller.</li>
+<li>Pools differ from indexes: while indexes resolve multiple digests per proprietor,
+pools resolve from a <em>single managed balance</em> representing aggregated commitments.</li>
+</ul>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(PoolBalance)</code> containing the resolved pool balance</li>
+<li><code>Err(DispatchError)</code> if the release operation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.recover_pool" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#932-936">Source</a><h4 class="code-header">fn <a href="#tymethod.recover_pool" class="fn">recover_pool</a>(
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    balance: &amp;Self::<a class="associatedtype" href="trait.PoolOps.html#associatedtype.PoolBalance" title="type pallet_commitment::traits::PoolOps::PoolBalance">PoolBalance</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Recovers a pool’s state after a prior release via <a href="trait.PoolOps.html#tymethod.release_pool" title="associated function pallet_commitment::traits::PoolOps::release_pool"><code>PoolOps::release_pool</code></a>.</p>
+<p>This function restores the pool’s state following balance mutation or reconciliation.
+Should only be invoked after the pool has been released via <a href="trait.PoolOps.html#tymethod.release_pool" title="associated function pallet_commitment::traits::PoolOps::release_pool"><code>PoolOps::release_pool</code></a>.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the pool state was successfully recovered</li>
+<li><code>Err(DispatchError)</code> if recovery fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.remove_pool_slot" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#954-959">Source</a><h4 class="code-header">fn <a href="#tymethod.remove_pool_slot" class="fn">remove_pool_slot</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    slot_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Removes a slot from a pool and updates the pool’s state accordingly.</p>
+<p>This operation ensures that:</p>
+<ul>
+<li>The slot represented by <code>slot_of</code> is removed from the pool.</li>
+<li>The pool’s collective balance is released and then recovered to reflect
+the updated state after removal.</li>
+</ul>
+<p>Automatically updates the pool’s internal representation of managed funds.</p>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the slot was successfully removed and pool state updated</li>
+<li><code>Err(DispatchError)</code> if the operation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_pool_slot" class="method"><a class="src rightside" href="../../src/pallet_commitment/traits.rs.html#980-987">Source</a><h4 class="code-header">fn <a href="#tymethod.set_pool_slot" class="fn">set_pool_slot</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    slot_of: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    shares: Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+    variant: &amp;Pallet::<a class="associatedtype" href="../../frame_suite/commitment/trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Sets or updates a slot within a pool and synchronizes the pool’s state.</p>
+<p>This operation may:</p>
+<ul>
+<li>Add a new slot to the pool.</li>
+<li>Update an existing slot’s <code>shares</code> or <code>variant</code>.</li>
+<li>Trigger a pool release and recovery cycle to ensure
+the pool’s balance reflects the new slot configuration.</li>
+</ul>
+<p>It only defines <strong>low-level, unchecked operations</strong> - callers are
+responsible for ensuring validity and equilibrium before invoking this
+function.</p>
+<h6 id="behavior"><a class="doc-anchor" href="#behavior">§</a>Behavior</h6>
+<ul>
+<li>Ensures slot state consistency within the pool.</li>
+<li>Used for slot creation, update, or reallocation of pool shares.</li>
+</ul>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the slot was successfully set and pool state synchronized</li>
+<li><code>Err(DispatchError)</code> if the operation fails</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><details class="toggle implementors-toggle"><summary><section id="impl-PoolOps%3C%3CT+as+Config%3E::AccountId,+Pallet%3CT,+I%3E%3E-for-CommitHelpers%3CT,+I%3E" class="impl"><a class="src rightside" href="../../src/pallet_commitment/helpers.rs.html#2171-2608">Source</a><a href="#impl-PoolOps%3C%3CT+as+Config%3E::AccountId,+Pallet%3CT,+I%3E%3E-for-CommitHelpers%3CT,+I%3E" class="anchor">§</a><h3 class="code-header">impl&lt;T: <a class="trait" href="../pallet/trait.Config.html" title="trait pallet_commitment::pallet::Config">Config</a>&lt;I&gt;, I: 'static&gt; <a class="trait" href="trait.PoolOps.html" title="trait pallet_commitment::traits::PoolOps">PoolOps</a>&lt;&lt;T as Config&gt;::AccountId, <a class="struct" href="../pallet/struct.Pallet.html" title="struct pallet_commitment::pallet::Pallet">Pallet</a>&lt;T, I&gt;&gt; for <a class="struct" href="../pallet/struct.CommitHelpers.html" title="struct pallet_commitment::pallet::CommitHelpers">CommitHelpers</a>&lt;T, I&gt;</h3><div class="docblock"><p>Implementation of <a href="trait.PoolOps.html" title="trait pallet_commitment::traits::PoolOps"><code>PoolOps</code></a> for the pallet, defining how pools slots
+are queried, inserted, updated, or removed within a given index digest.</p>
+</div></section></summary><div class="docblock"><p>Each function operates on the <em>pool-slot composition layer</em> - maintaining
+relationships between an pool digest and its subordinate slot digests.</p>
+</div><div class="impl-items"><section id="associatedtype.PoolBalance-1" class="associatedtype trait-impl"><a class="src rightside" href="../../src/pallet_commitment/helpers.rs.html#2177">Source</a><a href="#associatedtype.PoolBalance-1" class="anchor">§</a><h4 class="code-header">type <a href="#associatedtype.PoolBalance" class="associatedtype">PoolBalance</a> = <a class="struct" href="../balance/struct.ProductType.html" title="struct pallet_commitment::balance::ProductType">ProductType</a>&lt;T, I, &lt;&lt;T as <a class="trait" href="../pallet/trait.Config.html" title="trait pallet_commitment::pallet::Config">Config</a>&lt;I&gt;&gt;::<a class="associatedtype" href="../pallet/trait.Config.html#associatedtype.BalanceContext" title="type pallet_commitment::pallet::Config::BalanceContext">BalanceContext</a> as <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../../frame_suite/plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, <a class="struct" href="../../frame_suite/assets/struct.BalanceAsset.html" title="struct frame_suite::assets::BalanceAsset">BalanceAsset</a>, <a class="struct" href="../../frame_suite/assets/struct.BalanceRational.html" title="struct frame_suite::assets::BalanceRational">BalanceRational</a>, <a class="struct" href="../../frame_suite/assets/struct.BalanceTime.html" title="struct frame_suite::assets::BalanceTime">BalanceTime</a>, <a class="struct" href="../../frame_suite/assets/struct.BalanceAddon.html" title="struct frame_suite::assets::BalanceAddon">BalanceAddon</a>&gt;</h4></section></div></details></div><script src="../../trait.impl/pallet_commitment/traits/trait.PoolOps.js" async></script></section></div></main></body></html>

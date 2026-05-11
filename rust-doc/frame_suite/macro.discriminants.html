@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines one or more public zero-sized discriminant types."><title>discriminants in frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">discriminants</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#why-discriminants" title="Why Discriminants?">Why Discriminants?</a></li><li><a href="#syntax" title="Syntax">Syntax</a></li><li><a href="#expansion" title="Expansion">Expansion</a></li><li><a href="#properties" title="Properties">Properties</a></li><li><a href="#why-always-public" title="Why Always Public">Why Always Public</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">frame_suite</a></div><h1>Macro <span class="macro">discriminants</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/virtuals.rs.html#341-356">Source</a> </span></div><pre class="rust item-decl"><code>macro_rules! discriminants {
+    (
+        $(
+            $(#[$meta:meta])*
+            $name:ident
+        ),* $(,)?
+    ) =&gt; { ... };
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines one or more public zero-sized discriminant types.</p>
+<p>A <em>discriminant</em> is a concrete type-level key used to uniquely identify
+behavior, structure, or interpretation in generic systems.</p>
+<h3 id="why-discriminants"><a class="doc-anchor" href="#why-discriminants">§</a>Why Discriminants?</h3>
+<p>In Rust, trait implementations over generic or associated types can become
+ambiguous under coherence rules:</p>
+<ul>
+<li>generic types may unify in multiple ways</li>
+<li>implementations may overlap when types are not fully concrete</li>
+<li>the compiler must reject such cases conservatively</li>
+</ul>
+<p>Discriminants solve this by introducing a <strong>concrete, unique type</strong>
+that disambiguates otherwise overlapping implementations.</p>
+<p>This enables:</p>
+<ul>
+<li>multiple interpretations over the same types</li>
+<li>safe composition of generic abstractions</li>
+<li>coherence-safe extensibility</li>
+</ul>
+<h3 id="syntax"><a class="doc-anchor" href="#syntax">§</a>Syntax</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">discriminants!</span>(
+    <span class="doccomment">/// Optional docs or attributes
+    </span>A,
+
+    B,
+
+    <span class="attr">#[cfg(feature = <span class="string">"x"</span>)]
+    </span>C,
+);</code></pre></div>
+<h3 id="expansion"><a class="doc-anchor" href="#expansion">§</a>Expansion</h3>
+<p>For each identifier, this macro generates:</p>
+<ul>
+<li>a <code>pub</code> zero-sized struct</li>
+<li>an implementation of <a href="virtuals/trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag"><code>DiscriminantTag</code></a></li>
+</ul>
+<h3 id="properties"><a class="doc-anchor" href="#properties">§</a>Properties</h3>
+<ul>
+<li>zero runtime cost (ZSTs)</li>
+<li>purely type-level identifiers</li>
+<li>stable and unambiguous across generic contexts</li>
+<li>reusable across virtual fields, extensions, and
+<a href="plugins/index.html" title="mod frame_suite::plugins"><code>plugin</code></a> systems</li>
+</ul>
+<h3 id="why-always-public"><a class="doc-anchor" href="#why-always-public">§</a>Why Always Public</h3>
+<p>Discriminants appear in type signatures and generic bounds,
+making them part of the public type-level API.</p>
+<p>Restricting visibility would:</p>
+<ul>
+<li>prevent use in external generic constraints</li>
+<li>break composability across modules or crates</li>
+<li>force duplication of identical identifiers</li>
+</ul>
+<p>In practice, discriminants are <strong>type-level contracts</strong>, not internal details.</p>
+</div></details></section></div></main></body></html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Fork-local utilities for pallet offchain workers (OCWs)."><title>frame_suite::forks - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module forks</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#usage" title="Usage">Usage</a></li><li><a href="#navigation" title="Navigation">Navigation</a></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a></div><h1>Module <span>forks</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/forks.rs.html#16-3324">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Fork-local utilities for pallet offchain workers (OCWs).</p>
+<p>This module does not provide canonical chain selection or consensus.</p>
+<p>Instead, it runs on top of a pallet’s OCW execution and maintains a
+deterministic local fork graph so the pallet can answer:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="string">"what was my local state on this branch?"</span></code></pre></div>
+<p>A <a href="struct.Branch.html" title="struct frame_suite::forks::Branch"><code>Branch</code></a> represents a continuous stream of blocks extending on top
+of each other along the same path.</p>
+<div class="example-wrap"><pre class="language-text"><code>A -&gt; B -&gt; C -&gt; D
+same branch</code></pre></div>
+<p>As long as blocks continue as direct children, the same branch is reused
+and only the branch head moves forward.</p>
+<p>When a division occurs (a sibling block appears at the same ancestry),
+a new fork branch is created.</p>
+<div class="example-wrap"><pre class="language-text"><code>A -&gt; B -&gt; C
+        |-- D
+        |-- D&#39;</code></pre></div>
+<p>Here:</p>
+<ul>
+<li><code>D</code> is the original branch continuation</li>
+<li><code>D'</code> is the new sibling branch</li>
+<li><code>A -&gt; B -&gt; C</code> is the parent branch of both paths</li>
+</ul>
+<p>Each branch carries its own fork-local scope through <a href="trait.ForkScopes.html" title="trait frame_suite::forks::ForkScopes"><code>ForkScopes</code></a>.</p>
+<p>When a new sibling branch is created, it inherits from the parent branch
+using <a href="../misc/trait.Accrete.html" title="trait frame_suite::misc::Accrete"><code>Accrete</code></a>:</p>
+<div class="example-wrap"><pre class="language-text"><code>scope(D&#39;) = scope(C).accrete()</code></pre></div>
+<p>This allows each fork path to maintain isolated local state while still
+preserving inherited lineage state.</p>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<p>Every pallet using this system should begin its OCW execution with
+<a href="trait.ForksHandler.html#method.start" title="associated function frame_suite::forks::ForksHandler::start"><code>ForksHandler::start</code></a>:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>offchain_worker(block_number: BlockNumberFor&lt;T&gt;) {
+    &lt;<span class="self">Self </span><span class="kw">as </span>ForksHandler&lt;T, MyForkScope&gt;&gt;::start(
+        <span class="prelude-val">Some</span>(<span class="string">"my-pallet"</span>),
+        <span class="prelude-val">Some</span>(LogFormatter::default()),
+        || {
+            <span class="comment">// pallet-specific OCW logic here
+        </span>}
+    );
+}</code></pre></div>
+<p><a href="trait.ForksHandler.html#method.start" title="associated function frame_suite::forks::ForksHandler::start"><code>ForksHandler::start</code></a> handles:</p>
+<ul>
+<li>longest-chain extension vs sibling fork creation</li>
+<li>missing branch recovery (during client inactivity)</li>
+<li>safe branch resolution before OCW logic executes</li>
+</ul>
+<p>The OCW closure (main logic) runs only after branch state is
+valid and ready to map the fork graph.</p>
+<h3 id="navigation"><a class="doc-anchor" href="#navigation">§</a>Navigation</h3>
+<p>Since fork resolution is delayed by one block:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>block N executes
+-&gt; block N - <span class="number">1 </span>is resolved and persisted</code></pre></div>
+<p>the current executing block is not yet inserted into the local fork graph.</p>
+<p>For normal OCW access, use <a href="trait.ForksHandler.html#method.get_prev_block_branch" title="associated function frame_suite::forks::ForksHandler::get_prev_block_branch"><code>ForksHandler::get_prev_block_branch</code></a>
+to retrieve the previous block’s (<code>N - 1</code>) resolved branch.</p>
+<p>From that branch, navigation can continue using <a href="enum.ForkAction.html" title="enum frame_suite::forks::ForkAction"><code>ForkAction</code></a> and
+<a href="trait.ForksHandler.html#method.transition" title="associated function frame_suite::forks::ForksHandler::transition"><code>ForksHandler::transition</code></a>, or helpers like:</p>
+<ul>
+<li><a href="trait.ForksHandler.html#method.get_block_branch" title="associated function frame_suite::forks::ForksHandler::get_block_branch"><code>ForksHandler::get_block_branch</code></a></li>
+<li><a href="trait.ForksHandler.html#method.get_prev_branch" title="associated function frame_suite::forks::ForksHandler::get_prev_branch"><code>ForksHandler::get_prev_branch</code></a></li>
+<li><a href="trait.ForksHandler.html#method.get_branch" title="associated function frame_suite::forks::ForksHandler::get_branch"><code>ForksHandler::get_branch</code></a></li>
+</ul>
+<p>This allows movement across:</p>
+<ul>
+<li>parent branches</li>
+<li>child branches</li>
+<li>sibling branches</li>
+<li>root ancestry</li>
+</ul>
+<p>This provides deterministic branch-local traversal without relying on
+canonical consensus routing.</p>
+<p>The system is intentionally fork-aware, scope-first, and best-effort:
+it tracks local execution branches, not global consensus finality.</p>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a></dt><dd>Fork branch details pertaining to a block and the
+specialized scope state defined by the pallet/module
+for which the local fork graph exists.</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.ForkAction.html" title="enum frame_suite::forks::ForkAction">Fork<wbr>Action</a></dt><dd>Deterministic branch traversal and navigation actions
+for moving across the local fork graph.</dd></dl><h2 id="constants" class="section-header">Constants<a href="#constants" class="anchor">§</a></h2><dl class="item-table"><dt><a class="constant" href="constant.HEAD_BLOCK.html" title="constant frame_suite::forks::HEAD_BLOCK">HEAD_<wbr>BLOCK</a></dt><dd>Highest known longest-chain head used for fork detection.</dd></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.ForkScopes.html" title="trait frame_suite::forks::ForkScopes">Fork<wbr>Scopes</a></dt><dd>A scope is an abstract area for storing branch-local state and anything
+logically related to that fork, such as:</dd><dt><a class="trait" href="trait.ForksHandler.html" title="trait frame_suite::forks::ForksHandler">Forks<wbr>Handler</a></dt><dd>Fork-aware local branch collection framework for pallet/module state.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.block_key.html" title="fn frame_suite::forks::block_key">block_<wbr>key</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Block routing identity key</dd><dt><a class="fn" href="fn.branch_key.html" title="fn frame_suite::forks::branch_key">branch_<wbr>key</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Deterministic branch identity key</dd><dt><a class="fn" href="fn.divider_key.html" title="fn frame_suite::forks::divider_key">divider_<wbr>key</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Divider identity key</dd><dt><a class="fn" href="fn.load_value.html" title="fn frame_suite::forks::load_value">load_<wbr>value</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Load and decode a value from Persistent Node-Local storage.</dd><dt><a class="fn" href="fn.make_hash.html" title="fn frame_suite::forks::make_hash">make_<wbr>hash</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Deterministic storage hash builder.</dd><dt><a class="fn" href="fn.store_encoded.html" title="fn frame_suite::forks::store_encoded">store_<wbr>encoded</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Persist an encoded value into Persistent Node-Local storage.</dd></dl></section></div></main></body></html>

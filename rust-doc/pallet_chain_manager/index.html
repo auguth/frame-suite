@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The Chain Manager pallet is the primary orchestration layer for managing session validators as a coordinated, session-driven system."><title>pallet_chain_manager - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="pallet_chain_manager" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../pallet_chain_manager/index.html">pallet_<wbr>chain_<wbr>manager</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#architectural-role" title="Architectural Role">Architectural Role</a></li><li><a href="#validator-lifecycle" title="Validator Lifecycle">Validator Lifecycle</a></li><li><a href="#execution-model" title="Execution Model">Execution Model</a></li><li><a href="#economic-model" title="Economic Model">Economic Model</a></li><li><a href="#design-intent" title="Design Intent">Design Intent</a></li><li><a href="#development-feature-gate" title="Development Feature Gate">Development Feature Gate</a></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>pallet_chain_manager</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/pallet_chain_manager/lib.rs.html#16-5435">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>The <strong>Chain Manager pallet</strong> is the primary orchestration layer for
+managing <strong>session validators</strong> as a coordinated, session-driven system.</p>
+<p>It governs the full validator lifecycle spanning participation,
+election, activation, rewards, and penalties by materializing the
+abstractions defined in <a href="../frame_suite/blockchain/index.html" title="mod frame_suite::blockchain"><code>frame_suite::blockchain</code></a>
+into a concrete runtime execution model.</p>
+<p>This pallet does not introduce new primitives. Instead, it binds together
+traits, plugins, and adapters to drive deterministic validator selection
+and behavior across sessions, enabling the game-theoretic guarantees
+required for a decentralized network.</p>
+<ul>
+<li><a href="pallet/trait.Config.html" title="trait pallet_chain_manager::pallet::Config"><code>Config</code></a> - Runtime configuration</li>
+<li><a href="pallet/enum.Call.html" title="enum pallet_chain_manager::pallet::Call"><code>Call</code></a> - Dispatchable extrinsics (includes unsigned)</li>
+<li><a href="pallet/struct.Pallet.html" title="struct pallet_chain_manager::pallet::Pallet"><code>Pallet</code></a> - External usage and trait implementations</li>
+</ul>
+<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
+<p>A <strong>validator (author)</strong> in this system is an actor who:</p>
+<ul>
+<li>signals intent to participate in validation,</li>
+<li>submits affidavit data (backers) for election,</li>
+<li>competes in a session-based selection process,</li>
+<li>becomes an active session validator upon selection,</li>
+<li>receives rewards or penalties based on behavior.</li>
+</ul>
+<p>Validators are modeled as <strong>session-scoped actors</strong>, where
+participation, selection, and compensation are tied to
+deterministic session transitions.</p>
+<h3 id="architectural-role"><a class="doc-anchor" href="#architectural-role">§</a>Architectural Role</h3>
+<p>The pallet acts as an <strong>orchestration boundary</strong>, integrating:</p>
+<ul>
+<li>role management and funding via <a href="pallet/trait.Config.html#associatedtype.RoleAdapter" title="associated type pallet_chain_manager::pallet::Config::RoleAdapter"><code>Config::RoleAdapter</code></a></li>
+<li>election logic via <a href="pallet/trait.Config.html#associatedtype.ElectionAdapter" title="associated type pallet_chain_manager::pallet::Config::ElectionAdapter"><code>Config::ElectionAdapter</code></a></li>
+<li>asset interactions via <a href="pallet/trait.Config.html#associatedtype.Asset" title="associated type pallet_chain_manager::pallet::Config::Asset"><code>Config::Asset</code></a></li>
+<li>session and authorship via [<code>pallet_session</code>] and [<code>pallet_authorship</code>]</li>
+<li>offence handling via [<code>pallet_offences</code>]</li>
+</ul>
+<p>It only tightly integrates with these essential core pallets, allowing
+any Substrate runtime that composes them to adopt this pallet
+for validator lifecycle and session management.</p>
+<h3 id="validator-lifecycle"><a class="doc-anchor" href="#validator-lifecycle">§</a>Validator Lifecycle</h3>
+<p>The system progresses through <strong>session-scoped phases</strong>:</p>
+<ul>
+<li>
+<p><strong>Pursuing Validation</strong><br />
+Authors signal intent to validate and may pause participation (<code>chill</code>).</p>
+</li>
+<li>
+<p><strong>Affidavit Phase</strong><br />
+Active participants submit affidavit declarations representing
+election weights for the upcoming validator set.</p>
+</li>
+<li>
+<p><strong>Election Phase</strong><br />
+Elections are executed for all active participants to determine
+the next session validators.</p>
+</li>
+<li>
+<p><strong>Activation</strong><br />
+Elected authors transition into active session validators.</p>
+</li>
+<li>
+<p><strong>Reward &amp; Penalty</strong><br />
+Validators are compensated or penalized based on behavior.</p>
+</li>
+</ul>
+<p>All transitions are derived relative to session progression,
+ensuring predictable and deterministic execution.</p>
+<h3 id="execution-model"><a class="doc-anchor" href="#execution-model">§</a>Execution Model</h3>
+<p>The pallet operates as a <strong>session-driven orchestration engine</strong>,
+primarily driven by <strong>offchain workers and unsigned extrinsics</strong>.</p>
+<p>Once validation intent is externally invoked by an author, the system
+progresses automatically:</p>
+<ul>
+<li>
+<p><strong>Offchain workers</strong><br />
+coordinate affidavit submission, election execution, and key rotation</p>
+</li>
+<li>
+<p><strong>Unsigned extrinsics</strong><br />
+are submitted to finalize deterministic state transitions</p>
+</li>
+<li>
+<p><strong>Block hooks (<code>on_initialize</code>)</strong><br />
+process accumulated state and scheduled transitions</p>
+</li>
+</ul>
+<p>This enables:</p>
+<ul>
+<li>automated validator lifecycle progression</li>
+<li>continuous election participation for active candidates</li>
+<li>minimal manual interaction beyond intent signaling</li>
+</ul>
+<h3 id="economic-model"><a class="doc-anchor" href="#economic-model">§</a>Economic Model</h3>
+<p>Rewards and penalties are <strong>externally defined and injected</strong>:</p>
+<ul>
+<li><a href="pallet/trait.Config.html#associatedtype.InflationModel" title="associated type pallet_chain_manager::pallet::Config::InflationModel"><code>Config::InflationModel</code></a>: derives total session payout</li>
+<li><a href="pallet/trait.Config.html#associatedtype.RewardModel" title="associated type pallet_chain_manager::pallet::Config::RewardModel"><code>Config::RewardModel</code></a>: distributes rewards from points</li>
+<li><a href="pallet/trait.Config.html#associatedtype.PenaltyModel" title="associated type pallet_chain_manager::pallet::Config::PenaltyModel"><code>Config::PenaltyModel</code></a>: transforms and normalizes penalties</li>
+</ul>
+<p>Final application is delegated via <a href="pallet/trait.Config.html#associatedtype.RoleAdapter" title="associated type pallet_chain_manager::pallet::Config::RoleAdapter"><code>Config::RoleAdapter</code></a>,
+ensuring consistent integration with role and funding systems.</p>
+<h3 id="design-intent"><a class="doc-anchor" href="#design-intent">§</a>Design Intent</h3>
+<p>This pallet is a <strong>composition layer</strong>, not a monolithic system:</p>
+<ul>
+<li>structure is defined via traits</li>
+<li>behavior is injected via plugins</li>
+<li>coordination is driven by sessions and routines</li>
+</ul>
+<p>enabling a modular, replaceable, and evolvable validator system
+while preserving strong type safety and deterministic execution.</p>
+<h3 id="development-feature-gate"><a class="doc-anchor" href="#development-feature-gate">§</a>Development Feature Gate</h3>
+<p>This pallet includes a <code>dev</code> feature gate for development and testing.</p>
+<p>Core functionality is exposed via public APIs for RPC and UI usage.
+The <code>dev</code> feature provides thin wrapper extrinsics and extended
+event emissions for direct inspection.</p>
+<p>This feature must be disabled in production runtimes due to
+additional debugging overhead.</p>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt id="reexport.AffidavitCryptoEd25519"><code>pub use crate::crypto::<a class="struct" href="crypto/ed25519/struct.AffidavitCryptoEd25519.html" title="struct pallet_chain_manager::crypto::ed25519::AffidavitCryptoEd25519">AffidavitCryptoEd25519</a>;</code></dt><dt id="reexport.AffidavitCryptoSr25519"><code>pub use crate::crypto::<a class="struct" href="crypto/sr25519/struct.AffidavitCryptoSr25519.html" title="struct pallet_chain_manager::crypto::sr25519::AffidavitCryptoSr25519">AffidavitCryptoSr25519</a>;</code></dt><dt><code>pub use <a class="mod" href="pallet/index.html" title="mod pallet_chain_manager::pallet">pallet</a>::*;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="blockchain/index.html" title="mod pallet_chain_manager::blockchain">blockchain</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Provides the <strong>core runtime logic for managing blockchain actors</strong>
+(authors/validators) across their full lifecycle.</dd><dt><a class="mod" href="crypto/index.html" title="mod pallet_chain_manager::crypto">crypto</a></dt><dd>Affidavit crypto and payload types for offchain operations used for validation,
+affidavit declaration, and author election</dd><dt><a class="mod" href="mocks/index.html" title="mod pallet_chain_manager::mocks">mocks</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="mod" href="offence/index.html" title="mod pallet_chain_manager::offence">offence</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Implements [<code>OnOffenceHandler</code>] for <a href="pallet/struct.Pallet.html" title="struct pallet_chain_manager::pallet::Pallet"><code>Pallet</code></a>.</dd><dt><a class="mod" href="pallet/index.html" title="mod pallet_chain_manager::pallet">pallet</a></dt><dd>The <code>pallet</code> module in each FRAME pallet hosts the most important items needed
+to construct this pallet.</dd><dt><a class="mod" href="roles/index.html" title="mod pallet_chain_manager::roles">roles</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Implements <a href="../frame_suite/roles/trait.RoleActivity.html" title="trait frame_suite::roles::RoleActivity"><code>RoleActivity</code></a> for <a href="pallet/struct.Pallet.html" title="struct pallet_chain_manager::pallet::Pallet"><code>Pallet</code></a>.</dd><dt><a class="mod" href="routines/index.html" title="mod pallet_chain_manager::routines">routines</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Offchain routines orchestrating the affidavit lifecycle and election execution.</dd><dt><a class="mod" href="session/index.html" title="mod pallet_chain_manager::session">session</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Implements [<code>SessionManager</code>] for <a href="pallet/struct.Pallet.html" title="struct pallet_chain_manager::pallet::Pallet"><code>Pallet</code></a>.</dd><dt><a class="mod" href="types/index.html" title="mod pallet_chain_manager::types">types</a></dt><dd><strong>Core types and aliases for the Chain Manager system.</strong></dd><dt><a class="mod" href="weights/index.html" title="mod pallet_chain_manager::weights">weights</a></dt><dd>Autogenerated weights for <code>pallet_chain_manager</code></dd></dl><script type="text/json" id="notable-traits-data">{"&'static [u8]":"<h3>Notable traits for <code>&amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a> for &amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</div>","&<Vec<T, A> as Index<I>>::Output":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","&[u8]":"<h3>Notable traits for <code>&amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a> for &amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</div>","&mut <Vec<T, A> as Index<I>>::Output":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","&mut [u8]":"<h3>Notable traits for <code>&amp;mut [<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for &amp;mut [<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</div>","<Vec<T, A> as IntoIterator>::IntoIter":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","<Vec<T> as IntoDeserializer<'de, E>>::Deserializer":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>","Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>"}</script></section></div></main></body></html>

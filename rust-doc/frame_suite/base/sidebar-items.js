@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["Asset","Buffer","Collection","Countable","CrossEnvType","Delimited","Elastic","Fractional","Growable","Indexable","Keyed","MetaAware","Percentage","Portable","Probe","RuntimeEnum","RuntimeError","RuntimeNum","RuntimeType","Sortable","Storable","Time"]};

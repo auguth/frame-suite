@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["pallet_authors",[["impl&lt;T: <a class=\"trait\" href=\"pallet_authors/pallet/trait.Config.html\" title=\"trait pallet_authors::pallet::Config\">Config</a>&gt; BuildStorage for <a class=\"struct\" href=\"pallet_authors/pallet/struct.GenesisConfig.html\" title=\"struct pallet_authors::pallet::GenesisConfig\">GenesisConfig</a>&lt;T&gt;"]]],["pallet_chain_manager",[["impl&lt;T: <a class=\"trait\" href=\"pallet_chain_manager/pallet/trait.Config.html\" title=\"trait pallet_chain_manager::pallet::Config\">Config</a>&gt; BuildStorage for <a class=\"struct\" href=\"pallet_chain_manager/pallet/struct.GenesisConfig.html\" title=\"struct pallet_chain_manager::pallet::GenesisConfig\">GenesisConfig</a>&lt;T&gt;"]]],["pallet_commitment",[["impl&lt;T: <a class=\"trait\" href=\"pallet_commitment/pallet/trait.Config.html\" title=\"trait pallet_commitment::pallet::Config\">Config</a>&lt;I&gt;, I: 'static&gt; BuildStorage for <a class=\"struct\" href=\"pallet_commitment/pallet/struct.GenesisConfig.html\" title=\"struct pallet_commitment::pallet::GenesisConfig\">GenesisConfig</a>&lt;T, I&gt;"]]],["pallet_xp",[["impl&lt;T: <a class=\"trait\" href=\"pallet_xp/pallet/trait.Config.html\" title=\"trait pallet_xp::pallet::Config\">Config</a>&lt;I&gt;, I: 'static&gt; BuildStorage for <a class=\"struct\" href=\"pallet_xp/pallet/struct.GenesisConfig.html\" title=\"struct pallet_xp::pallet::GenesisConfig\">GenesisConfig</a>&lt;T, I&gt;"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[341,372,381,341]}

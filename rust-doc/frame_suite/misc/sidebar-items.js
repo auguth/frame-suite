@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Disposition","Polarity"],"struct":["Ignore"],"trait":["Accrete","Directive","Extent","PositionIndex"]};

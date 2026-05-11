@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ACTIVE_AFDT_KEY","EMOJI_DEBUG","EMOJI_ERROR","EMOJI_INFO","EMOJI_WARN","LOG_TARGET_AFDT","LOG_TARGET_ELEC","NEXT_AFDT_KEY"],"fn":["level_emoji","std_fmt"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["chill","declare","elect","force_genesis_config","inspect_affidavit","inspect_elects","prepare_validation_payload","validate"]};

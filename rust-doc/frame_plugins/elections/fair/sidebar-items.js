@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["BalancedModel","MaxMinLoadModel","PhragmenModel","PhragmenModelConfig","ThresholdFairModel","ThresholdFairModelConfig","TopDownFairModel"]};

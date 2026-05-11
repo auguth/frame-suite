@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Higher-Level Trait for performing election of authors (e.g., block producers, validators, etc) in a FRAME-based runtime."><title>ElectAuthors in frame_suite::blockchain - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Elect<wbr>Authors</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#type-parameters" title="Type Parameters">Type Parameters</a></li><li><a href="#runner-model" title="Runner Model">Runner Model</a></li><li><a href="#usage" title="Usage">Usage</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Candidates" title="Candidates">Candidates</a></li><li><a href="#associatedtype.Elected" title="Elected">Elected</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.can_process_election" title="can_process_election">can_process_election</a></li><li><a href="#tymethod.prepare_authors" title="prepare_authors">prepare_authors</a></li><li><a href="#tymethod.prepare_candidates" title="prepare_candidates">prepare_candidates</a></li><li><a href="#tymethod.reveal" title="reveal">reveal</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.on_elect_fail" title="on_elect_fail">on_elect_fail</a></li><li><a href="#method.on_elect_success" title="on_elect_success">on_elect_success</a></li><li><a href="#method.prepare_election" title="prepare_election">prepare_election</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>blockchain</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">blockchain</a></div><h1>Trait <span class="trait">ElectAuthors</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/blockchain.rs.html#134-262">Source</a> </span></div><pre class="rust item-decl"><code>pub trait ElectAuthors&lt;Author, ElectionWeight&gt;<div class="where">where
+    Author: <a class="trait" href="../base/trait.Keyed.html" title="trait frame_suite::base::Keyed">Keyed</a>,
+    ElectionWeight: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/cmp/trait.Ord.html" title="trait core::cmp::Ord">Ord</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a>,</div>{
+    type <a href="#associatedtype.Candidates" class="associatedtype">Candidates</a>: <a class="trait" href="../base/trait.Buffer.html" title="trait frame_suite::base::Buffer">Buffer</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.tuple.html">(Author, ElectionWeight)</a>&gt;;
+    type <a href="#associatedtype.Elected" class="associatedtype">Elected</a>: <a class="trait" href="../base/trait.Buffer.html" title="trait frame_suite::base::Buffer">Buffer</a>&lt;Author&gt;;
+
+    // Required methods
+    fn <a href="#tymethod.can_process_election" class="fn">can_process_election</a>(_runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reveal" class="fn">reveal</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self::<a class="associatedtype" href="trait.ElectAuthors.html#associatedtype.Elected" title="type frame_suite::blockchain::ElectAuthors::Elected">Elected</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.prepare_candidates" class="fn">prepare_candidates</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.ElectAuthors.html#associatedtype.Candidates" title="type frame_suite::blockchain::ElectAuthors::Candidates">Candidates</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.prepare_authors" class="fn">prepare_authors</a>(candidates: Self::<a class="associatedtype" href="trait.ElectAuthors.html#associatedtype.Candidates" title="type frame_suite::blockchain::ElectAuthors::Candidates">Candidates</a>) -&gt; DispatchResult;
+
+    // Provided methods
+    fn <a href="#method.prepare_election" class="fn">prepare_election</a>(runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_elect_success" class="fn">on_elect_success</a>(_runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_elect_fail" class="fn">on_elect_fail</a>(_runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;, _err: DispatchError) { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Higher-Level Trait for performing election of authors (e.g., block producers,
+validators, etc) in a FRAME-based runtime.</p>
+<p>This trait abstracts the process of <strong>candidate preparation</strong>, <strong>author
+selection</strong>, and <strong>election result handling</strong> in a generic,
+<a href="../plugins/index.html" title="mod frame_suite::plugins"><code>pluggable</code></a> way.</p>
+<p>The design allows different implementations to define their own election logic -
+such as weighted randomness, reputation-based scoring, or round-robin selection -
+while maintaining a consistent interface.</p>
+<h3 id="type-parameters"><a class="doc-anchor" href="#type-parameters">§</a>Type Parameters</h3>
+<ul>
+<li><code>Author</code>: The type representing an author or candidate</li>
+<li><code>ElectionWeight</code>: The type representing each candidate’s election weight,
+score, or stake. Should be comparable <a href="https://doc.rust-lang.org/1.90.0/core/cmp/trait.Ord.html" title="trait core::cmp::Ord"><code>Ord</code></a>.</li>
+</ul>
+<h3 id="runner-model"><a class="doc-anchor" href="#runner-model">§</a>Runner Model</h3>
+<p>The election process can be executed in two modes:</p>
+<ul>
+<li><strong>Global execution (<code>None</code>)</strong>: The runtime itself triggers and executes
+the election (e.g., via inherent or root-driven logic).</li>
+<li><strong>Author-driven execution (<code>Some(Author)</code>)</strong>: A specific author acts as a
+<strong>runner</strong>, voluntarily or by assignment, to execute the election logic.</li>
+</ul>
+<p>This enables flexible designs where:</p>
+<ul>
+<li>Elections can be decentralized and triggered by participants.</li>
+<li>A designated author (e.g., block producer, coordinator) can perform elections.</li>
+<li>The runtime can still retain full control when required.</li>
+</ul>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<p>A runtime pallet implementing this trait would typically:</p>
+<ol>
+<li>Collect candidates via <a href="trait.ElectAuthors.html#tymethod.prepare_candidates"><code>Self::prepare_candidates</code></a>.</li>
+<li>Elect authors via <a href="trait.ElectAuthors.html#tymethod.prepare_authors"><code>Self::prepare_authors</code></a>.</li>
+<li>Handle success or failure with <a href="trait.ElectAuthors.html#method.on_elect_success"><code>Self::on_elect_success</code></a> or
+<a href="trait.ElectAuthors.html#method.on_elect_fail"><code>Self::on_elect_fail</code></a>, optionally using the <code>runner</code>.</li>
+<li>Reveal the final elected authors with <a href="trait.ElectAuthors.html#tymethod.reveal"><code>Self::reveal</code></a>.</li>
+</ol>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Candidates" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#140">Source</a><h4 class="code-header">type <a href="#associatedtype.Candidates" class="associatedtype">Candidates</a>: <a class="trait" href="../base/trait.Buffer.html" title="trait frame_suite::base::Buffer">Buffer</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.tuple.html">(Author, ElectionWeight)</a>&gt;</h4></section></summary><div class="docblock"><p>Type representing all candidates in the election.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Elected" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#143">Source</a><h4 class="code-header">type <a href="#associatedtype.Elected" class="associatedtype">Elected</a>: <a class="trait" href="../base/trait.Buffer.html" title="trait frame_suite::base::Buffer">Buffer</a>&lt;Author&gt;</h4></section></summary><div class="docblock"><p>Type representing the set of successfully elected authors.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.can_process_election" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#164">Source</a><h4 class="code-header">fn <a href="#tymethod.can_process_election" class="fn">can_process_election</a>(_runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Determines whether the election process can currently be run.</p>
+<h6 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h6>
+<ul>
+<li><code>runner</code>: Optional executor of the election process.
+<ul>
+<li><code>None</code>: runtime-driven execution.</li>
+<li><code>Some(author)</code>: author-driven execution.</li>
+</ul>
+</li>
+</ul>
+<p>This is a pre-check to ensure that conditions are right for running
+an election. For example, a runtime may enforce:</p>
+<ul>
+<li>Minimum number of candidates.</li>
+<li>Required system state (e.g., epoch boundaries).</li>
+<li>Timing constraints or cooldown periods.</li>
+<li>Authorization or eligibility of the <code>runner</code>.</li>
+</ul>
+<p>Returns <code>Ok(())</code> if the election is allowed to proceed, <code>DispatchError</code> otherwise.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reveal" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#174">Source</a><h4 class="code-header">fn <a href="#tymethod.reveal" class="fn">reveal</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self::<a class="associatedtype" href="trait.ElectAuthors.html#associatedtype.Elected" title="type frame_suite::blockchain::ElectAuthors::Elected">Elected</a>&gt;</h4></section></summary><div class="docblock"><p>Returns the final set of recently elected authors.</p>
+<p>Implementations may retrieve this from storage or memory.
+This is usually called after a successful <a href="trait.ElectAuthors.html#method.prepare_election"><code>Self::prepare_election</code></a> run.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.prepare_candidates" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#186">Source</a><h4 class="code-header">fn <a href="#tymethod.prepare_candidates" class="fn">prepare_candidates</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.ElectAuthors.html#associatedtype.Candidates" title="type frame_suite::blockchain::ElectAuthors::Candidates">Candidates</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Prepares the set of candidates for the next election round.</p>
+<p>Typically this would collect eligible authors, validators, or accounts
+from storage or an external data source, and attach their election weights.</p>
+<p>Returns either the collection of candidates or an error if preparation fails.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.prepare_authors" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#199">Source</a><h4 class="code-header">fn <a href="#tymethod.prepare_authors" class="fn">prepare_authors</a>(candidates: Self::<a class="associatedtype" href="trait.ElectAuthors.html#associatedtype.Candidates" title="type frame_suite::blockchain::ElectAuthors::Candidates">Candidates</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Main entry point for the election process.</p>
+<p>Takes a collection of candidates (with weights) and performs
+the author election logic - storing or returning the result as appropriate.</p>
+<p>Returns <code>Ok(())</code> if election succeeds, or <code>Err(DispatchError)</code> if
+election logic fails.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.prepare_election" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#218-227">Source</a><h4 class="code-header">fn <a href="#method.prepare_election" class="fn">prepare_election</a>(runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>High-level orchestration function for running the entire election flow.</p>
+<h6 id="parameters-1"><a class="doc-anchor" href="#parameters-1">§</a>Parameters</h6>
+<ul>
+<li><code>runner</code>: Optional executor of the election process.
+<ul>
+<li><code>None</code>: election is executed by the runtime.</li>
+<li><code>Some(author)</code>: a specific author executes the election.</li>
+</ul>
+</li>
+</ul>
+<h6 id="workflow"><a class="doc-anchor" href="#workflow">§</a>Workflow</h6>
+<ol>
+<li>Calls <a href="trait.ElectAuthors.html#tymethod.can_process_election"><code>Self::can_process_election</code></a> to validate execution conditions.</li>
+<li>Calls <a href="trait.ElectAuthors.html#tymethod.prepare_candidates"><code>Self::prepare_candidates</code></a> to collect all eligible candidates.</li>
+<li>Passes them to <a href="trait.ElectAuthors.html#tymethod.prepare_authors"><code>Self::prepare_authors</code></a> to perform the election.</li>
+<li>Triggers <a href="trait.ElectAuthors.html#method.on_elect_success"><code>Self::on_elect_success</code></a> or <a href="trait.ElectAuthors.html#method.on_elect_fail"><code>Self::on_elect_fail</code></a> with <code>runner</code>.</li>
+</ol>
+<p>This ensures consistent election control flow, centralized error handling,
+and proper attribution of execution responsibility.</p>
+<p>Returns <code>DispatchError</code> if any stage fails.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_elect_success" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#245">Source</a><h4 class="code-header">fn <a href="#method.on_elect_success" class="fn">on_elect_success</a>(_runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;)</h4></section></summary><div class="docblock"><p>Hook called when an election completes successfully.</p>
+<h6 id="parameters-2"><a class="doc-anchor" href="#parameters-2">§</a>Parameters</h6>
+<ul>
+<li><code>runner</code>: Optional executor of the election.</li>
+</ul>
+<p>To perform post-election actions such as:</p>
+<ul>
+<li>Persisting results to storage.</li>
+<li>Emitting pallet events.</li>
+<li>Updating system state or metrics.</li>
+<li>Attributing execution responsibility or rewards to the runner.</li>
+</ul>
+<p>Default implementation is no-op</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_elect_fail" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#261">Source</a><h4 class="code-header">fn <a href="#method.on_elect_fail" class="fn">on_elect_fail</a>(_runner: &amp;<a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Author&gt;, _err: DispatchError)</h4></section></summary><div class="docblock"><p>Hook called when an election fails.</p>
+<h6 id="parameters-3"><a class="doc-anchor" href="#parameters-3">§</a>Parameters</h6>
+<ul>
+<li><code>runner</code>: Optional executor of the election.</li>
+<li><code>err</code>: The error that caused the failure.</li>
+</ul>
+<p>Runtime implementations can override this to:</p>
+<ul>
+<li>Emit error events.</li>
+<li>Retry logic.</li>
+<li>Fallback to default authors.</li>
+<li>Attribute failure or responsibility to the runner.</li>
+</ul>
+<p>The passed <code>DispatchError</code> provides detailed context on what went wrong.
+Default implementation is no-op</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/blockchain/trait.ElectAuthors.js" async></script></section></div></main></body></html>

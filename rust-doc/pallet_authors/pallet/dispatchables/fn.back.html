@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Provide economic backing support to an author using a supported funding model."><title>back in pallet_authors::pallet::dispatchables - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="pallet_authors" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../pallet_authors/index.html">pallet_<wbr>authors</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">back</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#funding-models" title="Funding Models">Funding Models</a></li><li><a href="#guarantees" title="Guarantees">Guarantees</a></li><li><a href="#execution-controls" title="Execution Controls">Execution Controls</a></li><li><a href="#warning-doc-only" title="Warning: Doc-Only">Warning: Doc-Only</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In pallet_<wbr>authors::<wbr>pallet::<wbr>dispatchables</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">pallet_authors</a>::<wbr><a href="../index.html">pallet</a>::<wbr><a href="index.html">dispatchables</a></div><h1>Function <span class="fn">back</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/pallet_authors/lib.rs.html#144">Source</a> </span></div><pre class="rust item-decl"><code>pub fn back&lt;T: <a class="trait" href="../trait.Config.html" title="trait pallet_authors::pallet::Config">Config</a>&gt;(
+    via: <a class="enum" href="../../types/enum.FundingTarget.html" title="enum pallet_authors::types::FundingTarget">FundingTarget</a>&lt;T&gt;,
+    value: <a class="type" href="../../types/type.AuthorAsset.html" title="type pallet_authors::types::AuthorAsset">AuthorAsset</a>&lt;T&gt;,
+    fortitude: <a class="enum" href="../../types/enum.FortitudeWrapper.html" title="enum pallet_authors::types::FortitudeWrapper">FortitudeWrapper</a>,
+    precision: <a class="enum" href="../../types/enum.PrecisionWrapper.html" title="enum pallet_authors::types::PrecisionWrapper">PrecisionWrapper</a>,
+)</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Provide <strong>economic backing</strong> support to an author using a supported funding model.</p>
+<p>This extrinsic allows the caller to economically support an author by
+locking assets under the <a href="../enum.FreezeReason.html#variant.AuthorFunding" title="variant pallet_authors::pallet::FreezeReason::AuthorFunding"><code>FreezeReason::AuthorFunding</code></a> commitment domain.
+Funding directly affects an author’s eligibility, exposure, and election weight.</p>
+<h3 id="funding-models"><a class="doc-anchor" href="#funding-models">§</a>Funding Models</h3>
+<ul>
+<li><strong>Direct:</strong> Funds are committed explicitly to a single author.</li>
+<li><strong>Index:</strong> Route funds through an index resolving to multiple author digests.</li>
+<li><strong>Pool:</strong> Commit funds to a managed pool of authors with commission-based withdrawals.</li>
+</ul>
+<h3 id="guarantees"><a class="doc-anchor" href="#guarantees">§</a>Guarantees</h3>
+<ul>
+<li>Funds are <strong>fully locked</strong> and cannot be double-used elsewhere.</li>
+<li>Author collateral is <strong>never mixed</strong> with external funding.</li>
+<li><a href="../type.MinFund.html" title="type pallet_authors::pallet::MinFund"><code>MinFund</code></a> and <a href="../type.MaxExposure.html" title="type pallet_authors::pallet::MaxExposure"><code>MaxExposure</code></a> are strictly enforced.</li>
+<li>Local minimum and maximum limits enforced by authors and underlying
+systems are considered.</li>
+<li>Funding is rejected if the resolved author or digest is invalid.</li>
+</ul>
+<h3 id="execution-controls"><a class="doc-anchor" href="#execution-controls">§</a>Execution Controls</h3>
+<ul>
+<li><code>precision</code> defines how strictly the requested amount must be satisfied:
+<ul>
+<li>[<code>Precision::Exact</code>]: Requires full amount commitment.</li>
+<li>[<code>Precision::BestEffort</code>]: Allows partial fulfillment where supported.</li>
+</ul>
+</li>
+<li><code>force</code> defines how funds are sourced:
+<ul>
+<li>[<code>Fortitude::Force</code>]: Uses the caller’s <strong>liquid balance</strong>, enforcing
+the commitment directly.</li>
+<li>[<code>Fortitude::Polite</code>]: Uses funds already deposited in the commitment
+reserve (if <a href="../trait.Config.html#associatedtype.CommitmentAdapter" title="associated type pallet_authors::pallet::Config::CommitmentAdapter"><code>Config::CommitmentAdapter</code></a> == <code>pallet_commitment</code>).</li>
+</ul>
+</li>
+</ul>
+<p><strong>Emits</strong> via internal hook:
+- <a href="../enum.Event.html#variant.AuthorFunded" title="variant pallet_authors::pallet::Event::AuthorFunded"><code>Event::AuthorFunded</code></a> if direct author backing
+- <a href="../enum.Event.html#variant.IndexFunded" title="variant pallet_authors::pallet::Event::IndexFunded"><code>Event::IndexFunded</code></a> multiple authors via an index
+- <a href="../enum.Event.html#variant.PoolFunded" title="variant pallet_authors::pallet::Event::PoolFunded"><code>Event::PoolFunded</code></a> multiple authors via a managed pool</p>
+<h2 id="warning-doc-only"><a class="doc-anchor" href="#warning-doc-only">§</a>Warning: Doc-Only</h2>
+<p>This function is an automatically generated, and is doc-only, uncallable
+stub. See the real version in
+<a href="../struct.Pallet.html#method.back" title="associated function pallet_authors::pallet::Pallet::back"><code>Pallet::back</code></a>.</p>
+</div></details></section></div></main></body></html>

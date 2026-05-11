@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Force-update a selected genesis configuration parameter."><title>force_genesis_config in pallet_authors::pallet::dispatchables - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="pallet_authors" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../pallet_authors/index.html">pallet_<wbr>authors</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">force_<wbr>genesis_<wbr>config</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#warning-doc-only" title="Warning: Doc-Only">Warning: Doc-Only</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In pallet_<wbr>authors::<wbr>pallet::<wbr>dispatchables</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">pallet_authors</a>::<wbr><a href="../index.html">pallet</a>::<wbr><a href="index.html">dispatchables</a></div><h1>Function <span class="fn">force_genesis_config</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/pallet_authors/lib.rs.html#144">Source</a> </span></div><pre class="rust item-decl"><code>pub fn force_genesis_config&lt;T: <a class="trait" href="../trait.Config.html" title="trait pallet_authors::pallet::Config">Config</a>&gt;(field: <a class="enum" href="../../types/enum.ForceGenesisConfig.html" title="enum pallet_authors::types::ForceGenesisConfig">ForceGenesisConfig</a>&lt;T&gt;)</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Force-update a selected genesis configuration parameter.</p>
+<p><strong>Origin:</strong> Root only.</p>
+<p>This extrinsic allows privileged modification of runtime parameters
+that were originally defined at genesis.</p>
+<ul>
+<li><code>ProbationPeriod</code> - Updates the number of blocks authors must remain in probation.</li>
+<li><code>ReduceProbationBy</code> - Updates how much probation is reduced on good behavior.</li>
+<li><code>IncreaseProbationBy</code> - Updates how much probation is increased on misbehavior.</li>
+<li><code>RewardsBuffer</code> - Updates the delay (in blocks) before rewards are finalized.</li>
+<li><code>PenaltiesBuffer</code> - Updates the delay (in blocks) before penalties are enforced.</li>
+<li><code>MaxElected</code> - Updates the maximum number of authors that can be elected.</li>
+<li><code>MinElected</code> - Updates the minimum number of authors required for a valid election.</li>
+<li><code>EnforceMaxElected</code> - Toggles strict enforcement of the <code>MaxElected</code> limit.</li>
+<li><code>MinFund</code> - Updates the minimum funding required per backing operation.</li>
+<li><code>MaxExposure</code> - Updates the maximum allowed exposure per funding operation.</li>
+<li><code>MinCollateral</code> - Updates the minimum collateral required for authors.</li>
+</ul>
+<p>The call enforces consistency constraints where applicable:</p>
+<ul>
+<li>Values that must be non-zero will fail with <a href="../enum.Error.html#variant.NonZeroConfigRequired" title="variant pallet_authors::pallet::Error::NonZeroConfigRequired"><code>Error::NonZeroConfigRequired</code></a>.</li>
+<li>Fails with <a href="../enum.Error.html#variant.MinGreaterThanMax" title="variant pallet_authors::pallet::Error::MinGreaterThanMax"><code>Error::MinGreaterThanMax</code></a> if:
+<ul>
+<li><code>MinElected &gt; MaxElected</code>, or</li>
+<li><code>MinFund &gt; MaxExposure</code>, or</li>
+<li><code>MaxElected &lt; MinElected</code>, or</li>
+<li><code>MaxExposure &lt; MinFund</code>.</li>
+</ul>
+</li>
+</ul>
+<p>This call directly overwrites storage and emits an event containing the
+updated configuration variant.</p>
+<h2 id="warning-doc-only"><a class="doc-anchor" href="#warning-doc-only">§</a>Warning: Doc-Only</h2>
+<p>This function is an automatically generated, and is doc-only, uncallable
+stub. See the real version in
+<a href="../struct.Pallet.html#method.force_genesis_config" title="associated function pallet_authors::pallet::Pallet::force_genesis_config"><code>Pallet::force_genesis_config</code></a>.</p>
+</div></details></section></div></main></body></html>

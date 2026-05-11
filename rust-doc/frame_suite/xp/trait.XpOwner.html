@@ -1,0 +1,111 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Trait for XP ownership and access control."><title>XpOwner in frame_suite::xp - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">XpOwner</a></h2><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Owner" title="Owner">Owner</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.is_owner" title="is_owner">is_owner</a></li><li><a href="#tymethod.set_owner" title="set_owner">set_owner</a></li><li><a href="#tymethod.xp_key_gen" title="xp_key_gen">xp_key_gen</a></li><li><a href="#tymethod.xp_of_owner" title="xp_of_owner">xp_of_owner</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.on_xp_transfer" title="on_xp_transfer">on_xp_transfer</a></li><li><a href="#method.transfer_owner" title="transfer_owner">transfer_owner</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>xp</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">xp</a></div><h1>Trait <span class="trait">XpOwner</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/xp.rs.html#339-470">Source</a> </span></div><pre class="rust item-decl"><code>pub trait XpOwner<div class="where">where
+    Self: <a class="trait" href="trait.XpSystem.html" title="trait frame_suite::xp::XpSystem">XpSystem</a>&lt;Extension: <a class="trait" href="trait.XpOwnerListener.html" title="trait frame_suite::xp::XpOwnerListener">XpOwnerListener</a> + <a class="trait" href="trait.XpSystemExtensions.html" title="trait frame_suite::xp::XpSystemExtensions">XpSystemExtensions</a>&lt;Via = Self&gt;&gt;,</div>{
+    type <a href="#associatedtype.Owner" class="associatedtype">Owner</a>: <a class="trait" href="../base/trait.Keyed.html" title="trait frame_suite::base::Keyed">Keyed</a>;
+
+    // Required methods
+    fn <a href="#tymethod.is_owner" class="fn">is_owner</a>(owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>, key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.xp_of_owner" class="fn">xp_of_owner</a>(
+        owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.xp_key_gen" class="fn">xp_key_gen</a>(
+        owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+        xp: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Xp" title="type frame_suite::xp::XpSystem::Xp">Xp</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_owner" class="fn">set_owner</a>(
+        current_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        new_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+    ) -&gt; DispatchResult;
+
+    // Provided methods
+    fn <a href="#method.transfer_owner" class="fn">transfer_owner</a>(
+        owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        new_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_xp_transfer" class="fn">on_xp_transfer</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, new_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>) { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Trait for XP ownership and access control.</p>
+<p>This trait defines the relationship between an <code>Owner</code> and their associated XP keys,
+enabling access control and transfer semantics for XP entries.</p>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Owner" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#347">Source</a><h4 class="code-header">type <a href="#associatedtype.Owner" class="associatedtype">Owner</a>: <a class="trait" href="../base/trait.Keyed.html" title="trait frame_suite::base::Keyed">Keyed</a></h4></section></summary><div class="docblock"><p>Represents the unique identifier for the owner of an XP entry.</p>
+<p>Typically used to associate XP records with accounts or verifiable entities
+in the system.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.is_owner" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#362">Source</a><h4 class="code-header">fn <a href="#tymethod.is_owner" class="fn">is_owner</a>(owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>, key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether the given owner controls the specified XP key.</p>
+<p>This is the primary access control check used by mutation and permission logic
+throughout the XP system. All ownership-sensitive operations should use this
+method to verify authorization before proceeding.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the owner controls the specified XP key.</li>
+<li><code>Err(DispatchError)</code> if the owner does not control the XP key.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.xp_of_owner" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#377">Source</a><h4 class="code-header">fn <a href="#tymethod.xp_of_owner" class="fn">xp_of_owner</a>(owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns all XP keys currently owned by the given owner.</p>
+<p>This method enables enumeration and inspection of an owner’s XP portfolio,
+useful for performing bulk operations, displaying user assets, or implementing
+ownership-based queries and analytics.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;XpKey&gt;)</code> containing all XP keys owned by the specified owner.</li>
+<li><code>Err(DispatchError)</code> if the owner lookup fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.xp_key_gen" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#400">Source</a><h4 class="code-header">fn <a href="#tymethod.xp_key_gen" class="fn">xp_key_gen</a>(
+    owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+    xp: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Xp" title="type frame_suite::xp::XpSystem::Xp">Xp</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Generates a deterministic XP key from the given owner and XP metadata.</p>
+<p>Abstracts the process of deriving a unique, reproducible XP key for a specific owner
+and XP record.</p>
+<p>Typically leverages <a href="../keys/trait.KeyGenFor.html" title="trait frame_suite::keys::KeyGenFor"><code>crate::keys::KeyGenFor</code></a> or a similar deterministic key
+derivation utility, combining the owner identifier, XP struct (or metadata), and a
+generated salt value.</p>
+<p>Guarantees that each XP key is unique for every distinct combination of owner, XP
+metadata, and salt. This enables support for namespaced, context-specific, or
+multi-record XP systems, allowing a single owner to possess multiple XP entries
+differentiated by context or purpose.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(XpKey)</code> containing the generated deterministic key.</li>
+<li><code>Err(DispatchError)</code> if key generation fails or cannot be deterministically derived.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_owner" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#450-454">Source</a><h4 class="code-header">fn <a href="#tymethod.set_owner" class="fn">set_owner</a>(
+    current_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    new_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Sets the owner of the given XP key.</p>
+<p>This updates the ownership mapping from the current owner to the new owner.</p>
+<h6 id="note"><a class="doc-anchor" href="#note">§</a>Note</h6>
+<p>This is a low-level primitive that directly mutates ownership without
+performing access control checks.</p>
+<p>This method enforces that an XP key cannot exist without an owner by
+requiring both the current and new owner during the update.</p>
+<p>Prefer using <a href="trait.XpOwner.html#method.transfer_owner"><code>transfer_owner</code></a> for safe ownership changes.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the owner is successfully updated.</li>
+<li><code>Err(DispatchError)</code> if the operation fails.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.transfer_owner" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#420-432">Source</a><h4 class="code-header">fn <a href="#method.transfer_owner" class="fn">transfer_owner</a>(
+    owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    new_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Transfers ownership of the given XP key from the current owner to a new owner.</p>
+<p>This function updates the ownership mapping to associate the XP key with the new owner.
+The transfer is immediate and permanent, removing all access rights from the previous
+owner and granting full control to the new owner.</p>
+<h6 id="note-1"><a class="doc-anchor" href="#note-1">§</a>Note</h6>
+<p>This is a high-level operation that enforces access control via <a href="trait.XpOwner.html#tymethod.is_owner"><code>Self::is_owner</code></a>.
+The underlying ownership update is performed by <a href="trait.XpOwner.html#tymethod.set_owner"><code>Self::set_owner</code></a>, which acts as
+the low-level primitive.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the ownership transfer completes successfully.</li>
+<li><code>Err(DispatchError)</code> if the transfer fails due to access control or system errors.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_xp_transfer" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#467-469">Source</a><h4 class="code-header">fn <a href="#method.on_xp_transfer" class="fn">on_xp_transfer</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, new_owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>)</h4></section></summary><div class="docblock"><p>Hook invoked after a successful XP ownership transfer.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit transfer events</li>
+<li>Update metadata or access rights tied to the XP key</li>
+<li>Trigger side effects related to ownership changes (optionally
+via listener <a href="trait.XpOwnerListener.html#method.xp_transferred" title="associated function frame_suite::xp::XpOwnerListener::xp_transferred"><code>XpOwnerListener::xp_transferred</code></a>)</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/xp/trait.XpOwner.js" async></script></section></div></main></body></html>

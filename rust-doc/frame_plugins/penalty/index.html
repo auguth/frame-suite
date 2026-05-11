@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Provides a suite of pluggable penalty models used to transform, normalize, and constrain penalty values associated with entities."><title>frame_plugins::penalty - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_plugins" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_plugins/index.html">frame_<wbr>plugins</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module penalty</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#design-philosophy" title="Design Philosophy">Design Philosophy</a></li><li><a href="#core-concepts" title="Core Concepts">Core Concepts</a></li><li><a href="#applications" title="Applications">Applications</a></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>plugins</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_plugins</a></div><h1>Module <span>penalty</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_plugins/penalty.rs.html#16-328">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Provides a suite of <strong>pluggable penalty models</strong> used to transform,
+normalize, and constrain penalty values associated with entities.</p>
+<p>These models are designed to operate as <strong>post-processing layers</strong>
+in governance, reputation, and scoring systems, ensuring that penalties
+remain <strong>bounded, fair, and resistant to extreme values</strong>.</p>
+<h3 id="design-philosophy"><a class="doc-anchor" href="#design-philosophy">§</a>Design Philosophy</h3>
+<p>Raw penalty values (e.g., slashing amounts, negative scores, or risk weights)
+can often be:</p>
+<ul>
+<li><strong>Unbounded</strong>: leading to disproportionate punishment</li>
+<li><strong>Noisy</strong>: zero or insignificant values</li>
+<li><strong>Inconsistent</strong>: varying widely across participants</li>
+</ul>
+<p>Penalty models provide a structured way to:</p>
+<ul>
+<li><strong>Cap excessive penalties</strong> to prevent extreme outcomes</li>
+<li><strong>Enforce minimum penalties</strong> to avoid negligible punishments</li>
+<li><strong>Normalize distributions</strong> for fair comparison across entities</li>
+<li><strong>Filter irrelevant values</strong> (e.g., zero penalties)</li>
+</ul>
+<p>By transforming raw penalties into <strong>controlled and comparable values</strong>,
+these plugins ensure stable and predictable behavior in downstream systems.</p>
+<h3 id="core-concepts"><a class="doc-anchor" href="#core-concepts">§</a>Core Concepts</h3>
+<ul>
+<li><strong>Input (<code>p</code>)</strong>: A penalty value associated with an entity.</li>
+<li><strong>Output (<code>f(p)</code>)</strong>: The transformed penalty after applying constraints.</li>
+<li><strong>Penalty List</strong>: A collection of <code>(Id, Penalty)</code> pairs.</li>
+<li><strong>Context</strong>: Optional configuration defining bounds (e.g., threshold, floor, cap).</li>
+</ul>
+<h3 id="applications"><a class="doc-anchor" href="#applications">§</a>Applications</h3>
+<ul>
+<li><strong>Governance systems</strong>: Slashing, penalties, or reputation decay</li>
+<li><strong>Reputation engines</strong>: Penalizing malicious or low-quality behavior</li>
+<li><strong>Scoring systems</strong>: Normalizing negative contributions</li>
+<li><strong>Risk models</strong>: Bounding downside exposure</li>
+</ul>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.CappedPenalty.html" title="struct frame_plugins::penalty::CappedPenalty">Capped<wbr>Penalty</a></dt><dd>Applies a <strong>bounded range constraint</strong> to penalties.</dd><dt><a class="struct" href="struct.CappedPenaltyConfig.html" title="struct frame_plugins::penalty::CappedPenaltyConfig">Capped<wbr>Penalty<wbr>Config</a></dt><dd>Configuration for <a href="struct.CappedPenalty.html" title="struct frame_plugins::penalty::CappedPenalty"><code>CappedPenalty</code></a> plugin.</dd><dt><a class="struct" href="struct.ThresholdPenalty.html" title="struct frame_plugins::penalty::ThresholdPenalty">Threshold<wbr>Penalty</a></dt><dd>Applies an <strong>upper threshold cap</strong> to penalties.</dd><dt><a class="struct" href="struct.ThresholdPenaltyConfig.html" title="struct frame_plugins::penalty::ThresholdPenaltyConfig">Threshold<wbr>Penalty<wbr>Config</a></dt><dd>Configuration for <a href="struct.ThresholdPenalty.html" title="struct frame_plugins::penalty::ThresholdPenalty"><code>ThresholdPenalty</code></a> plugin.</dd></dl></section></div></main></body></html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["AFDT_KEY_TYPE"],"mod":["ed25519","sr25519"],"struct":["AffidavitPayload","ElectionPayload","ValidatePayload"]};

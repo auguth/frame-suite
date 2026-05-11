@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AuthorStatus","ForceGenesisConfig","FortitudeWrapper","Funder","FundingTarget","PrecisionWrapper"],"struct":["AuthorInfo"],"type":["Author","AuthorAsset","AuthorDigest","Backer","BackingElectionWeight","Commission","ElectViaBacking","ElectViaInfluence","ElectedAuthors","IndexDigest","PoolDigest","Ratio","Shares"]};

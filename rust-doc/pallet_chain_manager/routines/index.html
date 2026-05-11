@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Offchain routines orchestrating the affidavit lifecycle and election execution."><title>pallet_chain_manager::routines - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_chain_manager" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_chain_manager/index.html">pallet_<wbr>chain_<wbr>manager</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module routines</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#lifecycle-pipeline" title="Lifecycle Pipeline">Lifecycle Pipeline</a></li><li><a href="#responsibilities" title="Responsibilities">Responsibilities</a><ul><li><a href="#1-affidavit-key-initialization-initaffidavitkey" title="1. Affidavit Key Initialization (`InitAffidavitKey`)">1. Affidavit Key Initialization (<code>InitAffidavitKey</code>)</a></li><li><a href="#2-election-execution-tryelection" title="2. Election Execution (`TryElection`)">2. Election Execution (<code>TryElection</code>)</a></li><li><a href="#3-affidavit-declaration-declareaffidavit" title="3. Affidavit Declaration (`DeclareAffidavit`)">3. Affidavit Declaration (<code>DeclareAffidavit</code>)</a></li><li><a href="#4-key-rotation-rotateaffidavitkey" title="4. Key Rotation (`RotateAffidavitKey`)">4. Key Rotation (<code>RotateAffidavitKey</code>)</a></li></ul></li><li><a href="#storage--finality" title="Storage &#38; Finality">Storage &amp; Finality</a></li><li><a href="#execution-model" title="Execution Model">Execution Model</a></li><li><a href="#security-model" title="Security Model">Security Model</a></li><li><a href="#failure-handling" title="Failure Handling">Failure Handling</a></li></ul><h3><a href="#constants">Module Items</a></h3><ul class="block"><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate pallet_<wbr>chain_<wbr>manager</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_chain_manager</a></div><h1>Module <span>routines</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_chain_manager/routines.rs.html#16-2625">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Offchain routines orchestrating the affidavit lifecycle and election execution.</p>
+<p>This module implements a coordinated set of Offchain Worker (OCW) routines
+that drive the lifecycle of authors from affidavit key initialization to
+election participation and key rotation.</p>
+<h3 id="lifecycle-pipeline"><a class="doc-anchor" href="#lifecycle-pipeline">§</a>Lifecycle Pipeline</h3>
+<p>The system operates as a continuous OCW-driven pipeline:</p>
+<div class="example-wrap"><pre class="language-text"><code>InitAffidavitKey -&gt; TryElection -&gt; DeclareAffidavit -&gt; RotateAffidavitKey</code></pre></div>
+<p>Each stage is independently executable and relies on repeated OCW execution
+across blocks to eventually converge to a consistent state.</p>
+<h3 id="responsibilities"><a class="doc-anchor" href="#responsibilities">§</a>Responsibilities</h3><h4 id="1-affidavit-key-initialization-initaffidavitkey"><a class="doc-anchor" href="#1-affidavit-key-initialization-initaffidavitkey">§</a>1. Affidavit Key Initialization (<code>InitAffidavitKey</code>)</h4>
+<ul>
+<li>Generates an ephemeral affidavit key pair using application crypto.</li>
+<li>Persists the public identifier in <a href="../../frame_suite/routines/struct.Finalized.html" title="struct frame_suite::routines::Finalized"><code>Finalized</code></a> offchain storage.</li>
+<li>Ensures exactly one active affidavit key exists per node.</li>
+</ul>
+<h4 id="2-election-execution-tryelection"><a class="doc-anchor" href="#2-election-execution-tryelection">§</a>2. Election Execution (<code>TryElection</code>)</h4>
+<ul>
+<li>Opportunistically attempts to run the election for the upcoming session.</li>
+<li>Uses the currently active affidavit key for authorization.</li>
+<li>Ensures at-most-once execution per author per session.</li>
+<li>Designed to be non-blocking and retry-safe.</li>
+</ul>
+<h4 id="3-affidavit-declaration-declareaffidavit"><a class="doc-anchor" href="#3-affidavit-declaration-declareaffidavit">§</a>3. Affidavit Declaration (<code>DeclareAffidavit</code>)</h4>
+<ul>
+<li>Submits a signed affidavit to signal participation in the next
+session’s election.</li>
+<li>Prepares and finalizes the next affidavit key for rotation.</li>
+<li>Ensures eligibility and timing constraints via runtime checks.</li>
+</ul>
+<h4 id="4-key-rotation-rotateaffidavitkey"><a class="doc-anchor" href="#4-key-rotation-rotateaffidavitkey">§</a>4. Key Rotation (<code>RotateAffidavitKey</code>)</h4>
+<ul>
+<li>Finalizes transition from next -&gt; active affidavit key.</li>
+<li>Confirms successful affidavit submission via runtime state.</li>
+<li>Performs cleanup and ensures lifecycle continuity.</li>
+</ul>
+<h3 id="storage--finality"><a class="doc-anchor" href="#storage--finality">§</a>Storage &amp; Finality</h3>
+<p>Uses layered offchain storage:</p>
+<ul>
+<li><a href="../../frame_suite/routines/struct.ForkAware.html" title="struct frame_suite::routines::ForkAware"><code>ForkAware</code></a>: fork-safe speculative state</li>
+<li><a href="../../frame_suite/routines/struct.Persistent.html" title="struct frame_suite::routines::Persistent"><code>Persistent</code></a>: durable observation ledger</li>
+<li><a href="../../frame_suite/routines/struct.Finalized.html" title="struct frame_suite::routines::Finalized"><code>Finalized</code></a>: stable values via <a href="../../frame_suite/routines/enum.Confidence.html" title="enum frame_suite::routines::Confidence"><code>Confidence</code></a></li>
+</ul>
+<p>Finality is governed by <a href="../../frame_suite/routines/trait.FinalizedPolicy.html" title="trait frame_suite::routines::FinalizedPolicy"><code>FinalizedPolicy</code></a> using:</p>
+<ul>
+<li>time delay (<a href="../pallet/type.FinalityAfter.html" title="type pallet_chain_manager::pallet::FinalityAfter"><code>FinalityAfter</code></a>)</li>
+<li>observation count (<a href="../pallet/type.FinalityTicks.html" title="type pallet_chain_manager::pallet::FinalityTicks"><code>FinalityTicks</code></a>)</li>
+</ul>
+<h3 id="execution-model"><a class="doc-anchor" href="#execution-model">§</a>Execution Model</h3>
+<ul>
+<li><strong>Idempotent</strong>: All routines can run repeatedly without side effects.</li>
+<li><strong>Non-blocking</strong>: Routines exit early when prerequisites are unmet.</li>
+<li><strong>Opportunistic</strong>: Actions may be attempted before full readiness.</li>
+<li><strong>Eventually consistent</strong>: Correct state is reached through repetition.</li>
+</ul>
+<h3 id="security-model"><a class="doc-anchor" href="#security-model">§</a>Security Model</h3>
+<ul>
+<li>Uses <strong>ephemeral affidavit keys</strong> instead of long-term authority keys.</li>
+<li>Enforces <strong>key rotation per lifecycle</strong>.</li>
+<li>Limits signing scope to specific operations (affidavit/election).</li>
+<li>Reduces attack surface and key exposure risk.</li>
+</ul>
+<h3 id="failure-handling"><a class="doc-anchor" href="#failure-handling">§</a>Failure Handling</h3>
+<ul>
+<li>Storage inconsistencies trigger <strong>hard stops</strong> to prevent unsafe execution.</li>
+<li>Failed extrinsics are logged and retried in future OCW runs.</li>
+<li>Missing runtime reflection (e.g. failed affidavit) triggers <strong>state reset</strong>.</li>
+</ul>
+<p>This ensures the system never remains in a partially inconsistent state.</p>
+</div></details><h2 id="constants" class="section-header">Constants<a href="#constants" class="anchor">§</a></h2><dl class="item-table"><dt><a class="constant" href="constant.ACTIVE_AFDT_KEY.html" title="constant pallet_chain_manager::routines::ACTIVE_AFDT_KEY">ACTIVE_<wbr>AFDT_<wbr>KEY</a></dt><dd>Offchain key identifier for the <strong>active affidavit key</strong>.</dd><dt><a class="constant" href="constant.EMOJI_DEBUG.html" title="constant pallet_chain_manager::routines::EMOJI_DEBUG">EMOJI_<wbr>DEBUG</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Emoji indicator mapped to each <a href="../../frame_suite/routines/enum.LogLevel.html" title="enum frame_suite::routines::LogLevel"><code>LogLevel</code></a> for visual log scanning.</dd><dt><a class="constant" href="constant.EMOJI_ERROR.html" title="constant pallet_chain_manager::routines::EMOJI_ERROR">EMOJI_<wbr>ERROR</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="constant" href="constant.EMOJI_INFO.html" title="constant pallet_chain_manager::routines::EMOJI_INFO">EMOJI_<wbr>INFO</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="constant" href="constant.EMOJI_WARN.html" title="constant pallet_chain_manager::routines::EMOJI_WARN">EMOJI_<wbr>WARN</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="constant" href="constant.LOG_TARGET_AFDT.html" title="constant pallet_chain_manager::routines::LOG_TARGET_AFDT">LOG_<wbr>TARGET_<wbr>AFDT</a></dt><dd>Log target (classifier) for affidavit logging.</dd><dt><a class="constant" href="constant.LOG_TARGET_ELEC.html" title="constant pallet_chain_manager::routines::LOG_TARGET_ELEC">LOG_<wbr>TARGET_<wbr>ELEC</a></dt><dd>Log target (classifier) for elections logging.</dd><dt><a class="constant" href="constant.NEXT_AFDT_KEY.html" title="constant pallet_chain_manager::routines::NEXT_AFDT_KEY">NEXT_<wbr>AFDT_<wbr>KEY</a></dt><dd>Offchain storage key identifying the <strong>next affidavit key</strong>.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.level_emoji.html" title="fn pallet_chain_manager::routines::level_emoji">level_<wbr>emoji</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Returns the emoji indicator associated with a given <a href="../../frame_suite/routines/enum.LogLevel.html" title="enum frame_suite::routines::LogLevel"><code>LogLevel</code></a>.</dd><dt><a class="fn" href="fn.std_fmt.html" title="fn pallet_chain_manager::routines::std_fmt">std_fmt</a></dt><dd>Standard log formatter for OCW routines.</dd></dl></section></div></main></body></html>

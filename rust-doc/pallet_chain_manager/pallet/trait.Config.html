@@ -1,0 +1,241 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Configuration trait of this pallet."><title>Config in pallet_chain_manager::pallet - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_chain_manager" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_chain_manager/index.html">pallet_<wbr>chain_<wbr>manager</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Config</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#dependencies" title="Dependencies">Dependencies</a></li></ul><h3><a href="#required-associated-consts">Required Associated Constants</a></h3><ul class="block"><li><a href="#associatedconstant.MAX_FORKS" title="MAX_FORKS">MAX_FORKS</a></li><li><a href="#associatedconstant.MAX_FORK_RECOVERY_TRAVERSAL" title="MAX_FORK_RECOVERY_TRAVERSAL">MAX_FORK_RECOVERY_TRAVERSAL</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.AffidavitCrypto" title="AffidavitCrypto">AffidavitCrypto</a></li><li><a href="#associatedtype.Asset" title="Asset">Asset</a></li><li><a href="#associatedtype.ElectionAdapter" title="ElectionAdapter">ElectionAdapter</a></li><li><a href="#associatedtype.EmitEvents" title="EmitEvents">EmitEvents</a></li><li><a href="#associatedtype.InflateViaSupply" title="InflateViaSupply">InflateViaSupply</a></li><li><a href="#associatedtype.InflationContext" title="InflationContext">InflationContext</a></li><li><a href="#associatedtype.InflationModel" title="InflationModel">InflationModel</a></li><li><a href="#associatedtype.MaxAffidavitWeights" title="MaxAffidavitWeights">MaxAffidavitWeights</a></li><li><a href="#associatedtype.NextSessionRotation" title="NextSessionRotation">NextSessionRotation</a></li><li><a href="#associatedtype.PenaltyContext" title="PenaltyContext">PenaltyContext</a></li><li><a href="#associatedtype.PenaltyModel" title="PenaltyModel">PenaltyModel</a></li><li><a href="#associatedtype.Points" title="Points">Points</a></li><li><a href="#associatedtype.PointsAdapter" title="PointsAdapter">PointsAdapter</a></li><li><a href="#associatedtype.RewardContext" title="RewardContext">RewardContext</a></li><li><a href="#associatedtype.RewardModel" title="RewardModel">RewardModel</a></li><li><a href="#associatedtype.RoleAdapter" title="RoleAdapter">RoleAdapter</a></li><li><a href="#associatedtype.RuntimeCall" title="RuntimeCall">RuntimeCall</a></li><li><a href="#associatedtype.RuntimeEvent" title="RuntimeEvent">RuntimeEvent</a></li><li><a href="#associatedtype.WeightInfo" title="WeightInfo">WeightInfo</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In pallet_<wbr>chain_<wbr>manager::<wbr>pallet</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_chain_manager</a>::<wbr><a href="index.html">pallet</a></div><h1>Trait <span class="trait">Config</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_chain_manager/lib.rs.html#293-584">Source</a> </span></div><pre class="rust item-decl"><code>pub trait Config:
+    Config
+    + Config
+    + Config
+    + Config
+    + Config
+    + Config
+    + CreateSignedTransaction&lt;&lt;Self as Config&gt;::RuntimeCall&gt; {
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 21 associated items</span></summary>    type <a href="#associatedtype.RuntimeCall" class="associatedtype">RuntimeCall</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;<a class="enum" href="enum.Call.html" title="enum pallet_chain_manager::pallet::Call">Call</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self as Config&gt;::RuntimeCall&gt;;
+    type <a href="#associatedtype.RuntimeEvent" class="associatedtype">RuntimeEvent</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;<a class="enum" href="enum.Event.html" title="enum pallet_chain_manager::pallet::Event">Event</a>&lt;Self&gt;&gt; + IsType&lt;&lt;Self as Config&gt;::RuntimeEvent&gt;;
+    type <a href="#associatedtype.RoleAdapter" class="associatedtype">RoleAdapter</a>: <a class="trait" href="../../frame_suite/roles/trait.RoleManager.html" title="trait frame_suite::roles::RoleManager">RoleManager</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt; + <a class="trait" href="../../frame_suite/roles/trait.CompensateRoles.html" title="trait frame_suite::roles::CompensateRoles">CompensateRoles</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, Ratio = <a class="type" href="../types/type.PenaltyRatio.html" title="type pallet_chain_manager::types::PenaltyRatio">PenaltyRatio</a>&gt; + <a class="trait" href="../../frame_suite/roles/trait.FundRoles.html" title="trait frame_suite::roles::FundRoles">FundRoles</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt;;
+    type <a href="#associatedtype.ElectionAdapter" class="associatedtype">ElectionAdapter</a>: <a class="trait" href="../../frame_suite/elections/trait.ElectionManager.html" title="trait frame_suite::elections::ElectionManager">ElectionManager</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt; + <a class="trait" href="../../frame_suite/elections/trait.InspectWeight.html" title="trait frame_suite::elections::InspectWeight">InspectWeight</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, <a class="type" href="../types/type.ElectionVia.html" title="type pallet_chain_manager::types::ElectionVia">ElectionVia</a>&lt;Self&gt;&gt;;
+    type <a href="#associatedtype.Asset" class="associatedtype">Asset</a>: Inspect&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, Balance = <a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;&gt; + Mutate&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt;;
+    type <a href="#associatedtype.PointsAdapter" class="associatedtype">PointsAdapter</a>: <a class="trait" href="../../frame_suite/blockchain/trait.AuthorPoints.html" title="trait frame_suite::blockchain::AuthorPoints">AuthorPoints</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, Self::<a class="associatedtype" href="trait.Config.html#associatedtype.Points" title="type pallet_chain_manager::pallet::Config::Points">Points</a>&gt;;
+    type <a href="#associatedtype.NextSessionRotation" class="associatedtype">NextSessionRotation</a>: EstimateNextSessionRotation&lt;BlockNumberFor&lt;Self&gt;&gt;;
+    type <a href="#associatedtype.AffidavitCrypto" class="associatedtype">AffidavitCrypto</a>: AppCrypto&lt;Self::Public, Self::Signature&gt;;
+    type <a href="#associatedtype.Points" class="associatedtype">Points</a>: <a class="trait" href="../../frame_suite/base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a>;
+    type <a href="#associatedtype.InflationModel" class="associatedtype">InflationModel</a>: <a class="trait" href="../../frame_suite/plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;<a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;, &lt;Self::<a class="associatedtype" href="trait.Config.html#associatedtype.InflationContext" title="type pallet_chain_manager::pallet::Config::InflationContext">InflationContext</a> as <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../../frame_suite/plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, <a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>;
+    type <a href="#associatedtype.InflationContext" class="associatedtype">InflationContext</a>: <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>;
+    type <a href="#associatedtype.RewardModel" class="associatedtype">RewardModel</a>: <a class="trait" href="../../frame_suite/plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;(<a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;, <a class="type" href="../types/type.PayoutFor.html" title="type pallet_chain_manager::types::PayoutFor">PayoutFor</a>&lt;Self&gt;), &lt;Self::<a class="associatedtype" href="trait.Config.html#associatedtype.RewardContext" title="type pallet_chain_manager::pallet::Config::RewardContext">RewardContext</a> as <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../../frame_suite/plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, <a class="type" href="../types/type.PayeeList.html" title="type pallet_chain_manager::types::PayeeList">PayeeList</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>;
+    type <a href="#associatedtype.RewardContext" class="associatedtype">RewardContext</a>: <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>;
+    type <a href="#associatedtype.PenaltyModel" class="associatedtype">PenaltyModel</a>: <a class="trait" href="../../frame_suite/plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;<a class="type" href="../types/type.PenaltyFor.html" title="type pallet_chain_manager::types::PenaltyFor">PenaltyFor</a>&lt;Self&gt;, &lt;Self::<a class="associatedtype" href="trait.Config.html#associatedtype.PenaltyContext" title="type pallet_chain_manager::pallet::Config::PenaltyContext">PenaltyContext</a> as <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../../frame_suite/plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, <a class="type" href="../types/type.PenaltyFor.html" title="type pallet_chain_manager::types::PenaltyFor">PenaltyFor</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>;
+    type <a href="#associatedtype.PenaltyContext" class="associatedtype">PenaltyContext</a>: <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>;
+    type <a href="#associatedtype.WeightInfo" class="associatedtype">WeightInfo</a>: <a class="trait" href="../weights/trait.WeightInfo.html" title="trait pallet_chain_manager::weights::WeightInfo">WeightInfo</a>;
+    type <a href="#associatedtype.InflateViaSupply" class="associatedtype">InflateViaSupply</a>: Get&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a>;
+    type <a href="#associatedtype.MaxAffidavitWeights" class="associatedtype">MaxAffidavitWeights</a>: Get&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a>;
+    type <a href="#associatedtype.EmitEvents" class="associatedtype">EmitEvents</a>: Get&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a>;
+
+    const <a href="#associatedconstant.MAX_FORKS" class="constant">MAX_FORKS</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>;
+    const <a href="#associatedconstant.MAX_FORK_RECOVERY_TRAVERSAL" class="constant">MAX_FORK_RECOVERY_TRAVERSAL</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>;
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Configuration trait of this pallet.</p>
+<p>The main purpose of this trait is to act as an interface between this pallet and the runtime in
+which it is embedded in. A type, function, or constant in this trait is essentially left to be
+configured by the runtime that includes this pallet.</p>
+<p>Consequently, a runtime that wants to include this pallet must implement this trait.
+Configuration trait for the Chain Manager pallet.</p>
+<p>This trait defines the types, constants, and dependencies
+that the runtime must provide for this pallet to function.</p>
+<p>It extends several other FRAME pallets’ <code>Config</code> traits, ensuring tight
+integration with Substrate’s session, authorship, time-management and
+offence-handling subsystems.</p>
+<h4 id="dependencies"><a class="doc-anchor" href="#dependencies">§</a>Dependencies</h4>
+<p>Dependencies other than [<code>frame_system::Config</code>]:</p>
+<ul>
+<li>[<code>pallet_authorship::Config</code>]: Provides access to the current block author
+and authorship tracking, used to assign and record block production points.</li>
+<li>[<code>pallet_offences::Config</code>]: Enables detection and handling of offences for
+misbehaving authors, required for penalty enforcement.</li>
+<li>[<code>pallet_session::Config</code>]: Manages session rotation and validator/author sets;
+supports session-aware election and reward cycles.</li>
+<li>[<code>pallet_session::historical::Config</code>]: Provides access to historical session
+data for offence handling.</li>
+<li>[<code>pallet_timestamp::Config</code>] : Provides access to a monotonic deterministic
+onchain unix timestamp.</li>
+<li>[<code>frame_system::offchain::CreateSignedTransaction</code>]: Enables offchain workers
+to sign and submit transactions. Required for unsigned extrinsics that rely
+on signed payload verification ([<code>ValidateUnsigned</code>]).</li>
+</ul>
+</div></details><h2 id="required-associated-consts" class="section-header">Required Associated Constants<a href="#required-associated-consts" class="anchor">§</a></h2><div class="methods"><section id="associatedconstant.MAX_FORKS" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#572">Source</a><h4 class="code-header">const <a href="#associatedconstant.MAX_FORKS" class="constant">MAX_FORKS</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a></h4></section><section id="associatedconstant.MAX_FORK_RECOVERY_TRAVERSAL" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#574">Source</a><h4 class="code-header">const <a href="#associatedconstant.MAX_FORK_RECOVERY_TRAVERSAL" class="constant">MAX_FORK_RECOVERY_TRAVERSAL</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a></h4></section></div><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.RuntimeCall" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#304">Source</a><h4 class="code-header">type <a href="#associatedtype.RuntimeCall" class="associatedtype">RuntimeCall</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;<a class="enum" href="enum.Call.html" title="enum pallet_chain_manager::pallet::Call">Call</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self as Config&gt;::RuntimeCall&gt;</h4></section></summary><div class="docblock"><p>Extrinsic calls aggregation type for the runtime.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.RuntimeEvent" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#307">Source</a><h4 class="code-header">type <a href="#associatedtype.RuntimeEvent" class="associatedtype">RuntimeEvent</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;<a class="enum" href="enum.Event.html" title="enum pallet_chain_manager::pallet::Event">Event</a>&lt;Self&gt;&gt; + IsType&lt;&lt;Self as Config&gt;::RuntimeEvent&gt;</h4></section></summary><div class="docblock"><p>Events aggregation type for the runtime.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.RoleAdapter" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#323-326">Source</a><h4 class="code-header">type <a href="#associatedtype.RoleAdapter" class="associatedtype">RoleAdapter</a>: <a class="trait" href="../../frame_suite/roles/trait.RoleManager.html" title="trait frame_suite::roles::RoleManager">RoleManager</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt; + <a class="trait" href="../../frame_suite/roles/trait.CompensateRoles.html" title="trait frame_suite::roles::CompensateRoles">CompensateRoles</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, Ratio = <a class="type" href="../types/type.PenaltyRatio.html" title="type pallet_chain_manager::types::PenaltyRatio">PenaltyRatio</a>&gt; + <a class="trait" href="../../frame_suite/roles/trait.FundRoles.html" title="trait frame_suite::roles::FundRoles">FundRoles</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt;</h4></section></summary><div class="docblock"><p>Adapter type for <strong>author role, and compensation management</strong>.</p>
+<p>This associated type integrates multiple traits that together define how
+authors are <strong>managed</strong>, <strong>rewarded</strong>, and <strong>funded</strong>.</p>
+<p>It acts as a unified interface between this pallet and the underlying
+role-management, and reward systems.</p>
+<h6 id="required-traits"><a class="doc-anchor" href="#required-traits">§</a>Required Traits</h6>
+<ul>
+<li><a href="../../frame_suite/roles/trait.RoleManager.html" title="trait frame_suite::roles::RoleManager"><code>RoleManager</code></a>: Core author management - handles registration and membership.</li>
+<li><a href="../../frame_suite/roles/trait.CompensateRoles.html" title="trait frame_suite::roles::CompensateRoles"><code>CompensateRoles</code></a>: Defines logic for author <strong>rewards and penalties</strong>.</li>
+<li><a href="../../frame_suite/roles/trait.FundRoles.html" title="trait frame_suite::roles::FundRoles"><code>FundRoles</code></a>: Enables <strong>external funding or backing</strong> mechanisms for authors.</li>
+</ul>
+</div></details><details class="toggle" open><summary><section id="associatedtype.ElectionAdapter" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#336-337">Source</a><h4 class="code-header">type <a href="#associatedtype.ElectionAdapter" class="associatedtype">ElectionAdapter</a>: <a class="trait" href="../../frame_suite/elections/trait.ElectionManager.html" title="trait frame_suite::elections::ElectionManager">ElectionManager</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt; + <a class="trait" href="../../frame_suite/elections/trait.InspectWeight.html" title="trait frame_suite::elections::InspectWeight">InspectWeight</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, <a class="type" href="../types/type.ElectionVia.html" title="type pallet_chain_manager::types::ElectionVia">ElectionVia</a>&lt;Self&gt;&gt;</h4></section></summary><div class="docblock"><p>Adapter type for role <strong>author election management system</strong>.</p>
+<p>This associated type integrates multiple traits that together define how
+authors are <strong>elected</strong>.</p>
+<h6 id="required-traits-1"><a class="doc-anchor" href="#required-traits-1">§</a>Required Traits</h6>
+<ul>
+<li><a href="../../frame_suite/elections/trait.ElectionManager.html" title="trait frame_suite::elections::ElectionManager"><code>ElectionManager</code></a>: Conducts author <strong>elections</strong> on behalf of this pallet.</li>
+<li><a href="../../frame_suite/elections/trait.InspectWeight.html" title="trait frame_suite::elections::InspectWeight"><code>InspectWeight</code></a>: Provides APIs to <strong>query election weights</strong> for authors.</li>
+</ul>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Asset" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#352-360">Source</a><h4 class="code-header">type <a href="#associatedtype.Asset" class="associatedtype">Asset</a>: Inspect&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, Balance = <a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;&gt; + Mutate&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;&gt;</h4></section></summary><div class="docblock"><p>The <strong>asset type</strong> used for distributing rewards and penalties.</p>
+<p>This represents a fungible unit (e.g., a token balance) over which
+the pallet performs <strong>reward</strong>, <strong>penalty</strong>, and <strong>funding</strong> operations.</p>
+<h6 id="requirements"><a class="doc-anchor" href="#requirements">§</a>Requirements</h6>
+<ul>
+<li>Must implement [<code>Inspect</code>], enabling the pallet to query and verify
+account balances or holdings of authors.</li>
+</ul>
+<h6 id="example"><a class="doc-anchor" href="#example">§</a>Example</h6>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">type </span>Asset = pallet_assets::Pallet&lt;T&gt;;</code></pre></div>
+</div></details><details class="toggle" open><summary><section id="associatedtype.PointsAdapter" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#369">Source</a><h4 class="code-header">type <a href="#associatedtype.PointsAdapter" class="associatedtype">PointsAdapter</a>: <a class="trait" href="../../frame_suite/blockchain/trait.AuthorPoints.html" title="trait frame_suite::blockchain::AuthorPoints">AuthorPoints</a>&lt;<a class="type" href="../types/type.AuthorOf.html" title="type pallet_chain_manager::types::AuthorOf">AuthorOf</a>&lt;Self&gt;, Self::<a class="associatedtype" href="trait.Config.html#associatedtype.Points" title="type pallet_chain_manager::pallet::Config::Points">Points</a>&gt;</h4></section></summary><div class="docblock"><p>Adapter for managing and querying <strong>author points</strong>.</p>
+<p>Provides the implementation for tracking points (e.g., block production
+or performance metrics) associated with each author.</p>
+<p>This can be set to <a href="struct.Pallet.html" title="struct pallet_chain_manager::pallet::Pallet"><code>Pallet&lt;Self&gt;</code></a> if using the chain-manager pallet’s
+internal implementation, or provided externally via another pallet or adapter.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.NextSessionRotation" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#379">Source</a><h4 class="code-header">type <a href="#associatedtype.NextSessionRotation" class="associatedtype">NextSessionRotation</a>: EstimateNextSessionRotation&lt;BlockNumberFor&lt;Self&gt;&gt;</h4></section></summary><div class="docblock"><p>Provides the logic to <strong>estimate the length of the next session</strong>.</p>
+<p>Used to compute</p>
+<ul>
+<li>affidavit submission windows,</li>
+<li>election start blocks, and</li>
+<li>session timing.</li>
+</ul>
+</div></details><details class="toggle" open><summary><section id="associatedtype.AffidavitCrypto" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#393">Source</a><h4 class="code-header">type <a href="#associatedtype.AffidavitCrypto" class="associatedtype">AffidavitCrypto</a>: AppCrypto&lt;Self::Public, Self::Signature&gt;</h4></section></summary><div class="docblock"><p>Custom application crypto for <strong>affidavit submission and rotation</strong>.</p>
+<p>Defines the cryptographic scheme used by offchain workers when
+submitting and rotating affidavits. This associated type creates
+a dedicated <code>KeyId</code> namespace for affidavit-related operations.</p>
+<h6 id="supported-cryptography"><a class="doc-anchor" href="#supported-cryptography">§</a>Supported Cryptography</h6>
+<ul>
+<li><a href="../crypto/ed25519/struct.AffidavitCryptoEd25519.html" title="struct pallet_chain_manager::crypto::ed25519::AffidavitCryptoEd25519"><code>AffidavitCryptoEd25519</code></a></li>
+<li><a href="../crypto/sr25519/struct.AffidavitCryptoSr25519.html" title="struct pallet_chain_manager::crypto::sr25519::AffidavitCryptoSr25519"><code>AffidavitCryptoSr25519</code></a></li>
+</ul>
+<p>Either scheme may be used depending on the desired security and
+performance characteristics.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Points" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#407">Source</a><h4 class="code-header">type <a href="#associatedtype.Points" class="associatedtype">Points</a>: <a class="trait" href="../../frame_suite/base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a></h4></section></summary><div class="docblock"><p>Type representing <strong>good-behaviour points</strong> accumulated by an author.</p>
+<p>This is an abstract point type used to measure good behaviour
+(e.g. block production) within a session.</p>
+<h6 id="design-notes"><a class="doc-anchor" href="#design-notes">§</a>Design Notes</h6>
+<ul>
+<li>Points are <strong>session-scoped</strong> and non-transferable.</li>
+<li>This is <strong>not</strong> an economic asset.</li>
+<li>Points are interpreted later by reward and penalty logic
+and may be transformed into actual asset movements.</li>
+</ul>
+</div></details><details class="toggle" open><summary><section id="associatedtype.InflationModel" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#412-452">Source</a><h4 class="code-header">type <a href="#associatedtype.InflationModel" class="associatedtype">InflationModel</a>: <a class="trait" href="../../frame_suite/plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;<a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;, &lt;Self::<a class="associatedtype" href="trait.Config.html#associatedtype.InflationContext" title="type pallet_chain_manager::pallet::Config::InflationContext">InflationContext</a> as <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../../frame_suite/plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, <a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a></h4></section></summary><div class="docblock"><p>Inflation adjustment <strong>plugin model</strong>.</p>
+<p>This model defines the logic used to transform the raw total asset
+(<code>AssetOf</code>) into an inflation-adjusted payout before distribution
+to authors.</p>
+<p>Conceptually similar to <code>PayoutModel</code> in <code>RewardAuthors</code>, but focused
+specifically on inflation-based adjustments in a more layman-friendly
+abstraction.</p>
+<h6 id="input"><a class="doc-anchor" href="#input">§</a>Input</h6>
+<ul>
+<li><a href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf"><code>AssetOf</code></a>: The raw total asset for the current cycle.</li>
+</ul>
+<h6 id="output"><a class="doc-anchor" href="#output">§</a>Output</h6>
+<ul>
+<li><a href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf"><code>AssetOf</code></a>: The total asset after applying inflation rules.</li>
+</ul>
+<p>Designed to be runtime-configurable via <a href="trait.Config.html#associatedtype.InflationContext"><code>Self::InflationContext</code></a>.</p>
+<p>Designed to be selectable using template plugin models in
+<a href="../../frame_plugins/rewards/payout/index.html" title="mod frame_plugins::rewards::payout"><code>frame_plugins::rewards::payout</code></a> or custom model defining
+macros via <a href="../../frame_suite/plugins/index.html" title="mod frame_suite::plugins"><code>frame_suite::plugins</code></a>.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.InflationContext" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#412-452">Source</a><h4 class="code-header">type <a href="#associatedtype.InflationContext" class="associatedtype">InflationContext</a>: <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a></h4></section></summary><div class="docblock"><p>Runtime <strong>context</strong> for the inflation adjustment plugin model.</p>
+<p>Provides configurable parameters that influence how the
+<a href="trait.Config.html#associatedtype.InflationModel"><code>Self::InflationModel</code></a> behaves at runtime.</p>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<ul>
+<li>Inflation rates</li>
+<li>Upper or lower payout caps</li>
+<li>Scaling coefficients or dampening factors</li>
+</ul>
+<p>This allows the inflation logic to be tuned without changing the model
+implementation itself.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.RewardModel" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#455-496">Source</a><h4 class="code-header">type <a href="#associatedtype.RewardModel" class="associatedtype">RewardModel</a>: <a class="trait" href="../../frame_suite/plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;(<a class="type" href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf">AssetOf</a>&lt;Self&gt;, <a class="type" href="../types/type.PayoutFor.html" title="type pallet_chain_manager::types::PayoutFor">PayoutFor</a>&lt;Self&gt;), &lt;Self::<a class="associatedtype" href="trait.Config.html#associatedtype.RewardContext" title="type pallet_chain_manager::pallet::Config::RewardContext">RewardContext</a> as <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../../frame_suite/plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, <a class="type" href="../types/type.PayeeList.html" title="type pallet_chain_manager::types::PayeeList">PayeeList</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a></h4></section></summary><div class="docblock"><p>Per-author <strong>reward distribution plugin model</strong>.</p>
+<p>Responsible for mapping each author’s contribution to a concrete payout.
+Conceptually performs:</p>
+<p><code>(Author, Points)</code> -&gt; <code>(Author, AssetOf)</code></p>
+<h6 id="input-1"><a class="doc-anchor" href="#input-1">§</a>Input</h6>
+<ul>
+<li>(<a href="../types/type.AssetOf.html" title="type pallet_chain_manager::types::AssetOf"><code>AssetOf</code></a>, <a href="../types/type.PayoutFor.html" title="type pallet_chain_manager::types::PayoutFor"><code>PayoutFor</code></a>):
+The total payout for the cycle and the per-author points allocation.</li>
+</ul>
+<h6 id="output-1"><a class="doc-anchor" href="#output-1">§</a>Output</h6>
+<ul>
+<li><a href="../types/type.PayeeList.html" title="type pallet_chain_manager::types::PayeeList"><code>PayeeList</code></a>:
+The finalized list of authors and their respective rewards.</li>
+</ul>
+<h6 id="notes"><a class="doc-anchor" href="#notes">§</a>Notes</h6>
+<ul>
+<li>Maps each author’s points to their final reward share.</li>
+<li>Designed to be runtime-configurable via <a href="trait.Config.html#associatedtype.RewardContext"><code>Self::RewardContext</code></a>.</li>
+</ul>
+<p>Designed to be selectable using template plugin models in
+<a href="../../frame_plugins/rewards/payee/index.html" title="mod frame_plugins::rewards::payee"><code>frame_plugins::rewards::payee</code></a> or custom model defining
+macros via <a href="../../frame_suite/plugins/index.html" title="mod frame_suite::plugins"><code>frame_suite::plugins</code></a>.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.RewardContext" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#455-496">Source</a><h4 class="code-header">type <a href="#associatedtype.RewardContext" class="associatedtype">RewardContext</a>: <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a></h4></section></summary><div class="docblock"><p>Runtime <strong>context</strong> for configuring reward plugin computation.</p>
+<p>Supplies parameters that influence how rewards are calculated and
+distributed by the <a href="trait.Config.html#associatedtype.RewardModel"><code>Self::RewardModel</code></a>.</p>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<ul>
+<li>Multipliers or weights</li>
+<li>Per-author or global caps</li>
+<li>Curves, thresholds, or smoothing factors</li>
+</ul>
+<p>This separation allows payout logic to evolve independently from
+runtime tuning and governance decisions.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.PenaltyModel" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#499-540">Source</a><h4 class="code-header">type <a href="#associatedtype.PenaltyModel" class="associatedtype">PenaltyModel</a>: <a class="trait" href="../../frame_suite/plugins/trait.PurePluginModel.html" title="trait frame_suite::plugins::PurePluginModel">PurePluginModel</a>&lt;<a class="type" href="../types/type.PenaltyFor.html" title="type pallet_chain_manager::types::PenaltyFor">PenaltyFor</a>&lt;Self&gt;, &lt;Self::<a class="associatedtype" href="trait.Config.html#associatedtype.PenaltyContext" title="type pallet_chain_manager::pallet::Config::PenaltyContext">PenaltyContext</a> as <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a>&gt;::<a class="associatedtype" href="../../frame_suite/plugins/trait.ModelContext.html#associatedtype.Context" title="type frame_suite::plugins::ModelContext::Context">Context</a>, <a class="type" href="../types/type.PenaltyFor.html" title="type pallet_chain_manager::types::PenaltyFor">PenaltyFor</a>&lt;Self&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a></h4></section></summary><div class="docblock"><p><strong>Penalty transformation plugin model</strong>.</p>
+<p>Defines how author penalties are adjusted before being applied.
+Conceptually performs:</p>
+<p><code>(Author, Penalty)</code> -&gt; <code>(Author, Penalty)</code></p>
+<h6 id="input-2"><a class="doc-anchor" href="#input-2">§</a>Input</h6>
+<ul>
+<li><a href="../types/type.PenaltyFor.html" title="type pallet_chain_manager::types::PenaltyFor"><code>PenaltyFor</code></a>:
+The raw per-author penalties for the current cycle.</li>
+</ul>
+<h6 id="output-2"><a class="doc-anchor" href="#output-2">§</a>Output</h6>
+<ul>
+<li><a href="../types/type.PenaltyFor.html" title="type pallet_chain_manager::types::PenaltyFor"><code>PenaltyFor</code></a>:
+The penalties after applying transformation rules.</li>
+</ul>
+<h6 id="notes-1"><a class="doc-anchor" href="#notes-1">§</a>Notes</h6>
+<ul>
+<li>Supports caps, scaling, or other penalty transformation logic.</li>
+<li>Runtime behavior is influenced by <a href="trait.Config.html#associatedtype.PenaltyContext"><code>Self::PenaltyContext</code></a>.</li>
+</ul>
+<p>Designed to be selectable using template plugin models in
+<a href="../../frame_plugins/penalty/index.html" title="mod frame_plugins::penalty"><code>frame_plugins::penalty</code></a> or custom model defining
+macros via <a href="../../frame_suite/plugins/index.html" title="mod frame_suite::plugins"><code>frame_suite::plugins</code></a>.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.PenaltyContext" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#499-540">Source</a><h4 class="code-header">type <a href="#associatedtype.PenaltyContext" class="associatedtype">PenaltyContext</a>: <a class="trait" href="../../frame_suite/plugins/trait.ModelContext.html" title="trait frame_suite::plugins::ModelContext">ModelContext</a></h4></section></summary><div class="docblock"><p>Runtime <strong>context</strong> for penalty plugin transformation.</p>
+<p>Supplies parameters that configure how the <a href="trait.Config.html#associatedtype.PenaltyModel"><code>Self::PenaltyModel</code></a> operates
+at runtime.</p>
+<h6 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h6>
+<ul>
+<li>Multipliers or dampening factors</li>
+<li>Upper or lower penalty caps</li>
+<li>Thresholds or step functions</li>
+</ul>
+<p>This allows penalty policy changes without modifying the model
+implementation.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.WeightInfo" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#545">Source</a><h4 class="code-header">type <a href="#associatedtype.WeightInfo" class="associatedtype">WeightInfo</a>: <a class="trait" href="../weights/trait.WeightInfo.html" title="trait pallet_chain_manager::weights::WeightInfo">WeightInfo</a></h4></section></summary><div class="docblock"><p>Weight information for extrinsics in this pallet.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.InflateViaSupply" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#557">Source</a><h4 class="code-header">type <a href="#associatedtype.InflateViaSupply" class="associatedtype">InflateViaSupply</a>: Get&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a></h4></section></summary><div class="docblock"><p><strong>Flag for reward inflation model</strong>.</p>
+<p>Determines how the total reward pool is computed:</p>
+<ul>
+<li><code>true</code>: total asset supply is used to calculate inflation/rewards.</li>
+<li><code>false</code>: total locked stake of authors is used instead.</li>
+</ul>
+<p>This allows flexible reward strategies depending on economic design.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.MaxAffidavitWeights" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#570">Source</a><h4 class="code-header">type <a href="#associatedtype.MaxAffidavitWeights" class="associatedtype">MaxAffidavitWeights</a>: Get&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a></h4></section></summary><div class="docblock"><p>Maximum number of <strong>weights an author can submit in an affidavit</strong>.</p>
+<p>Weight represents backers or collateral information essential for
+conducting elections.</p>
+<p>Limits storage and ensures predictable handling of submitted affidavits.
+If an author submits more than this number, the weights may be truncated.</p>
+<p>Each weight must remain sortable (<code>Ord</code>) for ensuring priority ordering during
+truncation to this upper bound.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.EmitEvents" class="method"><a class="src rightside" href="../../src/pallet_chain_manager/lib.rs.html#583">Source</a><h4 class="code-header">type <a href="#associatedtype.EmitEvents" class="associatedtype">EmitEvents</a>: Get&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a></h4></section></summary><div class="docblock"><p>Controls emission of <a href="enum.Event.html" title="enum pallet_chain_manager::pallet::Event"><code>Event</code></a> via <code>deposit_event</code>.</p>
+<p>Recommended:</p>
+<ul>
+<li><code>false</code> for production runtimes (to reduce overhead)</li>
+<li><code>true</code> for development and mock runtimes (for testing and
+observability)</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/pallet_chain_manager/pallet/trait.Config.js" async></script></section></div></main></body></html>

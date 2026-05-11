@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines a comprehensive framework for managing authors (validators) in a decentralized  network maintaining a distributed, deterministic state machine."><title>frame_suite::blockchain - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module blockchain</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#design-goals" title="Design Goals">Design Goals</a></li><li><a href="#terminology" title="Terminology">Terminology</a></li></ul><h3><a href="#traits">Module Items</a></h3><ul class="block"><li><a href="#traits" title="Traits">Traits</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a></div><h1>Module <span>blockchain</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/blockchain.rs.html#16-840">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines a <strong>comprehensive framework for managing authors</strong> (validators) in a
+decentralized  network maintaining a distributed, deterministic state machine.</p>
+<p>The network is considered as a set of <strong>independent nodes operated by authors</strong>,
+where each author is responsible for appending transactions that drive the state
+machine through deterministic transitions.</p>
+<p>To ensure consistency across the network, the system requires a mechanism to
+determine <strong>which author can propose transactions at any given period</strong>, in
+a way that is approved by a quorum of the authors themselves. This enables
+coordinated block production, fair transaction inclusion, and consensus-approved
+progression of the state machine while preserving author accountability.</p>
+<p>To ensure smooth operation, the system provides a <strong>consistent and pluggable
+framework</strong> for:</p>
+<ul>
+<li><strong>Author elections</strong> (<a href="trait.ElectAuthors.html" title="trait frame_suite::blockchain::ElectAuthors"><code>ElectAuthors</code></a>) determining which authors are
+responsible for producing the next set of blocks or transactions.</li>
+<li><strong>Contribution tracking</strong> (<a href="trait.AuthorPoints.html" title="trait frame_suite::blockchain::AuthorPoints"><code>AuthorPoints</code></a>) ephemeral points awarded for
+good behavior or participation during a session, allowing fair evaluation of
+author performance.</li>
+<li><strong>Reward distribution</strong> (<a href="trait.RewardAuthors.html" title="trait frame_suite::blockchain::RewardAuthors"><code>RewardAuthors</code></a>) single-point reward computation
+using accumulated points, distributing assets to authors based on their
+contributions.</li>
+<li><strong>Penalty enforcement</strong> (<a href="trait.PenalizeAuthors.html" title="trait frame_suite::blockchain::PenalizeAuthors"><code>PenalizeAuthors</code></a>) immediate sanctions for bad
+behavior, missed duties, or misbehavior.</li>
+<li><strong>Affidavit handling</strong> (<a href="trait.ElectionAffidavits.html" title="trait frame_suite::blockchain::ElectionAffidavits"><code>ElectionAffidavits</code></a>) voluntary self-reported
+election weights that authors may submit to participate in elections or help
+the system determine the next set of block producers.</li>
+</ul>
+<h3 id="design-goals"><a class="doc-anchor" href="#design-goals">§</a>Design Goals</h3>
+<ol>
+<li><strong>End-to-end author lifecycle management</strong>: track contributions, elect,
+reward, and penalize authors in a consistent way.</li>
+<li><strong>Fair and transparent reward system</strong>: ephemeral points track good behavior;
+rewards are computed at a single point in time for all authors and distributed
+according to points earned.</li>
+<li><strong>Immediate accountability</strong>: penalties are applied as soon as misbehavior
+is detected.</li>
+<li><strong>Flexible and pluggable logic</strong>: supports runtime-configurable
+<a href="../plugins/index.html" title="mod frame_suite::plugins"><code>plugins</code></a> for rewards, penalties, inflation adjustments, and
+election algorithms.</li>
+<li><strong>Framework-agnostic architecture</strong>: can be integrated in:
+<ul>
+<li><strong>Standalone chains</strong> with independent consensus and security.</li>
+<li><strong>Parachains or shared-security environments</strong>, where authors act as
+collators or validators.</li>
+</ul>
+</li>
+</ol>
+<h3 id="terminology"><a class="doc-anchor" href="#terminology">§</a>Terminology</h3>
+<ul>
+<li><strong>Authors</strong>: Independent node operators responsible for producing blocks,
+validating transactions, or fulfilling consensus-critical roles.</li>
+<li><strong>Points</strong>: Temporary metrics representing author contributions for a session;
+used for computing rewards fairly at a single evaluation point.</li>
+<li><strong>Rewards</strong>: Asset payouts allocated based on points, configurable via
+runtime <a href="../plugins/index.html" title="mod frame_suite::plugins"><code>plugins</code></a>.</li>
+<li><strong>Penalties</strong>: Immediate deductions or sanctions applied to authors for
+misbehavior.</li>
+<li><strong>Affidavits</strong>: Voluntary, self-reported election weights submitted by
+authors, used for lazy election mechanisms where authors influence election
+outcomes.</li>
+</ul>
+<p>By implementing these traits, a runtime gains a <strong>robust, modular, and
+chain-agnostic system</strong> for handling author performance, elections, rewards,
+penalties, and voluntary affidavits, ensuring predictable, fair, and transparent
+operation of the blockchain network.</p>
+</div></details><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.AuthorPoints.html" title="trait frame_suite::blockchain::AuthorPoints">Author<wbr>Points</a></dt><dd>Trait representing <strong>temporary, abstract points assigned to authors</strong>.</dd><dt><a class="trait" href="trait.ElectAuthors.html" title="trait frame_suite::blockchain::ElectAuthors">Elect<wbr>Authors</a></dt><dd>Higher-Level Trait for performing election of authors (e.g., block producers,
+validators, etc) in a FRAME-based runtime.</dd><dt><a class="trait" href="trait.ElectionAffidavits.html" title="trait frame_suite::blockchain::ElectionAffidavits">Election<wbr>Affidavits</a></dt><dd>Defines the behavior for <strong>author affidavits</strong> - self-declared affirmations
+of election weights during a given cycle.</dd><dt><a class="trait" href="trait.PenalizeAuthors.html" title="trait frame_suite::blockchain::PenalizeAuthors">Penalize<wbr>Authors</a></dt><dd>Provides a <strong>plugin-driven penalty system</strong> for authors, allowing
+permanent penalties to be applied in a modular and runtime-configurable way.</dd><dt><a class="trait" href="trait.RewardAuthors.html" title="trait frame_suite::blockchain::RewardAuthors">Reward<wbr>Authors</a></dt><dd>Provides a <strong>plugin-driven reward system</strong> for authors, connecting
+ephemeral <strong>points</strong> to actual <strong>asset payouts</strong>.</dd></dl></section></div></main></body></html>

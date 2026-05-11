@@ -1,0 +1,315 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Trait for issuing and managing XP locks."><title>XpLock in frame_suite::xp - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">XpLock</a></h2><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Lock" title="Lock">Lock</a></li><li><a href="#associatedtype.LockReason" title="LockReason">LockReason</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.burn_lock" title="burn_lock">burn_lock</a></li><li><a href="#tymethod.get_all_locks" title="get_all_locks">get_all_locks</a></li><li><a href="#tymethod.get_lock_xp" title="get_lock_xp">get_lock_xp</a></li><li><a href="#tymethod.has_lock" title="has_lock">has_lock</a></li><li><a href="#tymethod.lock_exists" title="lock_exists">lock_exists</a></li><li><a href="#tymethod.set_lock" title="set_lock">set_lock</a></li><li><a href="#tymethod.total_locked" title="total_locked">total_locked</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.can_lock_mutate" title="can_lock_mutate">can_lock_mutate</a></li><li><a href="#method.can_lock_new" title="can_lock_new">can_lock_new</a></li><li><a href="#method.can_lock_xp" title="can_lock_xp">can_lock_xp</a></li><li><a href="#method.lock_xp" title="lock_xp">lock_xp</a></li><li><a href="#method.maximum_locks" title="maximum_locks">maximum_locks</a></li><li><a href="#method.on_lock_burn" title="on_lock_burn">on_lock_burn</a></li><li><a href="#method.on_lock_slash" title="on_lock_slash">on_lock_slash</a></li><li><a href="#method.on_lock_update" title="on_lock_update">on_lock_update</a></li><li><a href="#method.slash_lock" title="slash_lock">slash_lock</a></li><li><a href="#method.withdraw_lock" title="withdraw_lock">withdraw_lock</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>xp</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">xp</a></div><h1>Trait <span class="trait">XpLock</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/xp.rs.html#1345-1745">Source</a> </span></div><pre class="rust item-decl"><code>pub trait XpLock<div class="where">where
+    Self: <a class="trait" href="trait.XpMutate.html" title="trait frame_suite::xp::XpMutate">XpMutate</a> + <a class="trait" href="trait.XpSystem.html" title="trait frame_suite::xp::XpSystem">XpSystem</a>&lt;Extension: <a class="trait" href="trait.XpLockListener.html" title="trait frame_suite::xp::XpLockListener">XpLockListener</a> + <a class="trait" href="trait.XpSystemExtensions.html" title="trait frame_suite::xp::XpSystemExtensions">XpSystemExtensions</a>&lt;Via = Self&gt;&gt;,</div>{
+    type <a href="#associatedtype.Lock" class="associatedtype">Lock</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a>;
+    type <a href="#associatedtype.LockReason" class="associatedtype">LockReason</a>: <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a> + VariantCount;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 17 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.lock_exists" class="fn">lock_exists</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.has_lock" class="fn">has_lock</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_lock_xp" class="fn">get_lock_xp</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.total_locked" class="fn">total_locked</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_all_locks" class="fn">get_all_locks</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.burn_lock" class="fn">burn_lock</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_lock" class="fn">set_lock</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; DispatchResult;
+
+    // Provided methods
+    fn <a href="#method.can_lock_xp" class="fn">can_lock_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_lock_mutate" class="fn">can_lock_mutate</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.can_lock_new" class="fn">can_lock_new</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.maximum_locks" class="fn">maximum_locks</a>() -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.usize.html">usize</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.lock_xp" class="fn">lock_xp</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.withdraw_lock" class="fn">withdraw_lock</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    ) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.slash_lock" class="fn">slash_lock</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_lock_update" class="fn">on_lock_update</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+        lock_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_lock_burn" class="fn">on_lock_burn</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_lock_slash" class="fn">on_lock_slash</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+        slashed_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Trait for issuing and managing XP locks.</p>
+<p>Locked XP is set aside and made temporarily inaccessible, reducing the liquid
+(spendable) balance for the duration of the lock. Locks are typically used to
+enforce runtime constraints, commitments, or cooldowns, and are always scoped
+to a specific XP entry.</p>
+<ul>
+<li>Multiple locks can exist per XP entry, each identified by a unique <code>LockReason</code>.</li>
+<li>Locking is non-transferable and always local to the XP entry; locked XP cannot
+be moved or reassigned.</li>
+<li>Locks are intended for internal runtime use (e.g., staking, governance, slashing)
+and should not be directly controlled by end users.</li>
+</ul>
+<p>Typical use cases include staking, governance participation, temporary restrictions,
+or module isolation.</p>
+<p>Additionally, this trait provides default support methods for common lock-related
+patterns, such as validation, locking, withdrawing, and slashing XP locks.</p>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Lock" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1361">Source</a><h4 class="code-header">type <a href="#associatedtype.Lock" class="associatedtype">Lock</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a></h4></section></summary><div class="docblock"><p>Structure representing lock metadata (e.g., ID, locked XP points).</p>
+<p>It is merely given for alias and hygiene reason for the implementation</p>
+<p>Locking should be internally controlled by runtime intent, not exposed to end
+users.</p>
+<p><strong>Note</strong>:</p>
+<ul>
+<li>XP locks are strictly for internal use, not for direct user access (unlike
+fungible assets).</li>
+<li>Allowing users direct control over locks can lead to manipulation or spam-like
+behavior.</li>
+</ul>
+</div></details><details class="toggle" open><summary><section id="associatedtype.LockReason" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1375">Source</a><h4 class="code-header">type <a href="#associatedtype.LockReason" class="associatedtype">LockReason</a>: <a class="trait" href="../base/trait.RuntimeEnum.html" title="trait frame_suite::base::RuntimeEnum">RuntimeEnum</a> + VariantCount</h4></section></summary><div class="docblock"><p>The <code>LockReason</code> represents <em>why</em> XP is Locked or modified within the system.</p>
+<p>It is expected to be a lightweight, bounded identifier that classifies
+the context or intent of runtime-level operations-such as staking, governance, or
+slashing.</p>
+<p>Should be constrained to a small, enumerable set defined by the runtime to prevent
+storage bloat.</p>
+<p>Example use cases:</p>
+<ul>
+<li><code>LockReason::Staking</code> - XP locked due to block author staking.</li>
+<li><code>LockReason::Treasury</code> - XP redirected for governance or public goods.</li>
+</ul>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.lock_exists" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1390">Source</a><h4 class="code-header">fn <a href="#tymethod.lock_exists" class="fn">lock_exists</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if a lock exists for the given XP key and lock reason.</p>
+<p>This method serves as a guard function to verify lock existence before performing
+operations that assume a specific lock is present.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if a lock exists for the specified key and reason.</li>
+<li><code>Err(DispatchError)</code> if the lock does not exist or the XP key is invalid.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.has_lock" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1401">Source</a><h4 class="code-header">fn <a href="#tymethod.has_lock" class="fn">has_lock</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if the XP entry has any active locks.</p>
+<p>This method provides a quick existence check for any locks without
+checking a lock’s specific reason. Useful as a precondition check
+before performing lock-sensitive operations.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the XP entry has one or more active locks.</li>
+<li><code>Err(DispatchError)</code> if no locks exist for the XP key.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_lock_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1518-1521">Source</a><h4 class="code-header">fn <a href="#tymethod.get_lock_xp" class="fn">get_lock_xp</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the amount of XP locked under the specified lock reason.</p>
+<p>This method returns the exact number of points currently locked for the given
+reason, allowing precise queries of lock states for accounting, validation,
+or display purposes.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the locked XP amount for the specified reason.</li>
+<li><code>Err(DispatchError)</code> if the XP key or lock does not exist.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.total_locked" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1532">Source</a><h4 class="code-header">fn <a href="#tymethod.total_locked" class="fn">total_locked</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the total points of XP actively locked for the given key.</p>
+<p><strong>Performance Tip</strong>: If total locked XP is available as high-level metadata
+in the XP structure, it is more efficient to query this value
+directly rather than summing individual locks.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the total locked XP amount.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_all_locks" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1542">Source</a><h4 class="code-header">fn <a href="#tymethod.get_all_locks" class="fn">get_all_locks</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves all active lock reasons associated with the XP key.</p>
+<p>Returns an empty vector if no locks exist for the XP key.
+Use <a href="trait.XpLock.html#tymethod.has_lock"><code>has_lock</code></a> as a precondition to avoid unnecessary queries when no locks exist.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;LockReason&gt;)</code> containing all active lock reasons.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or lookup fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.burn_lock" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1577">Source</a><h4 class="code-header">fn <a href="#tymethod.burn_lock" class="fn">burn_lock</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Burns (permanently removes) a lock and its associated XP.</p>
+<p>This method completely destroys both the lock entry and the XP it contained,
+representing full consumption of the locked value.</p>
+<p>This is typically used for internal operations or full withdrawal of a lock,
+as locks cannot be partially withdrawn unlike reserves.</p>
+<p>The handling of the burned XP is left to the caller or runtime logic.</p>
+<h6 id="note"><a class="doc-anchor" href="#note">§</a>Note</h6>
+<p>This does not inherently indicate a penalty. For penalty-oriented reductions,
+prefer using <a href="trait.XpLock.html#method.slash_lock"><code>Self::slash_lock</code></a>.</p>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the lock is successfully burned.</li>
+<li><code>Err(DispatchError)</code> if the XP key or lock does not exist or the operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_lock" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1595-1599">Source</a><h4 class="code-header">fn <a href="#tymethod.set_lock" class="fn">set_lock</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p><strong>Use with caution!</strong> Directly sets the locked XP for the given key and reason.</p>
+<p>This function bypasses standard XP flow and permission checks, allowing direct
+manipulation of lock values. It is intended strictly for low-level runtime intents
+such as migrations, internal state resets, or administrative operations.</p>
+<p>This method must <strong>never</strong> be exposed to users or XP providers, as it allows
+arbitrary creation or mutation of locks, which can break system invariants.
+Locks should always be created and withdrawn as whole units through controlled flows.</p>
+<p>If a lock with the given reason does not exist, it will be created with the specified
+points.</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if a lock with specified XP key and reason is successfully created or mutated.</li>
+<li><code>Err(DispatchError)</code> if the operation fails due to system constraints.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.can_lock_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1417-1428">Source</a><h4 class="code-header">fn <a href="#method.can_lock_xp" class="fn">can_lock_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if the specified points of XP can be locked for the given key.</p>
+<p>This method performs comprehensive validation before allowing lock creation:</p>
+<ul>
+<li>Verifies the XP key exists and can support new locks</li>
+<li>Ensures the points to lock are non-zero</li>
+<li>Confirms sufficient liquid XP is available</li>
+<li>Validates that adding the lock won’t cause arithmetic overflow</li>
+</ul>
+<p>This validation ensures that lock operations will succeed and maintain
+system invariants when performed.</p>
+<h6 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the lock can be safely created.</li>
+<li><code>Err(DispatchError)</code> if any validation condition fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_lock_mutate" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1444-1472">Source</a><h4 class="code-header">fn <a href="#method.can_lock_mutate" class="fn">can_lock_mutate</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks if an existing lock can be mutated to the new value.</p>
+<p>This method validates whether an existing lock’s value can be safely changed
+to the specified points. It handles both increases and decreases in lock value,
+ensuring that arithmetic operations won’t overflow or underflow and that the
+new value is valid (non-zero).</p>
+<p>This is essential for lock modification operations that need to adjust
+existing lock points while maintaining system stability.</p>
+<h6 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the lock mutation is allowed.</li>
+<li><code>Err(DispatchError)</code> if the mutation would cause arithmetic errors or violate
+constraints.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.can_lock_new" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1488-1503">Source</a><h4 class="code-header">fn <a href="#method.can_lock_new" class="fn">can_lock_new</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Determines if a new XP lock can be created for the given key and points.</p>
+<p>This method validates the fundamental requirements for creating a new lock:</p>
+<ul>
+<li>The XP key must exist in storage</li>
+<li>The points to lock must be non-zero (prevents meaningless locks)</li>
+<li>The number of existing locks must be below the maximum allowed</li>
+<li>Adding the new lock must not cause arithmetic overflow</li>
+</ul>
+<p>This is a more basic validation than <a href="trait.XpLock.html#method.can_lock_xp"><code>can_lock_xp</code></a>, focusing only on
+the structural requirements rather than liquid balance availability.</p>
+<h6 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if lock creation is structurally allowed.</li>
+<li><code>Err(DispatchError)</code> if any fundamental requirement fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.maximum_locks" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1552-1554">Source</a><h4 class="code-header">fn <a href="#method.maximum_locks" class="fn">maximum_locks</a>() -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.usize.html">usize</a></h4></section></summary><div class="docblock"><p>Returns the maximum number of concurrent locks allowed per XP key.</p>
+<p>This value is determined by the number of variants in the <code>LockReason</code> enum,
+as returned by [<code>VariantCountOf&lt;Self::LockReason&gt;</code>]. Each lock must have a
+unique reason, so the maximum is bounded by the available lock reasons.</p>
+<h6 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h6>
+<ul>
+<li>Returns the maximum number of concurrent locks as a <code>usize</code>.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.lock_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1614-1644">Source</a><h4 class="code-header">fn <a href="#method.lock_xp" class="fn">lock_xp</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Lock’s the specified points of XP under the given lock reason.</p>
+<p>This method deducts the specified points from the liquid balance and creates
+or updates a lock with the given reason. If a lock with the same reason already
+exists, its value is increased; otherwise, a new lock is created.</p>
+<p>The operation ensures atomic consistency by validating preconditions and
+updating both the liquid balance and lock state in a coordinated manner.
+This prevents partial updates that could leave the XP entry in an inconsistent state.</p>
+<h6 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the lock is successfully created or updated.</li>
+<li><code>Err(DispatchError)</code> if the operation fails, with an appropriate error.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.withdraw_lock" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1659-1669">Source</a><h4 class="code-header">fn <a href="#method.withdraw_lock" class="fn">withdraw_lock</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Withdraws the specified lock, returning the locked XP to the liquid balance.</p>
+<p>This method removes the entire lock and restores all its locked XP to the
+account’s liquid balance. The lock can only be withdrawn completely because
+partial withdrawals of locked points are not supported by this method.</p>
+<p>The withdrawal operation is atomic, ensuring that both the lock removal and
+liquid balance update occur together to maintain consistency.</p>
+<h6 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the lock is successfully withdrawn.</li>
+<li><code>Err(DispatchError)</code> if the XP key or lock does not exist or any of the
+operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.slash_lock" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1686-1704">Source</a><h4 class="code-header">fn <a href="#method.slash_lock" class="fn">slash_lock</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Reduces or slashes locked XP under the given lock reason.</p>
+<p>This method provides flexible slashing behavior based on the lock’s current value:</p>
+<ul>
+<li>If the locked XP points is greater than specified points, only the requested
+amount is slashed</li>
+<li>If the locked XP points is less than the requested points, the entire lock is
+burned</li>
+</ul>
+<p>This is typically used for penalty enforcement, where locked XP is reduced
+or fully forfeited based on protocol rules.</p>
+<h6 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the actual amount slashed or burned.</li>
+<li><code>Err(DispatchError)</code> if the XP key or lock does not exist or any of the operation
+fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_lock_update" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1719-1721">Source</a><h4 class="code-header">fn <a href="#method.on_lock_update" class="fn">on_lock_update</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    lock_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+)</h4></section></summary><div class="docblock"><p>Hook invoked after an XP lock is created or its value is updated.</p>
+<p>The <code>lock_points</code> parameter reflects the current value of the lock
+after the update.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit lock creation or update events</li>
+<li>Update related metadata or statistics</li>
+<li>Trigger side effects related to lock changes</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_lock_burn" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1729-1731">Source</a><h4 class="code-header">fn <a href="#method.on_lock_burn" class="fn">on_lock_burn</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>)</h4></section></summary><div class="docblock"><p>Hook invoked after an XP lock is burned (permanently removed).</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit lock removal or burn events</li>
+<li>Update related metadata or statistics</li>
+<li>Trigger side effects related to lock removal</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_lock_slash" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#1742-1744">Source</a><h4 class="code-header">fn <a href="#method.on_lock_slash" class="fn">on_lock_slash</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.XpLock.html#associatedtype.LockReason" title="type frame_suite::xp::XpLock::LockReason">LockReason</a>,
+    slashed_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+)</h4></section></summary><div class="docblock"><p>Hook invoked after a lock is slashed.</p>
+<p>The <code>slashed_points</code> parameter reflects the slashed value of the
+lock in points.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit slashing events</li>
+<li>Update related metadata or statistics</li>
+<li>Trigger side effects related to lock slashing</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/xp/trait.XpLock.js" async></script></section></div></main></body></html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A trait for discrete accumulation with configurable step rules."><title>DiscreteAccumulator in frame_suite::accumulators - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Discrete<wbr>Accumulator</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#intuition" title="Intuition">Intuition</a></li><li><a href="#generic-roles-of-the-associated-types" title="Generic Roles of the Associated Types">Generic Roles of the Associated Types</a></li><li><a href="#how-accumulation-works-conceptually" title="How Accumulation Works (Conceptually)">How Accumulation Works (Conceptually)</a></li><li><a href="#example-scenario-conceptual" title="Example Scenario (Conceptual)">Example Scenario (Conceptual)</a></li><li><a href="#design-flexibility" title="Design Flexibility">Design Flexibility</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Accumulator" title="Accumulator">Accumulator</a></li><li><a href="#associatedtype.Step" title="Step">Step</a></li><li><a href="#associatedtype.Stepper" title="Stepper">Stepper</a></li><li><a href="#associatedtype.Value" title="Value">Value</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.decrement" title="decrement">decrement</a></li><li><a href="#tymethod.increment" title="increment">increment</a></li><li><a href="#tymethod.reveal" title="reveal">reveal</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>accumulators</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">accumulators</a></div><h1>Trait <span class="trait">DiscreteAccumulator</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/accumulators.rs.html#118-162">Source</a> </span></div><pre class="rust item-decl"><code>pub trait DiscreteAccumulator {
+    type <a href="#associatedtype.Value" class="associatedtype">Value</a>: <a class="trait" href="../base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a>;
+    type <a href="#associatedtype.Step" class="associatedtype">Step</a>: <a class="trait" href="../base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a>;
+    type <a href="#associatedtype.Accumulator" class="associatedtype">Accumulator</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a>;
+    type <a href="#associatedtype.Stepper" class="associatedtype">Stepper</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a>;
+
+    // Required methods
+    fn <a href="#tymethod.increment" class="fn">increment</a>(accum: &amp;mut Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Accumulator" title="type frame_suite::accumulators::DiscreteAccumulator::Accumulator">Accumulator</a>, stepper: &amp;Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Stepper" title="type frame_suite::accumulators::DiscreteAccumulator::Stepper">Stepper</a>);
+<span class="item-spacer"></span>    fn <a href="#tymethod.decrement" class="fn">decrement</a>(accum: &amp;mut Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Accumulator" title="type frame_suite::accumulators::DiscreteAccumulator::Accumulator">Accumulator</a>, stepper: &amp;Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Stepper" title="type frame_suite::accumulators::DiscreteAccumulator::Stepper">Stepper</a>);
+<span class="item-spacer"></span>    fn <a href="#tymethod.reveal" class="fn">reveal</a>(accum: &amp;Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Accumulator" title="type frame_suite::accumulators::DiscreteAccumulator::Accumulator">Accumulator</a>) -&gt; Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Value" title="type frame_suite::accumulators::DiscreteAccumulator::Value">Value</a>;
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A trait for discrete accumulation with configurable step rules.</p>
+<p>This trait models systems where progress happens in small, discrete steps,
+and those steps gradually accumulate into a larger meaningful value.</p>
+<p>Instead of directly changing the final value every time, progress is first
+stored internally and only converted into a visible result when certain
+conditions (such as thresholds) are met.</p>
+<h3 id="intuition"><a class="doc-anchor" href="#intuition">§</a>Intuition</h3>
+<p>Think of this as a two-layer progression system:</p>
+<ol>
+<li>Small repeated actions add <em>internal progress</em></li>
+<li>Once enough progress is collected, the visible value increases</li>
+</ol>
+<p>The internal progress is hidden, and <code>reveal</code> exposes only the final result.</p>
+<h3 id="generic-roles-of-the-associated-types"><a class="doc-anchor" href="#generic-roles-of-the-associated-types">§</a>Generic Roles of the Associated Types</h3>
+<ul>
+<li>
+<p><code>Value</code>
+The final meaningful result exposed to consumers.
+This is what users care about (e.g., level, score, reputation).</p>
+</li>
+<li>
+<p><code>Step</code>
+Represents one discrete unit of progress applied during each operation.
+Each increment or decrement applies one such step.</p>
+</li>
+<li>
+<p><code>Accumulator</code>
+Internal state that tracks progress and any additional data needed
+to determine how the final value evolves over time.</p>
+</li>
+<li>
+<p><code>Stepper</code>
+Defines the rules for how steps affect the accumulator.
+This may include configuration such as thresholds, scaling factors,
+or other logic governing accumulation behavior.</p>
+</li>
+</ul>
+<h3 id="how-accumulation-works-conceptually"><a class="doc-anchor" href="#how-accumulation-works-conceptually">§</a>How Accumulation Works (Conceptually)</h3>
+<p>Forward progression:</p>
+<div class="example-wrap"><pre class="language-text"><code>progress += step
+if progress reaches some condition (e.g., threshold):
+    value increases
+    progress is adjusted/reset accordingly</code></pre></div>
+<p>Reverse progression:</p>
+<div class="example-wrap"><pre class="language-text"><code>progress -= step
+if progress would go below zero:
+    value decreases
+    progress is restored based on the rules</code></pre></div>
+<p>The exact logic is fully defined by the implementation.</p>
+<h3 id="example-scenario-conceptual"><a class="doc-anchor" href="#example-scenario-conceptual">§</a>Example Scenario (Conceptual)</h3>
+<p>Imagine a system where:</p>
+<ul>
+<li>Each action adds a fixed amount of progress</li>
+<li>A visible value increases only after enough progress is accumulated</li>
+</ul>
+<p>Progress might evolve like this:</p>
+<div class="example-wrap"><pre class="language-text"><code>Start: value = 0, internal progress = 0
+Step 1 -&gt; internal progress increases
+Step 2 -&gt; internal progress increases
+Step 3 -&gt; internal progress reaches condition -&gt; value becomes 1</code></pre></div>
+<p>Decrementing would reverse this process, potentially reducing the value
+and restoring some internal progress.</p>
+<h3 id="design-flexibility"><a class="doc-anchor" href="#design-flexibility">§</a>Design Flexibility</h3>
+<p>Implementors are free to define:</p>
+<ul>
+<li>How internal progress is stored</li>
+<li>What condition converts progress into value changes</li>
+<li>How increments and decrements interact with that state</li>
+<li>Any custom or domain-specific accumulation logic</li>
+</ul>
+<p>This makes the trait suitable for a wide range of stepped progression systems
+such as reward meters, scoring engines, leveling mechanics, or quota trackers.</p>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Value" class="method"><a class="src rightside" href="../../src/frame_suite/accumulators.rs.html#123">Source</a><h4 class="code-header">type <a href="#associatedtype.Value" class="associatedtype">Value</a>: <a class="trait" href="../base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a></h4></section></summary><div class="docblock"><p>The final value type that represents the accumulated result.</p>
+<p>This is the user-facing result derived from the internal accumulator state.
+Implementations decide how internal progress maps to this value.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Step" class="method"><a class="src rightside" href="../../src/frame_suite/accumulators.rs.html#128">Source</a><h4 class="code-header">type <a href="#associatedtype.Step" class="associatedtype">Step</a>: <a class="trait" href="../base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a></h4></section></summary><div class="docblock"><p>The discrete unit of progress applied during accumulation operations.</p>
+<p>Each increment or decrement uses this unit to modify internal state.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Accumulator" class="method"><a class="src rightside" href="../../src/frame_suite/accumulators.rs.html#134">Source</a><h4 class="code-header">type <a href="#associatedtype.Accumulator" class="associatedtype">Accumulator</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a></h4></section></summary><div class="docblock"><p>The internal state used to track accumulation progress.</p>
+<p>This may contain any data required to determine how the final value evolves,
+including partial progress toward future value changes.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Stepper" class="method"><a class="src rightside" href="../../src/frame_suite/accumulators.rs.html#140">Source</a><h4 class="code-header">type <a href="#associatedtype.Stepper" class="associatedtype">Stepper</a>: <a class="trait" href="../base/trait.Delimited.html" title="trait frame_suite::base::Delimited">Delimited</a></h4></section></summary><div class="docblock"><p>Configuration describing how steps affect the accumulator.</p>
+<p>This governs the rules of accumulation, such as when progress should
+convert into value changes or how reverse progression behaves.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.increment" class="method"><a class="src rightside" href="../../src/frame_suite/accumulators.rs.html#147">Source</a><h4 class="code-header">fn <a href="#tymethod.increment" class="fn">increment</a>(accum: &amp;mut Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Accumulator" title="type frame_suite::accumulators::DiscreteAccumulator::Accumulator">Accumulator</a>, stepper: &amp;Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Stepper" title="type frame_suite::accumulators::DiscreteAccumulator::Stepper">Stepper</a>)</h4></section></summary><div class="docblock"><p>Applies forward progression to the accumulator.</p>
+<p>This operation increases internal progress according to the rules defined
+by the <code>Stepper</code>. Depending on the implementation, this may cause the
+revealed value to increase once certain conditions are met.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.decrement" class="method"><a class="src rightside" href="../../src/frame_suite/accumulators.rs.html#155">Source</a><h4 class="code-header">fn <a href="#tymethod.decrement" class="fn">decrement</a>(accum: &amp;mut Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Accumulator" title="type frame_suite::accumulators::DiscreteAccumulator::Accumulator">Accumulator</a>, stepper: &amp;Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Stepper" title="type frame_suite::accumulators::DiscreteAccumulator::Stepper">Stepper</a>)</h4></section></summary><div class="docblock"><p>Applies reverse progression to the accumulator.</p>
+<p>This operation removes internal progress. If reversing progress crosses
+important boundaries (such as previously completed thresholds), the
+revealed value may decrease and internal progress may be restored
+accordingly.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reveal" class="method"><a class="src rightside" href="../../src/frame_suite/accumulators.rs.html#161">Source</a><h4 class="code-header">fn <a href="#tymethod.reveal" class="fn">reveal</a>(accum: &amp;Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Accumulator" title="type frame_suite::accumulators::DiscreteAccumulator::Accumulator">Accumulator</a>) -&gt; Self::<a class="associatedtype" href="trait.DiscreteAccumulator.html#associatedtype.Value" title="type frame_suite::accumulators::DiscreteAccumulator::Value">Value</a></h4></section></summary><div class="docblock"><p>Reveals the current accumulated value derived from the internal state.</p>
+<p>This provides read-only access to the meaningful result while hiding
+the internal progress details used to compute it.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/accumulators/trait.DiscreteAccumulator.js" async></script></section></div></main></body></html>

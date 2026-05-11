@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Allocation interface for virtual extensions whose type and schema are defined externally and fully determined at compile time."><title>VirtualStaticExtension in frame_suite::virtuals - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Virtual<wbr>Static<wbr>Extension</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#context" title="Context">Context</a></li><li><a href="#representation" title="Representation">Representation</a></li><li><a href="#semantics" title="Semantics">Semantics</a></li><li><a href="#key-property" title="Key Property">Key Property</a></li><li><a href="#default-discriminant" title="Default Discriminant">Default Discriminant</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.TypesVia" title="TypesVia">TypesVia</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.access" title="access">access</a></li><li><a href="#tymethod.mutate" title="mutate">mutate</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>virtuals</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">virtuals</a></div><h1>Trait <span class="trait">VirtualStaticExtension</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/virtuals.rs.html#1958-1967">Source</a> </span></div><pre class="rust item-decl"><code>pub trait VirtualStaticExtension&lt;Discriminant: <a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a> = <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>&gt;: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a> {
+    type <a href="#associatedtype.TypesVia" class="associatedtype">TypesVia</a>: <a class="trait" href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema">VirtualStaticExtensionSchema</a>&lt;Discriminant&gt;;
+
+    // Required methods
+    fn <a href="#tymethod.access" class="fn">access</a>(
+        &amp;self,
+    ) -&gt; &lt;Self::<a class="associatedtype" href="trait.VirtualStaticExtension.html#associatedtype.TypesVia" title="type frame_suite::virtuals::VirtualStaticExtension::TypesVia">TypesVia</a> as <a class="trait" href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema">VirtualStaticExtensionSchema</a>&lt;Discriminant&gt;&gt;::<a class="associatedtype" href="trait.VirtualStaticExtensionSchema.html#associatedtype.Repr" title="type frame_suite::virtuals::VirtualStaticExtensionSchema::Repr">Repr</a>;
+<span class="item-spacer"></span>    fn <a href="#tymethod.mutate" class="fn">mutate</a>(
+        &amp;mut self,
+        v: &lt;Self::<a class="associatedtype" href="trait.VirtualStaticExtension.html#associatedtype.TypesVia" title="type frame_suite::virtuals::VirtualStaticExtension::TypesVia">TypesVia</a> as <a class="trait" href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema">VirtualStaticExtensionSchema</a>&lt;Discriminant&gt;&gt;::<a class="associatedtype" href="trait.VirtualStaticExtensionSchema.html#associatedtype.Repr" title="type frame_suite::virtuals::VirtualStaticExtensionSchema::Repr">Repr</a>,
+    );
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Allocation interface for virtual extensions whose type and schema
+are defined externally and fully determined at compile time.</p>
+<p>This is the static counterpart to <a href="trait.VirtualDynExtension.html" title="trait frame_suite::virtuals::VirtualDynExtension"><code>VirtualDynExtension</code></a>, where
+both type and structure are fixed via the schema.</p>
+<h3 id="context"><a class="doc-anchor" href="#context">§</a>Context</h3>
+<p>In the static field model:</p>
+<ul>
+<li><a href="trait.VirtualStaticField.html" title="trait frame_suite::virtuals::VirtualStaticField"><code>VirtualStaticField</code></a> defines fields with fixed structure</li>
+<li><a href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema"><code>VirtualStaticExtensionSchema</code></a> defines externally supplied types
+and compile-time layout</li>
+<li><code>VirtualStaticExtension</code> stores values using that schema</li>
+</ul>
+<p>This allows a container (<code>Self</code>) to host externally defined fields
+with statically determined structure.</p>
+<h3 id="representation"><a class="doc-anchor" href="#representation">§</a>Representation</h3>
+<p>All operations are performed on the schema-defined representation:</p>
+<ul>
+<li><code>TypesVia</code> defines <code>None</code>, <code>Some</code>, <code>Many</code>, and <code>Repr</code></li>
+<li><code>Many</code> is expected to have <strong>array-like semantics</strong></li>
+<li>size and capacity are encoded at compile time</li>
+</ul>
+<h3 id="semantics"><a class="doc-anchor" href="#semantics">§</a>Semantics</h3>
+<ul>
+<li>
+<p><strong>Container (<code>Self</code>)</strong></p>
+<ul>
+<li>owns storage</li>
+</ul>
+</li>
+<li>
+<p><strong>Schema (<code>TypesVia</code>)</strong></p>
+<ul>
+<li>defines element type and representation</li>
+</ul>
+</li>
+</ul>
+<h3 id="key-property"><a class="doc-anchor" href="#key-property">§</a>Key Property</h3>
+<p>Both type and structure are <strong>fully determined at compile time</strong>,
+enabling zero-overhead representations without dynamic checks.</p>
+<h3 id="default-discriminant"><a class="doc-anchor" href="#default-discriminant">§</a>Default Discriminant</h3>
+<ul>
+<li><code>Discriminant = ()</code>: defines a single default extension,
+meaning only one static extension is assumed.</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.TypesVia" class="method"><a class="src rightside" href="../../src/frame_suite/virtuals.rs.html#1960">Source</a><h4 class="code-header">type <a href="#associatedtype.TypesVia" class="associatedtype">TypesVia</a>: <a class="trait" href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema">VirtualStaticExtensionSchema</a>&lt;Discriminant&gt;</h4></section></summary><div class="docblock"><p>External schema defining the extension.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.access" class="method"><a class="src rightside" href="../../src/frame_suite/virtuals.rs.html#1963">Source</a><h4 class="code-header">fn <a href="#tymethod.access" class="fn">access</a>(
+    &amp;self,
+) -&gt; &lt;Self::<a class="associatedtype" href="trait.VirtualStaticExtension.html#associatedtype.TypesVia" title="type frame_suite::virtuals::VirtualStaticExtension::TypesVia">TypesVia</a> as <a class="trait" href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema">VirtualStaticExtensionSchema</a>&lt;Discriminant&gt;&gt;::<a class="associatedtype" href="trait.VirtualStaticExtensionSchema.html#associatedtype.Repr" title="type frame_suite::virtuals::VirtualStaticExtensionSchema::Repr">Repr</a></h4></section></summary><div class="docblock"><p>Returns the underlying representation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.mutate" class="method"><a class="src rightside" href="../../src/frame_suite/virtuals.rs.html#1966">Source</a><h4 class="code-header">fn <a href="#tymethod.mutate" class="fn">mutate</a>(
+    &amp;mut self,
+    v: &lt;Self::<a class="associatedtype" href="trait.VirtualStaticExtension.html#associatedtype.TypesVia" title="type frame_suite::virtuals::VirtualStaticExtension::TypesVia">TypesVia</a> as <a class="trait" href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema">VirtualStaticExtensionSchema</a>&lt;Discriminant&gt;&gt;::<a class="associatedtype" href="trait.VirtualStaticExtensionSchema.html#associatedtype.Repr" title="type frame_suite::virtuals::VirtualStaticExtensionSchema::Repr">Repr</a>,
+)</h4></section></summary><div class="docblock"><p>Replaces the underlying representation.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/virtuals/trait.VirtualStaticExtension.js" async></script></section></div></main></body></html>

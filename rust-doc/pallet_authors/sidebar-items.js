@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["election","pallet","roles","types","weights"]};

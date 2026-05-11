@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["blockchain","crypto","mocks","offence","pallet","roles","routines","session","types","weights"]};

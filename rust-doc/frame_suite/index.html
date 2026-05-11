@@ -1,0 +1,144 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A composable, type-driven foundation for building modular runtime systems on top of Substrate."><title>frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#how-everything-is-designed" title="How Everything is Designed">How Everything is Designed</a></li><li><a href="#architecture-overview" title="Architecture Overview">Architecture Overview</a><ul><li><a href="#core-primitives" title="Core Primitives">Core Primitives</a></li><li><a href="#structural--behavioral-core" title="Structural &#38; Behavioral Core">Structural &amp; Behavioral Core</a></li><li><a href="#progression--accumulation" title="Progression &#38; Accumulation">Progression &amp; Accumulation</a></li><li><a href="#value--financial-semantics" title="Value &#38; Financial Semantics">Value &amp; Financial Semantics</a></li><li><a href="#coordination--governance" title="Coordination &#38; Governance">Coordination &amp; Governance</a></li><li><a href="#execution-layer" title="Execution Layer">Execution Layer</a></li></ul></li><li><a href="#design-principles" title="Design Principles">Design Principles</a><ul><li><a href="#decoupled-concerns" title="Decoupled Concerns">Decoupled Concerns</a></li><li><a href="#plugin-driven-execution" title="Plugin-Driven Execution">Plugin-Driven Execution</a></li><li><a href="#type-level-composition" title="Type-Level Composition">Type-Level Composition</a></li><li><a href="#lazy--deferred-semantics" title="Lazy &#38; Deferred Semantics">Lazy &amp; Deferred Semantics</a></li></ul></li><li><a href="#hygiene" title="Hygiene">Hygiene</a></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#macros" title="Macros">Macros</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>frame_suite</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/lib.rs.html#12-199">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A composable, type-driven foundation for building modular runtime systems
+on top of Substrate.</p>
+<p>This crate is a collection of <strong>orthogonal, interoperable abstractions</strong>
+that capture recurring runtime patterns and execution without prescribing
+concrete implementations.</p>
+<p>The focus is not on providing ready-made systems, but on defining
+<strong>reusable semantics and capabilities</strong> that can be composed, extended,
+and adapted across different contexts.</p>
+<p>The design is guided by:</p>
+<ul>
+<li><strong>Type-first abstractions</strong></li>
+<li><strong>Plugin-driven behavior</strong></li>
+<li><strong>Decoupled structure, storage, and execution</strong></li>
+</ul>
+<p>The crate is expected to evolve over time, growing as new reusable patterns
+emerge, while maintaining a consistent approach to abstraction and composition.</p>
+<h3 id="how-everything-is-designed"><a class="doc-anchor" href="#how-everything-is-designed">§</a>How Everything is Designed</h3>
+<p>The crate follows a consistent design model across all modules:</p>
+<ul>
+<li>
+<p><strong>Traits define semantics</strong>
+Each module exposes traits that describe <em>what a system means</em>,
+not how it is implemented.</p>
+</li>
+<li>
+<p><strong>Types encode constraints</strong>
+Capabilities, invariants, and relationships are expressed through
+associated types and bounds, ensuring correctness at compile time.</p>
+</li>
+<li>
+<p><strong>Behavior is externalized</strong>
+Logic is not embedded into core structures. Instead, it is provided
+through pluggable models and context-driven execution.</p>
+</li>
+<li>
+<p><strong>Storage is not assumed</strong>
+Data layout and persistence are left to the implementing context,
+allowing the same abstraction to work across different storage strategies.</p>
+</li>
+<li>
+<p><strong>Composition is the mechanism</strong>
+Larger systems emerge by combining small, orthogonal primitives,
+rather than extending monolithic components.</p>
+</li>
+</ul>
+<p>This results in abstractions that are:</p>
+<ul>
+<li>reusable across domains</li>
+<li>extensible without modification</li>
+<li>adaptable to different runtime environments</li>
+</ul>
+<h3 id="architecture-overview"><a class="doc-anchor" href="#architecture-overview">§</a>Architecture Overview</h3>
+<p>The crate is organized into domain-oriented modules, each contributing
+a focused set of traits and primitives. These modules are intentionally
+<strong>loosely coupled</strong> and can be used independently or composed together
+to form higher-level systems.</p>
+<p>The crate is organized from</p>
+<div class="example-wrap"><pre class="language-text"><code>low-level primitives -&gt; structural abstractions -&gt; domain systems -&gt; execution</code></pre></div><h4 id="core-primitives"><a class="doc-anchor" href="#core-primitives">§</a>Core Primitives</h4>
+<ul>
+<li><a href="base/index.html" title="mod frame_suite::base"><code>base</code></a>         : Foundational traits for deterministic, codec-safe types</li>
+<li><a href="fixedpoint/index.html" title="mod frame_suite::fixedpoint"><code>fixedpoint</code></a>   : Deterministic numeric and fixed-point abstractions</li>
+<li><a href="keys/index.html" title="mod frame_suite::keys"><code>keys</code></a>         : Deterministic identifier derivation</li>
+<li><a href="mutation/index.html" title="mod frame_suite::mutation"><code>mutation</code></a>     : Mutation-centric abstractions over ownership</li>
+<li><a href="misc/index.html" title="mod frame_suite::misc"><code>misc</code></a>         : Small, reusable building blocks across semantic-boundaries</li>
+</ul>
+<h4 id="structural--behavioral-core"><a class="doc-anchor" href="#structural--behavioral-core">§</a>Structural &amp; Behavioral Core</h4>
+<ul>
+<li><a href="virtuals/index.html" title="mod frame_suite::virtuals"><code>virtuals</code></a>     : Type-driven virtual struct system (decoupled structure layer)</li>
+<li><a href="plugins/index.html" title="mod frame_suite::plugins"><code>plugins</code></a>      : Pluggable, type-safe execution and behavior layer</li>
+</ul>
+<h4 id="progression--accumulation"><a class="doc-anchor" href="#progression--accumulation">§</a>Progression &amp; Accumulation</h4>
+<ul>
+<li><a href="accumulators/index.html" title="mod frame_suite::accumulators"><code>accumulators</code></a> : Step-based progression and accumulation models</li>
+<li><a href="xp/index.html" title="mod frame_suite::xp"><code>xp</code></a>           : Experience points as a pseudo-fungible progression primitive</li>
+</ul>
+<h4 id="value--financial-semantics"><a class="doc-anchor" href="#value--financial-semantics">§</a>Value &amp; Financial Semantics</h4>
+<ul>
+<li><a href="assets/index.html" title="mod frame_suite::assets"><code>assets</code></a>       : Lazy, receipt-based accounting models</li>
+<li><a href="commitment/index.html" title="mod frame_suite::commitment"><code>commitment</code></a>   : Value bonding and intent-driven primitives</li>
+</ul>
+<h4 id="coordination--governance"><a class="doc-anchor" href="#coordination--governance">§</a>Coordination &amp; Governance</h4>
+<ul>
+<li><a href="roles/index.html" title="mod frame_suite::roles"><code>roles</code></a>        : Role lifecycle, funding, and incentive semantics</li>
+<li><a href="elections/index.html" title="mod frame_suite::elections"><code>elections</code></a>    : Generic, plugin-based selection and weighting systems</li>
+<li><a href="blockchain/index.html" title="mod frame_suite::blockchain"><code>blockchain</code></a>   : Author lifecycle, rewards, and coordination abstractions</li>
+</ul>
+<h4 id="execution-layer"><a class="doc-anchor" href="#execution-layer">§</a>Execution Layer</h4>
+<ul>
+<li><a href="routines/index.html" title="mod frame_suite::routines"><code>routines</code></a>     : Structured Best-effort offchain-workers execution model</li>
+</ul>
+<h3 id="design-principles"><a class="doc-anchor" href="#design-principles">§</a>Design Principles</h3><h4 id="decoupled-concerns"><a class="doc-anchor" href="#decoupled-concerns">§</a>Decoupled Concerns</h4>
+<p>Structure, storage, and behavior are treated as independent dimensions:</p>
+<ul>
+<li><strong>Structure</strong>: expressed via traits and type-level schemas</li>
+<li><strong>Storage</strong>: abstracted or externalized</li>
+<li><strong>Behavior</strong>: injected via pluggable models</li>
+</ul>
+<p>This separation allows systems to evolve without forcing redesigns
+across unrelated layers.</p>
+<h4 id="plugin-driven-execution"><a class="doc-anchor" href="#plugin-driven-execution">§</a>Plugin-Driven Execution</h4>
+<p>Behavior is modeled as <strong>pluggable units of computation</strong>, enabling:</p>
+<ul>
+<li>compile-time selection of logic</li>
+<li>context-driven customization</li>
+<li>interchangeable implementations without changing interfaces</li>
+</ul>
+<h4 id="type-level-composition"><a class="doc-anchor" href="#type-level-composition">§</a>Type-Level Composition</h4>
+<p>The framework encodes meaning through types:</p>
+<ul>
+<li>capabilities and constraints live in trait bounds</li>
+<li>composition emerges from generic relationships</li>
+<li>correctness is enforced at compile time</li>
+</ul>
+<h4 id="lazy--deferred-semantics"><a class="doc-anchor" href="#lazy--deferred-semantics">§</a>Lazy &amp; Deferred Semantics</h4>
+<p>Several modules adopt <strong>lazy or deferred evaluation models</strong> to:</p>
+<ul>
+<li>minimize unnecessary state updates</li>
+<li>defer computation until it is required</li>
+<li>scale efficiently with system complexity</li>
+</ul>
+<h3 id="hygiene"><a class="doc-anchor" href="#hygiene">§</a>Hygiene</h3>
+<p>All public symbols are <strong>re-exported at the crate root</strong>.</p>
+<p>This ensures:</p>
+<ul>
+<li>a flat and ergonomic import surface</li>
+<li>no need to depend on internal module paths</li>
+<li>consistent and predictable naming across the crate</li>
+</ul>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt><code>pub use <a class="mod" href="accumulators/index.html" title="mod frame_suite::accumulators">accumulators</a>::*;</code></dt><dt><code>pub use <a class="mod" href="assets/index.html" title="mod frame_suite::assets">assets</a>::*;</code></dt><dt><code>pub use <a class="mod" href="base/index.html" title="mod frame_suite::base">base</a>::*;</code></dt><dt><code>pub use <a class="mod" href="blockchain/index.html" title="mod frame_suite::blockchain">blockchain</a>::*;</code></dt><dt><code>pub use <a class="mod" href="commitment/index.html" title="mod frame_suite::commitment">commitment</a>::*;</code></dt><dt><code>pub use <a class="mod" href="elections/index.html" title="mod frame_suite::elections">elections</a>::*;</code></dt><dt><code>pub use <a class="mod" href="fixedpoint/index.html" title="mod frame_suite::fixedpoint">fixedpoint</a>::*;</code></dt><dt><code>pub use <a class="mod" href="forks/index.html" title="mod frame_suite::forks">forks</a>::*;</code></dt><dt><code>pub use <a class="mod" href="keys/index.html" title="mod frame_suite::keys">keys</a>::*;</code></dt><dt><code>pub use <a class="mod" href="misc/index.html" title="mod frame_suite::misc">misc</a>::*;</code></dt><dt><code>pub use <a class="mod" href="mutation/index.html" title="mod frame_suite::mutation">mutation</a>::*;</code></dt><dt><code>pub use <a class="mod" href="plugins/index.html" title="mod frame_suite::plugins">plugins</a>::*;</code></dt><dt><code>pub use <a class="mod" href="roles/index.html" title="mod frame_suite::roles">roles</a>::*;</code></dt><dt><code>pub use <a class="mod" href="routines/index.html" title="mod frame_suite::routines">routines</a>::*;</code></dt><dt><code>pub use <a class="mod" href="virtuals/index.html" title="mod frame_suite::virtuals">virtuals</a>::*;</code></dt><dt><code>pub use <a class="mod" href="xp/index.html" title="mod frame_suite::xp">xp</a>::*;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="accumulators/index.html" title="mod frame_suite::accumulators">accumulators</a></dt><dd>Defines a generic interface for step-based progression systems.</dd><dt><a class="mod" href="assets/index.html" title="mod frame_suite::assets">assets</a></dt><dd>A collection of composable, type-driven balance models built on
+<a href="virtuals/index.html" title="mod frame_suite::virtuals"><code>virtual</code></a> abstractions and
+<a href="plugins/index.html" title="mod frame_suite::plugins"><code>plugin</code></a>-based execution.</dd><dt><a class="mod" href="base/index.html" title="mod frame_suite::base">base</a></dt><dd>Defines the <strong>foundational trait system</strong> for deterministic,
+codec-safe, and metadata-aware types used across the runtime.</dd><dt><a class="mod" href="blockchain/index.html" title="mod frame_suite::blockchain">blockchain</a></dt><dd>Defines a <strong>comprehensive framework for managing authors</strong> (validators) in a
+decentralized  network maintaining a distributed, deterministic state machine.</dd><dt><a class="mod" href="commitment/index.html" title="mod frame_suite::commitment">commitment</a></dt><dd>A composable framework for expressing financial intent as <strong>immutable commitments</strong>.</dd><dt><a class="mod" href="elections/index.html" title="mod frame_suite::elections">elections</a></dt><dd>Provides generic traits for <strong>election management</strong>, <strong>weight computation</strong>,
+and <strong>influence calculation</strong> using <a href="plugins/index.html" title="mod frame_suite::plugins"><code>plugin</code></a>-based models.</dd><dt><a class="mod" href="fixedpoint/index.html" title="mod frame_suite::fixedpoint">fixedpoint</a></dt><dd>Deterministic, <code>no_std</code>-compatible mathematical primitives for Substrate’s
+fixed-point numeric tower ([<code>FixedU64</code>], [<code>FixedU128</code>], [<code>FixedI64</code>], [<code>FixedI128</code>]).</dd><dt><a class="mod" href="forks/index.html" title="mod frame_suite::forks">forks</a></dt><dd>Fork-local utilities for pallet offchain workers (OCWs).</dd><dt><a class="mod" href="keys/index.html" title="mod frame_suite::keys">keys</a></dt><dd>Utilities for deterministic identifier derivation.</dd><dt><a class="mod" href="misc/index.html" title="mod frame_suite::misc">misc</a></dt><dd>Provides small, reusable building blocks that are broadly applicable
+across pallets and runtime components.</dd><dt><a class="mod" href="mutation/index.html" title="mod frame_suite::mutation">mutation</a></dt><dd>Mutation-focused abstractions over owned and borrowed values,
+treating mutability as the primary capability rather than ownership.</dd><dt><a class="mod" href="plugins/index.html" title="mod frame_suite::plugins">plugins</a></dt><dd>Pluggable, type-safe execution framework for composing runtime behavior via plugin
+models and families.</dd><dt><a class="mod" href="roles/index.html" title="mod frame_suite::roles">roles</a></dt><dd>Defines a <strong>unified abstraction layer</strong> for managing <em>role-based logic</em>
+within a runtime system.</dd><dt><a class="mod" href="routines/index.html" title="mod frame_suite::routines">routines</a></dt><dd>Best-effort execution framework for offchain routines with
+explicit logging and storage semantics.</dd><dt><a class="mod" href="virtuals/index.html" title="mod frame_suite::virtuals">virtuals</a></dt><dd>Virtual struct system mapping discriminants (ZSTs) to behavior via
+trait-driven schemas.</dd><dt><a class="mod" href="xp/index.html" title="mod frame_suite::xp">xp</a></dt><dd>Defines a interface for managing “Experience Points” (XP) as an
+abstract economic primitive or a constrained resource.</dd></dl><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><dl class="item-table"><dt><a class="macro" href="macro.__phantom_struct.html" title="macro frame_suite::__phantom_struct">__<wbr>phantom_<wbr>struct</a></dt><dd>Generates a zero-sized or PhantomData-backed marker struct.</dd><dt><a class="macro" href="macro.declare_family.html" title="macro frame_suite::declare_family">declare_<wbr>family</a></dt><dd>Declares a plugin model family using marker types.</dd><dt><a class="macro" href="macro.define_family.html" title="macro frame_suite::define_family">define_<wbr>family</a></dt><dd>Declares a concrete <strong>plugin family implementation</strong> for a given family root.</dd><dt><a class="macro" href="macro.discriminants.html" title="macro frame_suite::discriminants">discriminants</a></dt><dd>Defines one or more public zero-sized discriminant types.</dd><dt><a class="macro" href="macro.empty_virtual_extension.html" title="macro frame_suite::empty_virtual_extension">empty_<wbr>virtual_<wbr>extension</a></dt><dd>Implements an empty virtual extension schema for a given extension.</dd><dt><a class="macro" href="macro.impl_discriminants.html" title="macro frame_suite::impl_discriminants">impl_<wbr>discriminants</a></dt><dd>Implements <a href="virtuals/trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag"><code>DiscriminantTag</code></a> for one or more existing types.</dd><dt><a class="macro" href="macro.plugin_context.html" title="macro frame_suite::plugin_context">plugin_<wbr>context</a></dt><dd>Generates a stateless plugin context marker type for a plugin model or a
+plugin family.</dd><dt><a class="macro" href="macro.plugin_model.html" title="macro frame_suite::plugin_model">plugin_<wbr>model</a></dt><dd>Defines a plugin model in a fully generic, and type-safe way.</dd><dt><a class="macro" href="macro.plugin_output.html" title="macro frame_suite::plugin_output">plugin_<wbr>output</a></dt><dd>Generates a strongly-typed associated function that executes a plugin model
+and returns its computed output.</dd><dt><a class="macro" href="macro.plugin_test.html" title="macro frame_suite::plugin_test">plugin_<wbr>test</a></dt><dd>Generates <strong>table-driven unit tests</strong> for plugin models.</dd><dt><a class="macro" href="macro.plugin_types.html" title="macro frame_suite::plugin_types">plugin_<wbr>types</a></dt><dd>Declares <strong>associated plugin types</strong> inside a trait.</dd></dl><script type="text/json" id="notable-traits-data">{"Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>"}</script></section></div></main></body></html>

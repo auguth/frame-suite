@@ -1,0 +1,376 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Weight functions needed for `pallet_authors`."><title>WeightInfo in pallet_authors::weights - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_authors" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_authors/index.html">pallet_<wbr>authors</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Weight<wbr>Info</a></h2><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.check_direct_fund" title="check_direct_fund">check_direct_fund</a></li><li><a href="#tymethod.check_index_fund" title="check_index_fund">check_index_fund</a></li><li><a href="#tymethod.check_index_fund_towards" title="check_index_fund_towards">check_index_fund_towards</a></li><li><a href="#tymethod.check_pool_fund" title="check_pool_fund">check_pool_fund</a></li><li><a href="#tymethod.check_pool_fund_towards" title="check_pool_fund_towards">check_pool_fund_towards</a></li><li><a href="#tymethod.confirm" title="confirm">confirm</a></li><li><a href="#tymethod.create_index" title="create_index">create_index</a></li><li><a href="#tymethod.create_pool" title="create_pool">create_pool</a></li><li><a href="#tymethod.demit" title="demit">demit</a></li><li><a href="#tymethod.direct_fund" title="direct_fund">direct_fund</a></li><li><a href="#tymethod.enlist" title="enlist">enlist</a></li><li><a href="#tymethod.force_enforce_max_elected" title="force_enforce_max_elected">force_enforce_max_elected</a></li><li><a href="#tymethod.force_increase_probation_by" title="force_increase_probation_by">force_increase_probation_by</a></li><li><a href="#tymethod.force_max_elected" title="force_max_elected">force_max_elected</a></li><li><a href="#tymethod.force_max_exposure" title="force_max_exposure">force_max_exposure</a></li><li><a href="#tymethod.force_min_collateral" title="force_min_collateral">force_min_collateral</a></li><li><a href="#tymethod.force_min_elected" title="force_min_elected">force_min_elected</a></li><li><a href="#tymethod.force_min_fund" title="force_min_fund">force_min_fund</a></li><li><a href="#tymethod.force_penalties_buffer" title="force_penalties_buffer">force_penalties_buffer</a></li><li><a href="#tymethod.force_probation_period" title="force_probation_period">force_probation_period</a></li><li><a href="#tymethod.force_reduce_probation_by" title="force_reduce_probation_by">force_reduce_probation_by</a></li><li><a href="#tymethod.force_rewards_buffer" title="force_rewards_buffer">force_rewards_buffer</a></li><li><a href="#tymethod.index_fund" title="index_fund">index_fund</a></li><li><a href="#tymethod.my_collateral" title="my_collateral">my_collateral</a></li><li><a href="#tymethod.on_initialize_rewards_penalties" title="on_initialize_rewards_penalties">on_initialize_rewards_penalties</a></li><li><a href="#tymethod.pool_fund" title="pool_fund">pool_fund</a></li><li><a href="#tymethod.refill" title="refill">refill</a></li><li><a href="#tymethod.release_direct_fund" title="release_direct_fund">release_direct_fund</a></li><li><a href="#tymethod.release_index_fund" title="release_index_fund">release_index_fund</a></li><li><a href="#tymethod.release_pool_fund" title="release_pool_fund">release_pool_fund</a></li><li><a href="#tymethod.shed_penalties" title="shed_penalties">shed_penalties</a></li><li><a href="#tymethod.shed_rewards" title="shed_rewards">shed_rewards</a></li><li><a href="#tymethod.transfer_pool" title="transfer_pool">transfer_pool</a></li><li><a href="#tymethod.update_commission" title="update_commission">update_commission</a></li><li><a href="#tymethod.update_entry_shares" title="update_entry_shares">update_entry_shares</a></li><li><a href="#tymethod.update_slot_shares" title="update_slot_shares">update_slot_shares</a></li></ul><h3><a href="#foreign-impls">Implementations on Foreign Types</a></h3><ul class="block"><li><a href="#impl-WeightInfo-for-()" title="()">()</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In pallet_<wbr>authors::<wbr>weights</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_authors</a>::<wbr><a href="index.html">weights</a></div><h1>Trait <span class="trait">WeightInfo</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_authors/weights.rs.html#36-73">Source</a> </span></div><pre class="rust item-decl"><code>pub trait WeightInfo {
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 36 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.enlist" class="fn">enlist</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.demit" class="fn">demit</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.refill" class="fn">refill</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.my_collateral" class="fn">my_collateral</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.direct_fund" class="fn">direct_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.index_fund" class="fn">index_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.pool_fund" class="fn">pool_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.release_direct_fund" class="fn">release_direct_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.release_index_fund" class="fn">release_index_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.release_pool_fund" class="fn">release_pool_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.confirm" class="fn">confirm</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.create_index" class="fn">create_index</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.create_pool" class="fn">create_pool</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.transfer_pool" class="fn">transfer_pool</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.update_commission" class="fn">update_commission</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.update_slot_shares" class="fn">update_slot_shares</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.update_entry_shares" class="fn">update_entry_shares</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_probation_period" class="fn">force_probation_period</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_reduce_probation_by" class="fn">force_reduce_probation_by</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_increase_probation_by" class="fn">force_increase_probation_by</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_rewards_buffer" class="fn">force_rewards_buffer</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_penalties_buffer" class="fn">force_penalties_buffer</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_max_elected" class="fn">force_max_elected</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_min_elected" class="fn">force_min_elected</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_enforce_max_elected" class="fn">force_enforce_max_elected</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_min_fund" class="fn">force_min_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_max_exposure" class="fn">force_max_exposure</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.force_min_collateral" class="fn">force_min_collateral</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.check_direct_fund" class="fn">check_direct_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.check_index_fund" class="fn">check_index_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.check_index_fund_towards" class="fn">check_index_fund_towards</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.check_pool_fund" class="fn">check_pool_fund</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.check_pool_fund_towards" class="fn">check_pool_fund_towards</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.shed_rewards" class="fn">shed_rewards</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.shed_penalties" class="fn">shed_penalties</a>() -&gt; Weight;
+<span class="item-spacer"></span>    fn <a href="#tymethod.on_initialize_rewards_penalties" class="fn">on_initialize_rewards_penalties</a>(r: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>, p: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>) -&gt; Weight;
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Weight functions needed for <code>pallet_authors</code>.</p>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><section id="tymethod.enlist" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#37">Source</a><h4 class="code-header">fn <a href="#tymethod.enlist" class="fn">enlist</a>() -&gt; Weight</h4></section><section id="tymethod.demit" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#38">Source</a><h4 class="code-header">fn <a href="#tymethod.demit" class="fn">demit</a>() -&gt; Weight</h4></section><section id="tymethod.refill" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#39">Source</a><h4 class="code-header">fn <a href="#tymethod.refill" class="fn">refill</a>() -&gt; Weight</h4></section><section id="tymethod.my_collateral" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#40">Source</a><h4 class="code-header">fn <a href="#tymethod.my_collateral" class="fn">my_collateral</a>() -&gt; Weight</h4></section><section id="tymethod.direct_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#41">Source</a><h4 class="code-header">fn <a href="#tymethod.direct_fund" class="fn">direct_fund</a>() -&gt; Weight</h4></section><section id="tymethod.index_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#42">Source</a><h4 class="code-header">fn <a href="#tymethod.index_fund" class="fn">index_fund</a>() -&gt; Weight</h4></section><section id="tymethod.pool_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#43">Source</a><h4 class="code-header">fn <a href="#tymethod.pool_fund" class="fn">pool_fund</a>() -&gt; Weight</h4></section><section id="tymethod.release_direct_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#44">Source</a><h4 class="code-header">fn <a href="#tymethod.release_direct_fund" class="fn">release_direct_fund</a>() -&gt; Weight</h4></section><section id="tymethod.release_index_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#45">Source</a><h4 class="code-header">fn <a href="#tymethod.release_index_fund" class="fn">release_index_fund</a>() -&gt; Weight</h4></section><section id="tymethod.release_pool_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#46">Source</a><h4 class="code-header">fn <a href="#tymethod.release_pool_fund" class="fn">release_pool_fund</a>() -&gt; Weight</h4></section><section id="tymethod.confirm" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#47">Source</a><h4 class="code-header">fn <a href="#tymethod.confirm" class="fn">confirm</a>() -&gt; Weight</h4></section><section id="tymethod.create_index" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#48">Source</a><h4 class="code-header">fn <a href="#tymethod.create_index" class="fn">create_index</a>() -&gt; Weight</h4></section><section id="tymethod.create_pool" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#49">Source</a><h4 class="code-header">fn <a href="#tymethod.create_pool" class="fn">create_pool</a>() -&gt; Weight</h4></section><section id="tymethod.transfer_pool" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#50">Source</a><h4 class="code-header">fn <a href="#tymethod.transfer_pool" class="fn">transfer_pool</a>() -&gt; Weight</h4></section><section id="tymethod.update_commission" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#51">Source</a><h4 class="code-header">fn <a href="#tymethod.update_commission" class="fn">update_commission</a>() -&gt; Weight</h4></section><section id="tymethod.update_slot_shares" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#52">Source</a><h4 class="code-header">fn <a href="#tymethod.update_slot_shares" class="fn">update_slot_shares</a>() -&gt; Weight</h4></section><section id="tymethod.update_entry_shares" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#53">Source</a><h4 class="code-header">fn <a href="#tymethod.update_entry_shares" class="fn">update_entry_shares</a>() -&gt; Weight</h4></section><section id="tymethod.force_probation_period" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#54">Source</a><h4 class="code-header">fn <a href="#tymethod.force_probation_period" class="fn">force_probation_period</a>() -&gt; Weight</h4></section><section id="tymethod.force_reduce_probation_by" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#55">Source</a><h4 class="code-header">fn <a href="#tymethod.force_reduce_probation_by" class="fn">force_reduce_probation_by</a>() -&gt; Weight</h4></section><section id="tymethod.force_increase_probation_by" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#56">Source</a><h4 class="code-header">fn <a href="#tymethod.force_increase_probation_by" class="fn">force_increase_probation_by</a>() -&gt; Weight</h4></section><section id="tymethod.force_rewards_buffer" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#57">Source</a><h4 class="code-header">fn <a href="#tymethod.force_rewards_buffer" class="fn">force_rewards_buffer</a>() -&gt; Weight</h4></section><section id="tymethod.force_penalties_buffer" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#58">Source</a><h4 class="code-header">fn <a href="#tymethod.force_penalties_buffer" class="fn">force_penalties_buffer</a>() -&gt; Weight</h4></section><section id="tymethod.force_max_elected" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#59">Source</a><h4 class="code-header">fn <a href="#tymethod.force_max_elected" class="fn">force_max_elected</a>() -&gt; Weight</h4></section><section id="tymethod.force_min_elected" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#60">Source</a><h4 class="code-header">fn <a href="#tymethod.force_min_elected" class="fn">force_min_elected</a>() -&gt; Weight</h4></section><section id="tymethod.force_enforce_max_elected" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#61">Source</a><h4 class="code-header">fn <a href="#tymethod.force_enforce_max_elected" class="fn">force_enforce_max_elected</a>() -&gt; Weight</h4></section><section id="tymethod.force_min_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#62">Source</a><h4 class="code-header">fn <a href="#tymethod.force_min_fund" class="fn">force_min_fund</a>() -&gt; Weight</h4></section><section id="tymethod.force_max_exposure" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#63">Source</a><h4 class="code-header">fn <a href="#tymethod.force_max_exposure" class="fn">force_max_exposure</a>() -&gt; Weight</h4></section><section id="tymethod.force_min_collateral" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#64">Source</a><h4 class="code-header">fn <a href="#tymethod.force_min_collateral" class="fn">force_min_collateral</a>() -&gt; Weight</h4></section><section id="tymethod.check_direct_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#65">Source</a><h4 class="code-header">fn <a href="#tymethod.check_direct_fund" class="fn">check_direct_fund</a>() -&gt; Weight</h4></section><section id="tymethod.check_index_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#66">Source</a><h4 class="code-header">fn <a href="#tymethod.check_index_fund" class="fn">check_index_fund</a>() -&gt; Weight</h4></section><section id="tymethod.check_index_fund_towards" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#67">Source</a><h4 class="code-header">fn <a href="#tymethod.check_index_fund_towards" class="fn">check_index_fund_towards</a>() -&gt; Weight</h4></section><section id="tymethod.check_pool_fund" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#68">Source</a><h4 class="code-header">fn <a href="#tymethod.check_pool_fund" class="fn">check_pool_fund</a>() -&gt; Weight</h4></section><section id="tymethod.check_pool_fund_towards" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#69">Source</a><h4 class="code-header">fn <a href="#tymethod.check_pool_fund_towards" class="fn">check_pool_fund_towards</a>() -&gt; Weight</h4></section><section id="tymethod.shed_rewards" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#70">Source</a><h4 class="code-header">fn <a href="#tymethod.shed_rewards" class="fn">shed_rewards</a>() -&gt; Weight</h4></section><section id="tymethod.shed_penalties" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#71">Source</a><h4 class="code-header">fn <a href="#tymethod.shed_penalties" class="fn">shed_penalties</a>() -&gt; Weight</h4></section><section id="tymethod.on_initialize_rewards_penalties" class="method"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#72">Source</a><h4 class="code-header">fn <a href="#tymethod.on_initialize_rewards_penalties" class="fn">on_initialize_rewards_penalties</a>(r: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>, p: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="foreign-impls" class="section-header">Implementations on Foreign Types<a href="#foreign-impls" class="anchor">§</a></h2><details class="toggle implementors-toggle"><summary><section id="impl-WeightInfo-for-()" class="impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#774-1468">Source</a><a href="#impl-WeightInfo-for-()" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="trait.WeightInfo.html" title="trait pallet_authors::weights::WeightInfo">WeightInfo</a> for <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.enlist" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#799-808">Source</a><a href="#method.enlist" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.enlist" class="fn">enlist</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::MinCollateral</code> (r:1 w:0)
+Proof: <code>Authors::MinCollateral</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsMap</code> (r:1 w:1)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::ReservedXpOf</code> (r:1 w:0)
+Proof: <code>Xp::ReservedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(67), added: 2542, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>System::Account</code> (r:1 w:0)
+Proof: <code>System::Account</code> (<code>max_values</code>: None, <code>max_size</code>: Some(128), added: 2603, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:1 w:1)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolMap</code> (r:1 w:0)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsDigest</code> (r:0 w:1)
+Proof: <code>Authors::AuthorsDigest</code> (<code>max_values</code>: None, <code>max_size</code>: Some(80), added: 2555, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.demit" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#823-832">Source</a><a href="#method.demit" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.demit" class="fn">demit</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:1)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::PenaltiesUntil</code> (r:1 w:0)
+Proof: <code>Authors::PenaltiesUntil</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:1 w:1)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.refill" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#847-856">Source</a><a href="#method.refill" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.refill" class="fn">refill</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::CommitMap</code> (r:1 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:1 w:1)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinCollateral</code> (r:1 w:0)
+Proof: <code>Authors::MinCollateral</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::ReservedXpOf</code> (r:1 w:0)
+Proof: <code>Xp::ReservedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(67), added: 2542, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.my_collateral" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#863-871">Source</a><a href="#method.my_collateral" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.my_collateral" class="fn">my_collateral</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:0)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:1 w:0)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.direct_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#898-907">Source</a><a href="#method.direct_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.direct_fund" class="fn">direct_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:2 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:2 w:1)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinCollateral</code> (r:1 w:0)
+Proof: <code>Authors::MinCollateral</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinFund</code> (r:1 w:0)
+Proof: <code>Authors::MinFund</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MaxExposure</code> (r:1 w:0)
+Proof: <code>Authors::MaxExposure</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolMap</code> (r:1 w:0)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::ReservedXpOf</code> (r:1 w:0)
+Proof: <code>Xp::ReservedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(67), added: 2542, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorFunders</code> (r:0 w:1)
+Proof: <code>Authors::AuthorFunders</code> (<code>max_values</code>: None, <code>max_size</code>: Some(161), added: 2636, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.index_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#936-945">Source</a><a href="#method.index_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.index_fund" class="fn">index_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::IndexMap</code> (r:1 w:1)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsDigest</code> (r:2 w:0)
+Proof: <code>Authors::AuthorsDigest</code> (<code>max_values</code>: None, <code>max_size</code>: Some(80), added: 2555, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:2 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:4 w:2)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinCollateral</code> (r:1 w:0)
+Proof: <code>Authors::MinCollateral</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinFund</code> (r:1 w:0)
+Proof: <code>Authors::MinFund</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MaxExposure</code> (r:1 w:0)
+Proof: <code>Authors::MaxExposure</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::ReservedXpOf</code> (r:1 w:0)
+Proof: <code>Xp::ReservedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(67), added: 2542, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::EntryMap</code> (r:2 w:2)
+Proof: <code>Commitment::EntryMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1663), added: 4138, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorFunders</code> (r:0 w:2)
+Proof: <code>Authors::AuthorFunders</code> (<code>max_values</code>: None, <code>max_size</code>: Some(161), added: 2636, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.pool_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#974-983">Source</a><a href="#method.pool_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.pool_fund" class="fn">pool_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::PoolMap</code> (r:1 w:1)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsDigest</code> (r:2 w:0)
+Proof: <code>Authors::AuthorsDigest</code> (<code>max_values</code>: None, <code>max_size</code>: Some(80), added: 2555, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:2 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:4 w:2)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinCollateral</code> (r:1 w:0)
+Proof: <code>Authors::MinCollateral</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinFund</code> (r:1 w:0)
+Proof: <code>Authors::MinFund</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MaxExposure</code> (r:1 w:0)
+Proof: <code>Authors::MaxExposure</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::ReservedXpOf</code> (r:1 w:0)
+Proof: <code>Xp::ReservedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(67), added: 2542, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorFunders</code> (r:0 w:2)
+Proof: <code>Authors::AuthorFunders</code> (<code>max_values</code>: None, <code>max_size</code>: Some(161), added: 2636, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.release_direct_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#998-1007">Source</a><a href="#method.release_direct_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.release_direct_fund" class="fn">release_direct_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:1 w:1)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorFunders</code> (r:0 w:1)
+Proof: <code>Authors::AuthorFunders</code> (<code>max_values</code>: None, <code>max_size</code>: Some(161), added: 2636, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.release_index_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1028-1037">Source</a><a href="#method.release_index_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.release_index_fund" class="fn">release_index_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::IndexMap</code> (r:1 w:1)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsDigest</code> (r:2 w:0)
+Proof: <code>Authors::AuthorsDigest</code> (<code>max_values</code>: None, <code>max_size</code>: Some(80), added: 2555, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:3 w:2)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::EntryMap</code> (r:2 w:2)
+Proof: <code>Commitment::EntryMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1663), added: 4138, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorFunders</code> (r:0 w:2)
+Proof: <code>Authors::AuthorFunders</code> (<code>max_values</code>: None, <code>max_size</code>: Some(161), added: 2636, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.release_pool_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1062-1071">Source</a><a href="#method.release_pool_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.release_pool_fund" class="fn">release_pool_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::PoolMap</code> (r:1 w:1)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsDigest</code> (r:2 w:0)
+Proof: <code>Authors::AuthorsDigest</code> (<code>max_values</code>: None, <code>max_size</code>: Some(80), added: 2555, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:1)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:3 w:2)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolManager</code> (r:1 w:0)
+Proof: <code>Commitment::PoolManager</code> (<code>max_values</code>: None, <code>max_size</code>: Some(98), added: 2573, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::AssetToReap</code> (r:1 w:1)
+Proof: <code>Commitment::AssetToReap</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::XpOf</code> (r:1 w:1)
+Proof: <code>Xp::XpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(108), added: 2583, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:1 w:1)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Xp::LockedXpOf</code> (r:1 w:1)
+Proof: <code>Xp::LockedXpOf</code> (<code>max_values</code>: None, <code>max_size</code>: Some(103), added: 2578, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorFunders</code> (r:0 w:2)
+Proof: <code>Authors::AuthorFunders</code> (<code>max_values</code>: None, <code>max_size</code>: Some(161), added: 2636, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.confirm" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1076-1085">Source</a><a href="#method.confirm" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.confirm" class="fn">confirm</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:1)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::ProbationPeriod</code> (r:1 w:0)
+Proof: <code>Authors::ProbationPeriod</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.create_index" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1092-1101">Source</a><a href="#method.create_index" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.create_index" class="fn">create_index</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::CommitMap</code> (r:2 w:0)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>System::Account</code> (r:1 w:0)
+Proof: <code>System::Account</code> (<code>max_values</code>: None, <code>max_size</code>: Some(128), added: 2603, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:1)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.create_pool" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1110-1119">Source</a><a href="#method.create_pool" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.create_pool" class="fn">create_pool</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>System::Account</code> (r:1 w:0)
+Proof: <code>System::Account</code> (<code>max_values</code>: None, <code>max_size</code>: Some(128), added: 2603, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolMap</code> (r:1 w:1)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolManager</code> (r:0 w:1)
+Proof: <code>Commitment::PoolManager</code> (<code>max_values</code>: None, <code>max_size</code>: Some(98), added: 2573, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.transfer_pool" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1124-1133">Source</a><a href="#method.transfer_pool" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.transfer_pool" class="fn">transfer_pool</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::PoolMap</code> (r:1 w:0)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolManager</code> (r:1 w:1)
+Proof: <code>Commitment::PoolManager</code> (<code>max_values</code>: None, <code>max_size</code>: Some(98), added: 2573, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_commission" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1142-1151">Source</a><a href="#method.update_commission" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.update_commission" class="fn">update_commission</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>System::Account</code> (r:1 w:0)
+Proof: <code>System::Account</code> (<code>max_values</code>: None, <code>max_size</code>: Some(128), added: 2603, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolMap</code> (r:1 w:1)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolManager</code> (r:0 w:1)
+Proof: <code>Commitment::PoolManager</code> (<code>max_values</code>: None, <code>max_size</code>: Some(98), added: 2573, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_slot_shares" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1156-1165">Source</a><a href="#method.update_slot_shares" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.update_slot_shares" class="fn">update_slot_shares</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::PoolMap</code> (r:1 w:1)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolManager</code> (r:1 w:0)
+Proof: <code>Commitment::PoolManager</code> (<code>max_values</code>: None, <code>max_size</code>: Some(98), added: 2573, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.update_entry_shares" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1170-1179">Source</a><a href="#method.update_entry_shares" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.update_entry_shares" class="fn">update_entry_shares</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::IndexMap</code> (r:2 w:1)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>System::Account</code> (r:1 w:0)
+Proof: <code>System::Account</code> (<code>max_values</code>: None, <code>max_size</code>: Some(128), added: 2603, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_probation_period" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1182-1190">Source</a><a href="#method.force_probation_period" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_probation_period" class="fn">force_probation_period</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::ProbationPeriod</code> (r:0 w:1)
+Proof: <code>Authors::ProbationPeriod</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_reduce_probation_by" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1193-1201">Source</a><a href="#method.force_reduce_probation_by" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_reduce_probation_by" class="fn">force_reduce_probation_by</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::ReduceProbationBy</code> (r:0 w:1)
+Proof: <code>Authors::ReduceProbationBy</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_increase_probation_by" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1204-1212">Source</a><a href="#method.force_increase_probation_by" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_increase_probation_by" class="fn">force_increase_probation_by</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::IncreaseProbationBy</code> (r:0 w:1)
+Proof: <code>Authors::IncreaseProbationBy</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_rewards_buffer" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1215-1223">Source</a><a href="#method.force_rewards_buffer" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_rewards_buffer" class="fn">force_rewards_buffer</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::RewardsBuffer</code> (r:0 w:1)
+Proof: <code>Authors::RewardsBuffer</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_penalties_buffer" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1226-1234">Source</a><a href="#method.force_penalties_buffer" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_penalties_buffer" class="fn">force_penalties_buffer</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::PenaltiesBuffer</code> (r:0 w:1)
+Proof: <code>Authors::PenaltiesBuffer</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_max_elected" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1239-1248">Source</a><a href="#method.force_max_elected" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_max_elected" class="fn">force_max_elected</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::MinElected</code> (r:1 w:0)
+Proof: <code>Authors::MinElected</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MaxElected</code> (r:0 w:1)
+Proof: <code>Authors::MaxElected</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_min_elected" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1253-1262">Source</a><a href="#method.force_min_elected" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_min_elected" class="fn">force_min_elected</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::MaxElected</code> (r:1 w:0)
+Proof: <code>Authors::MaxElected</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinElected</code> (r:0 w:1)
+Proof: <code>Authors::MinElected</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_enforce_max_elected" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1265-1273">Source</a><a href="#method.force_enforce_max_elected" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_enforce_max_elected" class="fn">force_enforce_max_elected</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::ForceMaxElected</code> (r:0 w:1)
+Proof: <code>Authors::ForceMaxElected</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(1), added: 496, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_min_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1278-1287">Source</a><a href="#method.force_min_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_min_fund" class="fn">force_min_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::MaxExposure</code> (r:1 w:0)
+Proof: <code>Authors::MaxExposure</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MinFund</code> (r:0 w:1)
+Proof: <code>Authors::MinFund</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_max_exposure" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1292-1301">Source</a><a href="#method.force_max_exposure" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_max_exposure" class="fn">force_max_exposure</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::MinFund</code> (r:1 w:0)
+Proof: <code>Authors::MinFund</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::MaxExposure</code> (r:0 w:1)
+Proof: <code>Authors::MaxExposure</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.force_min_collateral" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1304-1312">Source</a><a href="#method.force_min_collateral" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.force_min_collateral" class="fn">force_min_collateral</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::MinCollateral</code> (r:0 w:1)
+Proof: <code>Authors::MinCollateral</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.check_direct_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1321-1329">Source</a><a href="#method.check_direct_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.check_direct_fund" class="fn">check_direct_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:0)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsDigest</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsDigest</code> (<code>max_values</code>: None, <code>max_size</code>: Some(80), added: 2555, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:1 w:0)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.check_index_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1338-1346">Source</a><a href="#method.check_index_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.check_index_fund" class="fn">check_index_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::CommitMap</code> (r:1 w:0)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:3 w:0)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::EntryMap</code> (r:2 w:0)
+Proof: <code>Commitment::EntryMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1663), added: 4138, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.check_index_fund_towards" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1357-1365">Source</a><a href="#method.check_index_fund_towards" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.check_index_fund_towards" class="fn">check_index_fund_towards</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:0)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::EntryMap</code> (r:1 w:0)
+Proof: <code>Commitment::EntryMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1663), added: 4138, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:1 w:0)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.check_pool_fund" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1374-1382">Source</a><a href="#method.check_pool_fund" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.check_pool_fund" class="fn">check_pool_fund</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Commitment::CommitMap</code> (r:1 w:0)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolMap</code> (r:1 w:0)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:3 w:0)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::IndexMap</code> (r:1 w:0)
+Proof: <code>Commitment::IndexMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(8292), added: 10767, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.check_pool_fund_towards" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1391-1399">Source</a><a href="#method.check_pool_fund_towards" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.check_pool_fund_towards" class="fn">check_pool_fund_towards</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::CommitMap</code> (r:1 w:0)
+Proof: <code>Commitment::CommitMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(1600), added: 4075, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::PoolMap</code> (r:1 w:0)
+Proof: <code>Commitment::PoolMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(18334), added: 20809, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:2 w:0)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.shed_rewards" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1406-1414">Source</a><a href="#method.shed_rewards" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.shed_rewards" class="fn">shed_rewards</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::RewardsUntil</code> (r:1 w:0)
+Proof: <code>Authors::RewardsUntil</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorRewards</code> (r:2 w:0)
+Proof: <code>Authors::AuthorRewards</code> (<code>max_values</code>: None, <code>max_size</code>: Some(84), added: 2559, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.shed_penalties" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1421-1429">Source</a><a href="#method.shed_penalties" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.shed_penalties" class="fn">shed_penalties</a>() -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorsMap</code> (r:1 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::PenaltiesUntil</code> (r:1 w:0)
+Proof: <code>Authors::PenaltiesUntil</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(4), added: 499, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorPenalties</code> (r:4 w:0)
+Proof: <code>Authors::AuthorPenalties</code> (<code>max_values</code>: None, <code>max_size</code>: Some(72), added: 2547, mode: <code>MaxEncodedLen</code>)</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_initialize_rewards_penalties" class="method trait-impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#1446-1467">Source</a><a href="#method.on_initialize_rewards_penalties" class="anchor">§</a><h4 class="code-header">fn <a href="#tymethod.on_initialize_rewards_penalties" class="fn">on_initialize_rewards_penalties</a>(r: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>, p: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>) -&gt; Weight</h4></section></summary><div class="docblock"><p>Storage: <code>Authors::AuthorRewards</code> (r:101 w:100)
+Proof: <code>Authors::AuthorRewards</code> (<code>max_values</code>: None, <code>max_size</code>: Some(84), added: 2559, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorsMap</code> (r:200 w:0)
+Proof: <code>Authors::AuthorsMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(127), added: 2602, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::DigestMap</code> (r:400 w:400)
+Proof: <code>Commitment::DigestMap</code> (<code>max_values</code>: None, <code>max_size</code>: Some(229), added: 2704, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::AssetToIssue</code> (r:1 w:1)
+Proof: <code>Commitment::AssetToIssue</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::ReasonValue</code> (r:2 w:2)
+Proof: <code>Commitment::ReasonValue</code> (<code>max_values</code>: None, <code>max_size</code>: Some(34), added: 2509, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Authors::AuthorPenalties</code> (r:101 w:100)
+Proof: <code>Authors::AuthorPenalties</code> (<code>max_values</code>: None, <code>max_size</code>: Some(72), added: 2547, mode: <code>MaxEncodedLen</code>)
+Storage: <code>Commitment::AssetToReap</code> (r:1 w:1)
+Proof: <code>Commitment::AssetToReap</code> (<code>max_values</code>: Some(1), <code>max_size</code>: Some(16), added: 511, mode: <code>MaxEncodedLen</code>)
+The range of component <code>r</code> is <code>[1, 100]</code>.
+The range of component <code>p</code> is <code>[1, 100]</code>.</p>
+</div></details></div></details><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-WeightInfo-for-SubstrateWeight%3CT%3E" class="impl"><a class="src rightside" href="../../src/pallet_authors/weights.rs.html#77-771">Source</a><a href="#impl-WeightInfo-for-SubstrateWeight%3CT%3E" class="anchor">§</a><h3 class="code-header">impl&lt;T: Config&gt; <a class="trait" href="trait.WeightInfo.html" title="trait pallet_authors::weights::WeightInfo">WeightInfo</a> for <a class="struct" href="struct.SubstrateWeight.html" title="struct pallet_authors::weights::SubstrateWeight">SubstrateWeight</a>&lt;T&gt;</h3></section></div><script src="../../trait.impl/pallet_authors/weights/trait.WeightInfo.js" data-ignore-extern-crates="std" async></script></section></div></main></body></html>

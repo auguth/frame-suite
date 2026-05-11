@@ -1,0 +1,60 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Provides concrete election implementations for author selection using `plugin`-based election traits."><title>pallet_authors::election - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_authors" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_authors/index.html">pallet_<wbr>authors</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module election</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#flat-election" title="Flat Election">Flat Election</a></li><li><a href="#fair-election" title="Fair Election">Fair Election</a></li><li><a href="#architecture" title="Architecture">Architecture</a></li><li><a href="#storage-semantics" title="Storage Semantics">Storage Semantics</a></li><li><a href="#design-guarantees" title="Design Guarantees">Design Guarantees</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate pallet_<wbr>authors</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_authors</a></div><h1>Module <span>election</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_authors/election.rs.html#16-1007">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Provides <strong>concrete election implementations</strong> for author
+selection using <strong><a href="../../frame_suite/plugins/index.html" title="mod frame_suite::plugins"><code>plugin</code></a>-based election traits</strong>.</p>
+<p>It binds the generic <a href="../../frame_suite/elections/index.html" title="mod frame_suite::elections"><code>election</code></a> abstractions
+defined in to pallet-specific storage, configuration, and runtime models.</p>
+<p>The module implements two distinct election strategies:</p>
+<h3 id="flat-election"><a class="doc-anchor" href="#flat-election">§</a>Flat Election</h3>
+<ul>
+<li>Aggregates all economic exposure of an author (self-collateral and
+third-party backing) into a <strong>single influence value</strong>.</li>
+<li>Influence is computed via a runtime-configured <a href="../../frame_suite/elections/trait.Influence.html" title="trait frame_suite::elections::Influence"><code>Influence</code></a> plugin model.</li>
+<li>Each author contributes exactly one comparable weight into the election.</li>
+</ul>
+<p>This model favors <strong>total economic commitment</strong>, regardless of its source.</p>
+<h3 id="fair-election"><a class="doc-anchor" href="#fair-election">§</a>Fair Election</h3>
+<ul>
+<li>Preserves <strong>individual backing contributions</strong> from external funders.</li>
+<li>Explicitly may include candidate’s self-collateral from election weight as
+one of the backers.</li>
+<li>Each backer contributes a distinct weight entry for the author.</li>
+</ul>
+<p>This model favors <strong>distributed support</strong> and discourages dominance through
+self-backed influence.</p>
+<h3 id="architecture"><a class="doc-anchor" href="#architecture">§</a>Architecture</h3>
+<p>Both election modes:</p>
+<ul>
+<li>Implement <a href="../../frame_suite/elections/trait.InspectWeight.html" title="trait frame_suite::elections::InspectWeight"><code>InspectWeight</code></a> to expose candidate weights in a
+model-appropriate form.</li>
+<li>Implement <a href="../../frame_suite/elections/trait.ElectionManager.html" title="trait frame_suite::elections::ElectionManager"><code>ElectionManager</code></a> to:
+<ul>
+<li>prepare election inputs,</li>
+<li>invoke plugin-based election models,</li>
+<li>enforce governance constraints (minimum / maximum elected),</li>
+<li>persist election results,</li>
+<li>and emit lifecycle events.</li>
+</ul>
+</li>
+</ul>
+<p>All election computation logic is delegated to <strong>runtime-configured plugins</strong>.
+This ensures that:</p>
+<ul>
+<li>election algorithms can evolve without pallet code changes,</li>
+<li>multiple election strategies can coexist safely,</li>
+<li>and governance retains control over election semantics.</li>
+</ul>
+<h3 id="storage-semantics"><a class="doc-anchor" href="#storage-semantics">§</a>Storage Semantics</h3>
+<ul>
+<li>Election results are stored per block and keyed by the most recent
+election round.</li>
+<li>Historical elections remain immutable.</li>
+<li>Removal operations only affect the latest election state.</li>
+</ul>
+<h3 id="design-guarantees"><a class="doc-anchor" href="#design-guarantees">§</a>Design Guarantees</h3>
+<ul>
+<li>No election logic is hardcoded in this module.</li>
+<li>Influence and weight calculations are fully externalized.</li>
+<li>Strong type safety is preserved across all election paths.</li>
+</ul>
+<p>This module serves as the <strong>bridge between abstract election traits
+and pallet-level author governance</strong>.</p>
+</div></details></section></div></main></body></html>

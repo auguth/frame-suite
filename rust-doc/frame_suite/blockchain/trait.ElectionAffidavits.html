@@ -1,0 +1,105 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines the behavior for author affidavits - self-declared affirmations of election weights during a given cycle."><title>ElectionAffidavits in frame_suite::blockchain - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Election<wbr>Affidavits</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#concept" title="Concept">Concept</a></li><li><a href="#responsibilities" title="Responsibilities">Responsibilities</a></li><li><a href="#type-parameters" title="Type Parameters">Type Parameters</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.affidavit_exists" title="affidavit_exists">affidavit_exists</a></li><li><a href="#tymethod.can_submit_affidavit" title="can_submit_affidavit">can_submit_affidavit</a></li><li><a href="#tymethod.clear_affidavits" title="clear_affidavits">clear_affidavits</a></li><li><a href="#tymethod.gen_affidavit" title="gen_affidavit">gen_affidavit</a></li><li><a href="#tymethod.get_affidavit" title="get_affidavit">get_affidavit</a></li><li><a href="#tymethod.remove_affidavit" title="remove_affidavit">remove_affidavit</a></li><li><a href="#tymethod.submit_affidavit" title="submit_affidavit">submit_affidavit</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.on_submit_affidavit" title="on_submit_affidavit">on_submit_affidavit</a></li><li><a href="#method.process_affidavit" title="process_affidavit">process_affidavit</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>blockchain</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">blockchain</a></div><h1>Trait <span class="trait">ElectionAffidavits</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/blockchain.rs.html#730-840">Source</a> </span></div><pre class="rust item-decl"><code>pub trait ElectionAffidavits&lt;Author, ElectionWeight&gt;<div class="where">where
+    Author: <a class="trait" href="../base/trait.Keyed.html" title="trait frame_suite::base::Keyed">Keyed</a>,
+    ElectionWeight: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/cmp/trait.Ord.html" title="trait core::cmp::Ord">Ord</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a>,</div>{
+    // Required methods
+    fn <a href="#tymethod.can_submit_affidavit" class="fn">can_submit_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.affidavit_exists" class="fn">affidavit_exists</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_affidavit" class="fn">get_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;ElectionWeight, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.gen_affidavit" class="fn">gen_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;ElectionWeight, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.submit_affidavit" class="fn">submit_affidavit</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>,
+        affidavit: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;ElectionWeight</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.remove_affidavit" class="fn">remove_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.clear_affidavits" class="fn">clear_affidavits</a>();
+
+    // Provided methods
+    fn <a href="#method.process_affidavit" class="fn">process_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_submit_affidavit" class="fn">on_submit_affidavit</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>, _affidavit: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;ElectionWeight</a>) { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines the behavior for <strong>author affidavits</strong> - self-declared affirmations
+of election weights during a given cycle.</p>
+<h3 id="concept"><a class="doc-anchor" href="#concept">§</a>Concept</h3>
+<p>Affidavits represent an <strong>author’s own self-declaration</strong> of their election weight
+(e.g., performance, stake, or participation value) for the current election cycle.
+They are not requested or enforced by the system; instead, they are <strong>voluntarily
+submitted by the authors</strong> themselves.</p>
+<p>These affidavits are <strong>ephemeral</strong>:</p>
+<ul>
+<li>Stored temporarily for the next (upcoming) election cycle.</li>
+<li>Must be cleared once the cycle ends or after all have been processed.</li>
+<li>Can later be used by external modules (e.g., <code>SessionManager</code>)
+to inform election outcomes or validations.</li>
+</ul>
+<h3 id="responsibilities"><a class="doc-anchor" href="#responsibilities">§</a>Responsibilities</h3>
+<p>This trait defines:</p>
+<ul>
+<li>Submission and validation of author affidavits.</li>
+<li>Storage and retrieval of <strong>ephemeral</strong> affidavit data.</li>
+<li>Lifecycle management (generation, existence check, removal, clearing).</li>
+</ul>
+<h3 id="type-parameters"><a class="doc-anchor" href="#type-parameters">§</a>Type Parameters</h3>
+<ul>
+<li><code>Author</code>: Entity submitting the affidavit (e.g., validator, collator,
+consortium-roles, etc).</li>
+<li><code>ElectionWeight</code>: The numeric or structured weight being affirmed.
+Requires <a href="https://doc.rust-lang.org/1.90.0/core/cmp/trait.Ord.html" title="trait core::cmp::Ord"><code>Ord</code></a>.</li>
+</ul>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.can_submit_affidavit" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#746">Source</a><h4 class="code-header">fn <a href="#tymethod.can_submit_affidavit" class="fn">can_submit_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Determines whether an author is eligible to submit an affidavit
+for the next election cycle.</p>
+<p>Implementations should define conditions such as:</p>
+<ul>
+<li>Whether the author can be part of the next election round.</li>
+<li>Whether the submission window is still open.</li>
+<li>Whether the author already submitted.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.affidavit_exists" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#753">Source</a><h4 class="code-header">fn <a href="#tymethod.affidavit_exists" class="fn">affidavit_exists</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether an affidavit currently exists for the given author.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if exists.</li>
+<li><code>Err(DispatchError)</code> if not or on query failure.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_affidavit" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#766">Source</a><h4 class="code-header">fn <a href="#tymethod.get_affidavit" class="fn">get_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;ElectionWeight, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the <strong>stored affidavit</strong> for a given author.</p>
+<p>Used only for external queries to fetch the most recent
+submitted affidavit.</p>
+<p>Should not be used internally during submission or processing of
+a single affidavit.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.gen_affidavit" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#784">Source</a><h4 class="code-header">fn <a href="#tymethod.gen_affidavit" class="fn">gen_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;ElectionWeight, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Generates a new affidavit (i.e., computes or constructs an election weight)
+for the given author.</p>
+<p>Typically derived from the author’s participation or other context-dependent
+metrics in the current cycle.</p>
+<p><strong>Note:</strong> This may produce a different value than any previously submitted
+affidavit.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(ElectionWeight)</code> if generation is successful.</li>
+<li><code>Err(DispatchError)</code> if generation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.submit_affidavit" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#795">Source</a><h4 class="code-header">fn <a href="#tymethod.submit_affidavit" class="fn">submit_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>, affidavit: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;ElectionWeight</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Submits an affidavit for the author for the next election cycle.</p>
+<h6 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h6>
+<ul>
+<li><code>who</code>: Author submitting the affidavit.</li>
+<li><code>affidavit</code>: The generated election weight for submission.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.remove_affidavit" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#821">Source</a><h4 class="code-header">fn <a href="#tymethod.remove_affidavit" class="fn">remove_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Removes a stored affidavit for the given author.</p>
+<p>Typically invoked by <strong>external modules</strong> to remove an affidavit
+before processing the collected affidavits for a cycle.</p>
+<p>Pre- or post-processing removal is allowed, as appropriate.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.clear_affidavits" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#827">Source</a><h4 class="code-header">fn <a href="#tymethod.clear_affidavits" class="fn">clear_affidavits</a>()</h4></section></summary><div class="docblock"><p>Clears <strong>all</strong> affidavits for the current election cycle.</p>
+<p>Should be called once all affidavits have been processed or validated,
+ensuring that new cycles start with a clean state.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.process_affidavit" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#807-813">Source</a><h4 class="code-header">fn <a href="#method.process_affidavit" class="fn">process_affidavit</a>(who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Processes the full lifecycle of an affidavit submission for a given author
+for the next election cycle.</p>
+<p>This is the <strong>entry point</strong> for submitting an affidavit.<br />
+Workflow:</p>
+<ol>
+<li>Check if the author <strong>can</strong> submit (<a href="trait.ElectionAffidavits.html#tymethod.can_submit_affidavit"><code>Self::can_submit_affidavit</code></a>).</li>
+<li>Generate the author’s affidavit (<a href="trait.ElectionAffidavits.html#tymethod.gen_affidavit"><code>Self::gen_affidavit</code></a>).</li>
+<li><strong>Submit</strong> the affidavit (<a href="trait.ElectionAffidavits.html#tymethod.submit_affidavit"><code>Self::submit_affidavit</code></a>) with the
+generated weight.</li>
+<li>Trigger optional post-submission hook (<a href="trait.ElectionAffidavits.html#method.on_submit_affidavit"><code>Self::on_submit_affidavit</code></a>).</li>
+</ol>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_submit_affidavit" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#839">Source</a><h4 class="code-header">fn <a href="#method.on_submit_affidavit" class="fn">on_submit_affidavit</a>(_who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>, _affidavit: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;ElectionWeight</a>)</h4></section></summary><div class="docblock"><p>Hook triggered <strong>after a successful affidavit submission</strong>.</p>
+<p>Allows external logic, e.g., logging, reward triggers, or
+cross-pallet coordination.</p>
+<p>Default is no-op</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/blockchain/trait.ElectionAffidavits.js" async></script></section></div></main></body></html>

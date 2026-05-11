@@ -1,0 +1,84 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A plugin registry system built on top of `frame_suite`, providing concrete, reusable implementations of plugin-driven behavior."><title>frame_plugins - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_plugins" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_plugins/index.html">frame_<wbr>plugins</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#design" title="Design">Design</a></li><li><a href="#module-overview" title="Module Overview">Module Overview</a><ul><li><a href="#value--accounting" title="Value &#38; Accounting">Value &amp; Accounting</a></li><li><a href="#coordination--selection" title="Coordination &#38; Selection">Coordination &amp; Selection</a></li><li><a href="#influence--weighting" title="Influence &#38; Weighting">Influence &amp; Weighting</a></li><li><a href="#rewards--distribution" title="Rewards &#38; Distribution">Rewards &amp; Distribution</a></li><li><a href="#penalty--normalization" title="Penalty &#38; Normalization">Penalty &amp; Normalization</a></li></ul></li><li><a href="#design-intent" title="Design Intent">Design Intent</a></li><li><a href="#hygiene" title="Hygiene">Hygiene</a></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>frame_plugins</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_plugins/lib.rs.html#12-116">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A plugin registry system built on top of <a href="../frame_suite/index.html" title="mod frame_suite"><code>frame_suite</code></a>, providing
+concrete, reusable implementations of plugin-driven behavior.</p>
+<p>This crate does not define new abstractions. Instead, it <strong>realizes</strong>
+the semantics defined in <code>frame_suite</code> by supplying <strong>ready-to-use
+plugin models and families</strong> that can be anchored into Substrate runtime systems.</p>
+<p>Where <code>frame_suite</code> defines <em>what is possible</em>, this crate provides
+examples of <em>how those possibilities can be instantiated</em>.</p>
+<h3 id="design"><a class="doc-anchor" href="#design">§</a>Design</h3>
+<p>The crate follows the same design principles as <code>frame_suite</code> and is
+implemented using the <a href="../frame_suite/plugins/index.html" title="mod frame_suite::plugins"><code>frame_suite::plugins</code></a> macro system:</p>
+<ul>
+<li>
+<p><strong>Plugins are units of behavior</strong>
+Each model represents a single, well-defined transformation or operation,
+defined via <a href="../frame_suite/macro.plugin_model.html" title="macro frame_suite::plugin_model"><code>plugin_model!</code></a>.</p>
+</li>
+<li>
+<p><strong>Families compose behavior</strong>
+Related operations are grouped into plugin families using
+<a href="../frame_suite/macro.define_family.html" title="macro frame_suite::define_family"><code>define_family!</code></a>, forming cohesive execution
+surfaces for higher-level systems.</p>
+</li>
+<li>
+<p><strong>Context drives execution</strong>
+Models may depend on external configuration or environment via context,
+enabling flexible and runtime-specific behavior.</p>
+</li>
+<li>
+<p><strong>No assumptions beyond the contract</strong>
+All implementations adhere strictly to the trait contracts defined in
+<code>frame_suite</code>, without introducing hidden coupling.</p>
+</li>
+</ul>
+<h3 id="module-overview"><a class="doc-anchor" href="#module-overview">§</a>Module Overview</h3>
+<p>The crate is organized into <strong>domain categories of plugin sets</strong>, each targeting
+a specific class of abstractions from <code>frame_suite</code>.</p>
+<h4 id="value--accounting"><a class="doc-anchor" href="#value--accounting">§</a>Value &amp; Accounting</h4>
+<ul>
+<li><a href="balances/index.html" title="mod frame_plugins::balances"><code>balances</code></a>   : Lazy balance plugin families and models</li>
+</ul>
+<h4 id="coordination--selection"><a class="doc-anchor" href="#coordination--selection">§</a>Coordination &amp; Selection</h4>
+<ul>
+<li><a href="elections/index.html" title="mod frame_plugins::elections"><code>elections</code></a>  : Election algorithms (flat, fair, and beyond)</li>
+</ul>
+<h4 id="influence--weighting"><a class="doc-anchor" href="#influence--weighting">§</a>Influence &amp; Weighting</h4>
+<ul>
+<li><a href="influence/index.html" title="mod frame_plugins::influence"><code>influence</code></a>  : Influence (Quantifiable Power) transformation models</li>
+</ul>
+<h4 id="rewards--distribution"><a class="doc-anchor" href="#rewards--distribution">§</a>Rewards &amp; Distribution</h4>
+<ul>
+<li><a href="rewards/index.html" title="mod frame_plugins::rewards"><code>rewards</code></a>    : Reward computation (<code>payout</code>) and distribution (<code>payee</code>) models</li>
+</ul>
+<h4 id="penalty--normalization"><a class="doc-anchor" href="#penalty--normalization">§</a>Penalty &amp; Normalization</h4>
+<ul>
+<li><a href="penalty/index.html" title="mod frame_plugins::penalty"><code>penalty</code></a>    : Penalty normalization and bounding models</li>
+</ul>
+<h3 id="design-intent"><a class="doc-anchor" href="#design-intent">§</a>Design Intent</h3>
+<p>This crate acts as a <strong>behavior layer</strong> over <code>frame_suite</code>:</p>
+<ul>
+<li>it demonstrates how abstractions can be implemented</li>
+<li>it provides reusable building blocks for common patterns</li>
+<li>it avoids locking systems into a single interpretation</li>
+</ul>
+<p>New models can be added freely as long as they:</p>
+<ul>
+<li>respect the underlying trait contracts</li>
+<li>remain composable and independent</li>
+<li>do not introduce unnecessary coupling</li>
+</ul>
+<h3 id="hygiene"><a class="doc-anchor" href="#hygiene">§</a>Hygiene</h3>
+<p>All public symbols are <strong>re-exported at the crate root</strong>.</p>
+<p>This ensures:</p>
+<ul>
+<li>a flat and ergonomic import surface</li>
+<li>no need to depend on internal module paths</li>
+<li>consistent and predictable naming across the crate</li>
+</ul>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt><code>pub use <a class="mod" href="balances/index.html" title="mod frame_plugins::balances">balances</a>::*;</code></dt><dt><code>pub use <a class="mod" href="elections/index.html" title="mod frame_plugins::elections">elections</a>::*;</code></dt><dt><code>pub use <a class="mod" href="influence/index.html" title="mod frame_plugins::influence">influence</a>::*;</code></dt><dt><code>pub use <a class="mod" href="penalty/index.html" title="mod frame_plugins::penalty">penalty</a>::*;</code></dt><dt><code>pub use <a class="mod" href="rewards/index.html" title="mod frame_plugins::rewards">rewards</a>::*;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="balances/index.html" title="mod frame_plugins::balances">balances</a></dt><dd>Lazy balance plugin families built on top of
+<a href="../frame_suite/assets/trait.LazyBalanceRoot.html" title="trait frame_suite::assets::LazyBalanceRoot"><code>LazyBalanceRoot</code></a>.</dd><dt><a class="mod" href="elections/index.html" title="mod frame_plugins::elections">elections</a></dt><dd>Defines two distinct <strong>pluggable election models</strong> for ranking and selecting
+candidates based on their stake, backing, or influence metrics.</dd><dt><a class="mod" href="influence/index.html" title="mod frame_plugins::influence">influence</a></dt><dd>Provides a suite of <strong>pluggable influence models</strong> to transform raw input values
+(e.g., stake, contribution, vote weight, or score) into computed influence metrics
+used by election systems, reputation engines, and governance mechanisms.</dd><dt><a class="mod" href="penalty/index.html" title="mod frame_plugins::penalty">penalty</a></dt><dd>Provides a suite of <strong>pluggable penalty models</strong> used to transform,
+normalize, and constrain penalty values associated with entities.</dd><dt><a class="mod" href="rewards/index.html" title="mod frame_plugins::rewards">rewards</a></dt><dd>Defines <strong>pluggable reward models</strong> for computing and distributing value across
+participants.</dd></dl></section></div></main></body></html>

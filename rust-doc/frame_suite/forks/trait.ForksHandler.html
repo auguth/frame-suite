@@ -1,0 +1,396 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Fork-aware local branch collection framework for pallet/module state."><title>ForksHandler in frame_suite::forks - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Forks<wbr>Handler</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#ocw-execution-model" title="OCW execution model">OCW execution model</a></li><li><a href="#scope-safety" title="Scope safety">Scope safety</a></li><li><a href="#query-model" title="Query model">Query model</a></li></ul><h3><a href="#required-associated-consts">Required Associated Constants</a></h3><ul class="block"><li><a href="#associatedconstant.MAX_FORKS" title="MAX_FORKS">MAX_FORKS</a></li><li><a href="#associatedconstant.MAX_RECOVER_TRAVERSAL" title="MAX_RECOVER_TRAVERSAL">MAX_RECOVER_TRAVERSAL</a></li><li><a href="#associatedconstant.TAG" title="TAG">TAG</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.forks_not_enabled" title="forks_not_enabled">forks_not_enabled</a></li><li><a href="#tymethod.inconsistent_forks" title="inconsistent_forks">inconsistent_forks</a></li><li><a href="#tymethod.max_forks_error" title="max_forks_error">max_forks_error</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.add_to_scope" title="add_to_scope">add_to_scope</a></li><li><a href="#method.gen_scope_item_key" title="gen_scope_item_key">gen_scope_item_key</a></li><li><a href="#method.get_block_branch" title="get_block_branch">get_block_branch</a></li><li><a href="#method.get_branch" title="get_branch">get_branch</a></li><li><a href="#method.get_branch_hash" title="get_branch_hash">get_branch_hash</a></li><li><a href="#method.get_divider" title="get_divider">get_divider</a></li><li><a href="#method.get_head" title="get_head">get_head</a></li><li><a href="#method.get_prev_block_branch" title="get_prev_block_branch">get_prev_block_branch</a></li><li><a href="#method.get_prev_branch" title="get_prev_branch">get_prev_branch</a></li><li><a href="#method.inherited_branch_decode_error" title="inherited_branch_decode_error">inherited_branch_decode_error</a></li><li><a href="#method.inherited_branch_mutation_conflict" title="inherited_branch_mutation_conflict">inherited_branch_mutation_conflict</a></li><li><a href="#method.max_forks" title="max_forks">max_forks</a></li><li><a href="#method.parent_branch_hash_unavailable" title="parent_branch_hash_unavailable">parent_branch_hash_unavailable</a></li><li><a href="#method.parent_branch_unavailable" title="parent_branch_unavailable">parent_branch_unavailable</a></li><li><a href="#method.parent_divider_unavailable" title="parent_divider_unavailable">parent_divider_unavailable</a></li><li><a href="#method.remove_from_scope" title="remove_from_scope">remove_from_scope</a></li><li><a href="#method.scope_item_exists" title="scope_item_exists">scope_item_exists</a></li><li><a href="#method.start" title="start">start</a></li><li><a href="#method.transition" title="transition">transition</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>forks</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">forks</a></div><h1>Trait <span class="trait">ForksHandler</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/forks.rs.html#543-1826">Source</a> </span></div><pre class="rust item-decl"><code>pub trait ForksHandler&lt;T: Config, S: <a class="trait" href="trait.ForkScopes.html" title="trait frame_suite::forks::ForkScopes">ForkScopes</a>&gt;: <a class="trait" href="../routines/trait.Logging.html" title="trait frame_suite::routines::Logging">Logging</a>&lt;BlockNumberFor&lt;T&gt;, Logger = DispatchError&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a> {
+    const <a href="#associatedconstant.TAG" class="constant">TAG</a>: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>];
+    const <a href="#associatedconstant.MAX_FORKS" class="constant">MAX_FORKS</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>;
+    const <a href="#associatedconstant.MAX_RECOVER_TRAVERSAL" class="constant">MAX_RECOVER_TRAVERSAL</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>;
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 22 methods</span></summary>
+    // Required methods
+    fn <a href="#tymethod.forks_not_enabled" class="fn">forks_not_enabled</a>() -&gt; DispatchError;
+<span class="item-spacer"></span>    fn <a href="#tymethod.inconsistent_forks" class="fn">inconsistent_forks</a>() -&gt; DispatchError;
+<span class="item-spacer"></span>    fn <a href="#tymethod.max_forks_error" class="fn">max_forks_error</a>() -&gt; DispatchError;
+
+    // Provided methods
+    fn <a href="#method.start" class="fn">start</a>&lt;F: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>()&gt;(
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+        ocw: F,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_head" class="fn">get_head</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;BlockNumberFor&lt;T&gt;&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_branch_hash" class="fn">get_branch_hash</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>]&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_block_branch" class="fn">get_block_branch</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_branch" class="fn">get_branch</a>(branch_hash: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>]) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_prev_branch" class="fn">get_prev_branch</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_prev_block_branch" class="fn">get_prev_block_branch</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_divider" class="fn">get_divider</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>]&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.transition" class="fn">transition</a>(
+        branch: &amp;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;,
+        action: <a class="enum" href="enum.ForkAction.html" title="enum frame_suite::forks::ForkAction">ForkAction</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.gen_scope_item_key" class="fn">gen_scope_item_key</a>(item: &amp;S::<a class="associatedtype" href="../misc/trait.Accrete.html#associatedtype.Item" title="type frame_suite::misc::Accrete::Item">Item</a>) -&gt; [<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>] { ... }
+<span class="item-spacer"></span>    fn <a href="#method.scope_item_exists" class="fn">scope_item_exists</a>(
+        key: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>],
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.add_to_scope" class="fn">add_to_scope</a>(
+        item: S::<a class="associatedtype" href="../misc/trait.Accrete.html#associatedtype.Item" title="type frame_suite::misc::Accrete::Item">Item</a>,
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>], Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.remove_from_scope" class="fn">remove_from_scope</a>(
+        key: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>],
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.parent_branch_hash_unavailable" class="fn">parent_branch_hash_unavailable</a>(
+        block: BlockNumberFor&lt;T&gt;,
+        _target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        _fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.parent_branch_unavailable" class="fn">parent_branch_unavailable</a>(
+        block: BlockNumberFor&lt;T&gt;,
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.inherited_branch_mutation_conflict" class="fn">inherited_branch_mutation_conflict</a>(
+        block: BlockNumberFor&lt;T&gt;,
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.parent_divider_unavailable" class="fn">parent_divider_unavailable</a>(
+        block: BlockNumberFor&lt;T&gt;,
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.inherited_branch_decode_error" class="fn">inherited_branch_decode_error</a>(
+        block: BlockNumberFor&lt;T&gt;,
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.max_forks" class="fn">max_forks</a>(
+        block: BlockNumberFor&lt;T&gt;,
+        target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+        fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt; { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Fork-aware local branch collection framework for pallet/module state.</p>
+<p>This trait allows a pallet (or module using OCWs) to maintain its own
+deterministic local fork graph independent of chain consensus.</p>
+<p>It is tightly coupled to FRAME System and uses:</p>
+<ul>
+<li>current block number</li>
+<li>parent hash</li>
+<li>historical block hashes</li>
+</ul>
+<p>to resolve and recover local branch state.</p>
+<p>Each implementation defines:</p>
+<ul>
+<li>its own <code>TAG</code> (storage namespace)</li>
+<li>its own <code>ForkScope</code> (local state tracked per branch)</li>
+</ul>
+<p>This lets every pallet answer:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="string">"what was my local state on this branch?"</span></code></pre></div>
+<p>Useful for:</p>
+<ul>
+<li>OCW-derived state</li>
+<li>local indexing and aggregation</li>
+<li>branch-aware replay</li>
+<li>deterministic recovery after storage loss</li>
+</ul>
+<h3 id="ocw-execution-model"><a class="doc-anchor" href="#ocw-execution-model">§</a>OCW execution model</h3>
+<p>Offchain workers should always begin with:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">fn </span>offchain_worker(block_number: BlockNumberFor&lt;T&gt;) {
+    &lt;<span class="self">Self </span><span class="kw">as </span>ForksHandler&lt;T, MyForkScope&gt;&gt;::start(
+        <span class="prelude-val">Some</span>(<span class="string">"my-pallet"</span>),
+        <span class="prelude-val">Some</span>(LogFormatter::default()),
+        || {
+            <span class="comment">// pallet-specific OCW logic here
+        </span>}
+    );
+}</code></pre></div>
+<p><a href="trait.ForksHandler.html#method.start"><code>Self::start</code></a> is the only valid entry point.</p>
+<p>It handles:</p>
+<ul>
+<li>longest-chain extension vs sibling fork creation</li>
+<li>recovery of missing or corrupted branch state</li>
+<li>conditions where OCW execution should be skipped</li>
+</ul>
+<p>The OCW closure executes only after branch resolution
+and recovery have completed.</p>
+<h3 id="scope-safety"><a class="doc-anchor" href="#scope-safety">§</a>Scope safety</h3>
+<p>Fork scope state is recoverable, but not permanently trusted.</p>
+<p>Recovery may recreate synthetic forks and restore only the
+minimum valid state required for continued execution,
+not exact historical lineage.</p>
+<p>Fork recovery guarantees execution continuity,
+not perfect reconstruction.</p>
+<h3 id="query-model"><a class="doc-anchor" href="#query-model">§</a>Query model</h3>
+<p>Branch resolution is intentionally delayed by one block.</p>
+<p>The current executing block is not inserted into the fork graph
+during its own OCW execution.</p>
+<p>Instead:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>block N OCW executes
+-&gt; block N - <span class="number">1 </span>is resolved and persisted</code></pre></div>
+<p>because the current block hash is not yet safely available
+for deterministic fork routing.</p>
+<p>This means queries during OCW execution resolve the
+previous block’s branch by default.</p>
+<p>Additional traversal across parent, sibling,
+and canonical ancestry is available through
+branch access helpers.</p>
+</div></details><h2 id="required-associated-consts" class="section-header">Required Associated Constants<a href="#required-associated-consts" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedconstant.TAG" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#549">Source</a><h4 class="code-header">const <a href="#associatedconstant.TAG" class="constant">TAG</a>: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>]</h4></section></summary><div class="docblock"><p>Storage namespace prefix for all fork-local keys.</p>
+<p>Used to isolate multiple fork-graphs with special scopes.</p>
+</div></details><details class="toggle" open><summary><section id="associatedconstant.MAX_FORKS" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#555">Source</a><h4 class="code-header">const <a href="#associatedconstant.MAX_FORKS" class="constant">MAX_FORKS</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a></h4></section></summary><div class="docblock"><p>Maximum sibling forks allowed from a single branch point.</p>
+<p>Once exceeded, no additional sibling branch is created
+and <a href="trait.ForksHandler.html#method.max_forks"><code>Self::max_forks</code></a> is triggered.</p>
+</div></details><details class="toggle" open><summary><section id="associatedconstant.MAX_RECOVER_TRAVERSAL" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#563">Source</a><h4 class="code-header">const <a href="#associatedconstant.MAX_RECOVER_TRAVERSAL" class="constant">MAX_RECOVER_TRAVERSAL</a>: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a></h4></section></summary><div class="docblock"><p>Maximum reverse traversal attempts during recovery.</p>
+<p>Used when branch resolution fails and the system
+walks backward to find the nearest recoverable branch state.</p>
+<p>Prevents unbounded historical scanning.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.forks_not_enabled" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1331">Source</a><h4 class="code-header">fn <a href="#tymethod.forks_not_enabled" class="fn">forks_not_enabled</a>() -&gt; DispatchError</h4></section></summary><div class="docblock"><p>Returns the error used when fork-aware storage is accessed before
+<code>ForksHandler::start</code> has initialized the fork graph.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.inconsistent_forks" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1334">Source</a><h4 class="code-header">fn <a href="#tymethod.inconsistent_forks" class="fn">inconsistent_forks</a>() -&gt; DispatchError</h4></section></summary><div class="docblock"><p>Returns the error used when the fork graph is in an inconsistent state.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.max_forks_error" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1824">Source</a><h4 class="code-header">fn <a href="#tymethod.max_forks_error" class="fn">max_forks_error</a>() -&gt; DispatchError</h4></section></summary><div class="docblock"><p>Error returned when fork creation exceeds
+<a href="trait.ForksHandler.html#associatedconstant.MAX_FORKS"><code>Self::MAX_FORKS</code></a>.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.start" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#596-915">Source</a><h4 class="code-header">fn <a href="#method.start" class="fn">start</a>&lt;F: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.FnOnce.html" title="trait core::ops::function::FnOnce">FnOnce</a>()&gt;(
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+    ocw: F,
+)</h4></section></summary><div class="docblock"><p>Start fork resolution for the previous block and execute OCW logic
+inside the resolved branch environment.</p>
+<p>This is the only valid OCW entry point.</p>
+<p>It determines:</p>
+<ul>
+<li>longest-chain extension vs sibling fork creation</li>
+<li>divider / branch recovery when storage is missing</li>
+<li>corruption handling for decode failures</li>
+<li>mutation conflict promotion into sibling forks</li>
+<li>conditions where OCW execution should be skipped</li>
+</ul>
+<p>Resolution is intentionally delayed by one block:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>block N OCW executes
+-&gt; block N - <span class="number">1 </span>is resolved and persisted</code></pre></div>
+<p>because the current block hash is not yet safely available
+for deterministic fork routing.</p>
+<p>The provided <code>ocw</code> closure runs only after:</p>
+<ul>
+<li>branch resolution is complete</li>
+<li>recovery (if needed) has finished</li>
+<li>block -&gt; divider -&gt; branch invariants are restored</li>
+</ul>
+<p>This guarantees OCW logic executes only inside a valid
+fork-aware branch context.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_head" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#927-929">Source</a><h4 class="code-header">fn <a href="#method.get_head" class="fn">get_head</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;BlockNumberFor&lt;T&gt;&gt;</h4></section></summary><div class="docblock"><p>Returns the highest known longest-chain boundary used for fork detection.</p>
+<p>This is local fork-tracking state, not consensus finality.</p>
+<p>Used by <a href="trait.ForksHandler.html#method.start"><code>Self::start</code></a> to decide:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>block &lt;= HEAD_BLOCK -&gt; sibling fork path
+block &gt;  HEAD_BLOCK -&gt; longest-chain extension</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_branch_hash" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#935-938">Source</a><h4 class="code-header">fn <a href="#method.get_branch_hash" class="fn">get_branch_hash</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>]&gt;</h4></section></summary><div class="docblock"><p>Returns the fork-branch key-hash for a persisted block hash.</p>
+<p>This should be queried using already finalized block hashes,
+typically the previous block during OCW execution.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_block_branch" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#944-947">Source</a><h4 class="code-header">fn <a href="#method.get_block_branch" class="fn">get_block_branch</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt;</h4></section></summary><div class="docblock"><p>Returns the resolved fork-branch data for a persisted block hash.</p>
+<p>This should be queried using already finalized block hashes,
+typically the previous block during OCW execution.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_branch" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#950-952">Source</a><h4 class="code-header">fn <a href="#method.get_branch" class="fn">get_branch</a>(branch_hash: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>]) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt;</h4></section></summary><div class="docblock"><p>Loads a branch directly from its branch hash (key).</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_prev_branch" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#960-964">Source</a><h4 class="code-header">fn <a href="#method.get_prev_branch" class="fn">get_prev_branch</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt;</h4></section></summary><div class="docblock"><p>Returns the structural parent branch of a resolved block.</p>
+<p>Useful for manual traversal across fork ancestry.</p>
+<p>This should be queried using already finalized block hashes,
+typically the previous block during OCW execution.</p>
+</div></details><section id="method.get_prev_block_branch" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#966-970">Source</a><h4 class="code-header">fn <a href="#method.get_prev_block_branch" class="fn">get_prev_block_branch</a>() -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt;</h4></section><details class="toggle method-toggle" open><summary><section id="method.get_divider" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#979-982">Source</a><h4 class="code-header">fn <a href="#method.get_divider" class="fn">get_divider</a>(hash: T::Hash) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>]&gt;</h4></section></summary><div class="docblock"><p>Returns the divider for a persisted block hash.</p>
+<p>Divider is the routing layer that allows multiple sibling
+branches to coexist from the same parent ancestry.</p>
+<p>This should be queried using already finalized block hashes,
+typically the previous block during OCW execution.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.transition" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1070-1165">Source</a><h4 class="code-header">fn <a href="#method.transition" class="fn">transition</a>(branch: &amp;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;, action: <a class="enum" href="enum.ForkAction.html" title="enum frame_suite::forks::ForkAction">ForkAction</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="struct.Branch.html" title="struct frame_suite::forks::Branch">Branch</a>&lt;T, S&gt;&gt;</h4></section></summary><div class="docblock"><p>Deterministic traversal across persisted local fork branches.</p>
+<p>This moves between already resolved <a href="struct.Branch.html" title="struct frame_suite::forks::Branch"><code>Branch</code></a> states created by
+<a href="trait.ForksHandler.html#method.start" title="associated function frame_suite::forks::ForksHandler::start"><code>ForksHandler::start</code></a> during pallet OCW execution.</p>
+<p>Since fork resolution is delayed by one block:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>block N executes
+-&gt; block N - <span class="number">1 </span>is resolved and persisted</code></pre></div>
+<p>the current executing block is not yet inserted into the local fork
+graph during its own OCW execution.</p>
+<p>For normal OCW access, use <a href="trait.ForksHandler.html#method.get_prev_block_branch" title="associated function frame_suite::forks::ForksHandler::get_prev_block_branch"><code>ForksHandler::get_prev_block_branch</code></a>
+to retrieve the previous block’s (<code>N - 1</code>) resolved branch.</p>
+<p>From that branch, navigation can continue using <a href="enum.ForkAction.html" title="enum frame_suite::forks::ForkAction"><code>ForkAction</code></a> and
+<a href="trait.ForksHandler.html#method.transition" title="associated function frame_suite::forks::ForksHandler::transition"><code>ForksHandler::transition</code></a>, or other helpers such as:</p>
+<ul>
+<li><a href="trait.ForksHandler.html#method.get_block_branch" title="associated function frame_suite::forks::ForksHandler::get_block_branch"><code>ForksHandler::get_block_branch</code></a></li>
+<li><a href="trait.ForksHandler.html#method.get_prev_branch" title="associated function frame_suite::forks::ForksHandler::get_prev_branch"><code>ForksHandler::get_prev_branch</code></a></li>
+<li><a href="trait.ForksHandler.html#method.get_branch" title="associated function frame_suite::forks::ForksHandler::get_branch"><code>ForksHandler::get_branch</code></a></li>
+</ul>
+<p>A branch represents a continuous stream of blocks on the same path:</p>
+<div class="example-wrap"><pre class="language-text"><code>A -&gt; B -&gt; C -&gt; D
+same branch</code></pre></div>
+<p>When a division occurs, a new sibling branch is created:</p>
+<div class="example-wrap"><pre class="language-text"><code>A -&gt; B -&gt; C
+        |-- D
+        |-- D&#39;</code></pre></div>
+<p>Here:</p>
+<ul>
+<li><code>D</code> is the original branch continuation</li>
+<li><code>D'</code> is the new sibling branch</li>
+</ul>
+<p>The branch that existed before the split (<code>A -&gt; B -&gt; C</code>)
+becomes the parent branch for both paths.</p>
+<p>A child branch is any branch created from that fork point.</p>
+<p>Example:</p>
+<div class="example-wrap"><pre class="language-text"><code>parent branch
+A -&gt; B -&gt; C
+
+child branches
+        |-- D   [0]
+        |-- D&#39;  [1]</code></pre></div>
+<p>Nested forks create deeper child branches:</p>
+<div class="example-wrap"><pre class="language-text"><code>A -&gt; B -&gt; C
+        |-- D&#39;      [0]
+             |-- E&#39; [0,0]</code></pre></div>
+<p>This function performs branch navigation, not direct block traversal,
+so block numbers are not passed here.</p>
+<p>If block position is needed, it can be inferred from:</p>
+<ul>
+<li>the branch <a href="struct.Branch.html#structfield.head" title="field frame_suite::forks::Branch::head"><code>Branch::head</code></a></li>
+<li>the previously resolved branch head</li>
+</ul>
+<p>Traversal uses <a href="enum.ForkAction.html" title="enum frame_suite::forks::ForkAction"><code>ForkAction</code></a> to move between:</p>
+<ul>
+<li>parent branches</li>
+<li>child branches</li>
+<li>sibling branches</li>
+<li>root ancestry</li>
+</ul>
+<p>Returns <code>Some(branch)</code> if the target exists,
+otherwise <code>None</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.gen_scope_item_key" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1174-1178">Source</a><h4 class="code-header">fn <a href="#method.gen_scope_item_key" class="fn">gen_scope_item_key</a>(item: &amp;S::<a class="associatedtype" href="../misc/trait.Accrete.html#associatedtype.Item" title="type frame_suite::misc::Accrete::Item">Item</a>) -&gt; [<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>]</h4></section></summary><div class="docblock"><p>Derives a 32-byte scope key for a given scope item.</p>
+<p>Delegates to <a href="../misc/trait.Accrete.html#method.make_key" title="associated function frame_suite::misc::Accrete::make_key"><code>Accrete::make_key</code></a> which produces a stable, content-addressed
+key from the item.</p>
+<p>The same item always produces the same key regardless
+of the block or fork it is called from, making scope keys fork-independent.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.scope_item_exists" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1189-1212">Source</a><h4 class="code-header">fn <a href="#method.scope_item_exists" class="fn">scope_item_exists</a>(
+    key: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>],
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Returns <code>true</code> if the given scope key exists in the current fork’s branch.</p>
+<p>Resolves the branch for <code>block - 1</code> via <a href="trait.ForksHandler.html#method.get_prev_block_branch"><code>Self::get_prev_block_branch</code></a>
+and checks both the <strong>local</strong> scope (items written on this exact branch)
+and the <strong>inherited</strong> scope (items promoted from ancestor branches via
+<code>accrete()</code>).</p>
+<p>Returns <code>Err(OCWForksNotEnabled)</code> if no branch exists for the previous block,
+which indicates the fork graph has not been initialized via <code>ForksHandler::start</code>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add_to_scope" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1232-1265">Source</a><h4 class="code-header">fn <a href="#method.add_to_scope" class="fn">add_to_scope</a>(
+    item: S::<a class="associatedtype" href="../misc/trait.Accrete.html#associatedtype.Item" title="type frame_suite::misc::Accrete::Item">Item</a>,
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>], Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Registers a scope item in the <strong>local</strong> scope of the current branch.</p>
+<p>Resolves the branch for <code>block - 1</code> using <code>block_hash(block - 1)</code> as
+the lookup key.</p>
+<p>The item is added to <code>branch.scope.local_keys</code> so it is visible to
+<a href="trait.ForksHandler.html#method.scope_item_exists"><code>Self::scope_item_exists</code></a> on the same branch and propagates into
+<code>inherited_keys</code> of any child branch created via <code>accrete()</code> during
+the next <code>ForksHandler::start</code> call.</p>
+<p>Returns the 32-byte scope key assigned to the item.</p>
+<p>Returns:</p>
+<ul>
+<li><code>Err(OCWForksNotEnabled)</code> if <code>block_hash(block - 1)</code> has no
+corresponding branch entry, meaning <code>ForksHandler::start</code> has not yet
+run at the current block.</li>
+<li><code>Err(OCWForksInconsistent)</code> if the branch hash resolves
+but the branch itself cannot be loaded.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_from_scope" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1282-1327">Source</a><h4 class="code-header">fn <a href="#method.remove_from_scope" class="fn">remove_from_scope</a>(
+    key: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u8.html">u8</a>; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.array.html">32</a>],
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Removes a scope item from the current branch’s local or inherited scope.</p>
+<p>Resolves the branch for <code>block - 1</code> and removes the key from whichever
+scope layer it occupies:</p>
+<ul>
+<li>If the key is in <code>local_keys</code>, it is removed directly and the branch
+is persisted.</li>
+<li>If the key is in <code>inherited_keys</code>, it is removed from the inherited
+layer and the branch is persisted.</li>
+<li>If the key is in neither layer, the call is a no-op and returns <code>Ok(())</code>.</li>
+</ul>
+<p>Returns:</p>
+<ul>
+<li><code>Err(OCWForksNotEnabled)</code> if the branch cannot be resolved.</li>
+<li><code>Err(OCWForksInconsistent)</code> if the branch hash exists but the
+branch itself cannot be loaded.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.parent_branch_hash_unavailable" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1352-1567">Source</a><h4 class="code-header">fn <a href="#method.parent_branch_hash_unavailable" class="fn">parent_branch_hash_unavailable</a>(
+    block: BlockNumberFor&lt;T&gt;,
+    _target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    _fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Recovery path when a target block’s parent block
+does not have a resolvable branch available.</p>
+<p>The target block is usually (N-1) and parent (N-2)</p>
+<p>Storage corruption may permanently lose the parent’s
+local fork scope for that generation, which cannot be
+reconstructed from chain history alone.</p>
+<p>Recovery walks backward to the nearest recoverable branch
+and restores only the minimum valid scope required for
+execution continuity.</p>
+<p>This is intentionally scope-first, not lineage-first:
+synthetic recovery branches may be created instead of
+exact historical fork reconstruction.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.parent_branch_unavailable" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1575-1611">Source</a><h4 class="code-header">fn <a href="#method.parent_branch_unavailable" class="fn">parent_branch_unavailable</a>(
+    block: BlockNumberFor&lt;T&gt;,
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Recovery path when a divider exists for a target block’s (N-1)
+parent (N-2) but the resolved branch data is missing.</p>
+<p>The stale divider is cleared first, then recovery
+falls back to <a href="trait.ForksHandler.html#method.parent_branch_hash_unavailable"><code>Self::parent_branch_hash_unavailable</code></a>
+to rebuild the minimum valid branch state.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.inherited_branch_mutation_conflict" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1630-1765">Source</a><h4 class="code-header">fn <a href="#method.inherited_branch_mutation_conflict" class="fn">inherited_branch_mutation_conflict</a>(
+    block: BlockNumberFor&lt;T&gt;,
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Recovery path when optimistic branch mutation fails due to
+concurrent OCW modification.</p>
+<p>Unlike other recovery paths, this handles the target block (N-1)
+itself, not its missing parent (N-2) ancestry. It does not return
+control to <a href="trait.ForksHandler.html#method.start"><code>Self::start</code></a> for retry, because no parent recovery
+is needed.</p>
+<p>Instead, it directly performs branch update for the target
+block by cloning the conflicting structure - the inherited
+branch from parent into a new sibling branch.</p>
+<p>The conflicting writer keeps the original branch,
+while the later writer continues on a cloned sibling fork.</p>
+<p>This preserves deterministic execution without retrying
+mutation on already committed branch state.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.parent_divider_unavailable" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1773-1779">Source</a><h4 class="code-header">fn <a href="#method.parent_divider_unavailable" class="fn">parent_divider_unavailable</a>(
+    block: BlockNumberFor&lt;T&gt;,
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Recovery path when divider routing is missing for the
+target block’s (N-1) parent (N-2).</p>
+<p>Since divider loss breaks ancestry routing entirely,
+recovery falls back directly to
+<a href="trait.ForksHandler.html#method.parent_branch_hash_unavailable"><code>Self::parent_branch_hash_unavailable</code></a>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.inherited_branch_decode_error" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1790-1796">Source</a><h4 class="code-header">fn <a href="#method.inherited_branch_decode_error" class="fn">inherited_branch_decode_error</a>(
+    block: BlockNumberFor&lt;T&gt;,
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Recovery path when branch decoding fails for the
+target block’s (N-1) inherited branch from parent (N-2)
+for extension.</p>
+<p>This means the branch exists in storage,
+but its payload is corrupted or unreadable.</p>
+<p>It is treated the same as a missing branch and
+delegated to <a href="trait.ForksHandler.html#method.parent_branch_unavailable"><code>Self::parent_branch_unavailable</code></a>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.max_forks" class="method"><a class="src rightside" href="../../src/frame_suite/forks.rs.html#1809-1820">Source</a><h4 class="code-header">fn <a href="#method.max_forks" class="fn">max_forks</a>(
+    block: BlockNumberFor&lt;T&gt;,
+    target: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.str.html">str</a>&gt;,
+    fmt: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="../routines/type.LogFormatter.html" title="type frame_suite::routines::LogFormatter">LogFormatter</a>&lt;BlockNumberFor&lt;T&gt;, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Level" title="type frame_suite::routines::Logging::Level">Level</a>&gt;&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, Self::<a class="associatedtype" href="../routines/trait.Logging.html#associatedtype.Logger" title="type frame_suite::routines::Logging::Logger">Logger</a>&gt;</h4></section></summary><div class="docblock"><p>Triggered when no additional sibling branch slot
+can be allocated under the configured limit as the sibling
+of the target block’s (N-1) parent (N-2).</p>
+<p>This occurs when:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code>sibling_count &gt; MAX_FORKS</code></pre></div>
+<p>and branch creation must stop.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/forks/trait.ForksHandler.js" async></script></section></div></main></body></html>

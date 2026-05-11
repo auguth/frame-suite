@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["finalize_place_commit","finalize_raise_commit","finalize_resolve_commit"],"type":["CommitmentAsset","CommitmentDigest","CommitmentDigestModel","CommitmentPosition","CommitmentReason","CommitmentShares"]};

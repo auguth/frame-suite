@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Provides the core runtime logic for managing blockchain actors (authors/validators) across their full lifecycle."><title>pallet_chain_manager::blockchain - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="pallet_chain_manager" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../pallet_chain_manager/index.html">pallet_<wbr>chain_<wbr>manager</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module blockchain</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#design-overview" title="Design Overview">Design Overview</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate pallet_<wbr>chain_<wbr>manager</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">pallet_chain_manager</a></div><h1>Module <span>blockchain</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/pallet_chain_manager/blockchain.rs.html#16-1921">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Provides the <strong>core runtime logic for managing blockchain actors</strong>
+(authors/validators) across their full lifecycle.</p>
+<ul>
+<li><strong>Election orchestration</strong> (via <a href="../../frame_suite/blockchain/trait.ElectAuthors.html" title="trait frame_suite::blockchain::ElectAuthors"><code>ElectAuthors</code></a>)</li>
+<li><strong>Affidavit submission and validation</strong> (via <a href="../../frame_suite/blockchain/trait.ElectionAffidavits.html" title="trait frame_suite::blockchain::ElectionAffidavits"><code>ElectionAffidavits</code></a>)</li>
+<li><strong>Contribution tracking</strong> through session-scoped points (via
+<a href="../../frame_suite/blockchain/trait.AuthorPoints.html" title="trait frame_suite::blockchain::AuthorPoints"><code>AuthorPoints</code></a>, although swappable via <a href="../pallet/trait.Config.html#associatedtype.PointsAdapter" title="associated type pallet_chain_manager::pallet::Config::PointsAdapter"><code>Config::PointsAdapter</code></a>)</li>
+<li><strong>Reward scheduling</strong> based on participation (via <a href="../../frame_suite/blockchain/trait.RewardAuthors.html" title="trait frame_suite::blockchain::RewardAuthors"><code>RewardAuthors</code></a>)</li>
+<li><strong>Penalty scheduling</strong> for misbehavior (via <a href="../../frame_suite/blockchain/trait.PenalizeAuthors.html" title="trait frame_suite::blockchain::PenalizeAuthors"><code>PenalizeAuthors</code></a>)</li>
+</ul>
+<p>The module acts as a <strong>bridge layer</strong> between generic trait abstractions and
+pallet-specific storage, timing, and role-management systems.</p>
+<h3 id="design-overview"><a class="doc-anchor" href="#design-overview">§</a>Design Overview</h3>
+<ul>
+<li>
+<p><strong>Session-driven lifecycle</strong>:
+All operations (affidavits, elections, points, rewards, penalties)
+are scoped to sessions and aligned with deterministic session timing.</p>
+</li>
+<li>
+<p><strong>Time-gated execution</strong>:
+Affidavit submission and election processing are strictly bounded by
+windows derived from session start and configurable percentages.</p>
+</li>
+<li>
+<p><strong>Separation of concerns</strong>:</p>
+<ul>
+<li>This module coordinates <em>when</em> and <em>what</em> to execute.</li>
+<li>External adapters/plugins define <em>how</em> logic is executed:
+<ul>
+<li>Election logic: <a href="../pallet/trait.Config.html#associatedtype.ElectionAdapter" title="associated type pallet_chain_manager::pallet::Config::ElectionAdapter"><code>Config::ElectionAdapter</code></a></li>
+<li>Reward logic: <a href="../pallet/trait.Config.html#associatedtype.RewardModel" title="associated type pallet_chain_manager::pallet::Config::RewardModel"><code>Config::RewardModel</code></a>, <a href="../pallet/trait.Config.html#associatedtype.InflationModel" title="associated type pallet_chain_manager::pallet::Config::InflationModel"><code>Config::InflationModel</code></a></li>
+<li>Penalty logic: <a href="../pallet/trait.Config.html#associatedtype.PenaltyModel" title="associated type pallet_chain_manager::pallet::Config::PenaltyModel"><code>Config::PenaltyModel</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Deterministic and auditable</strong>:
+All operations avoid side effects and remain reproducible across nodes.</p>
+</li>
+<li>
+<p><strong>Deferred execution model</strong>:
+Rewards and penalties are <strong>scheduled</strong>, not immediately finalized,
+allowing downstream systems to aggregate, adjust, or revert them.</p>
+</li>
+</ul>
+</div></details></section></div></main></body></html>

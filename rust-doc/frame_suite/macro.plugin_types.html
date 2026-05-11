@@ -1,0 +1,114 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Declares associated plugin types inside a trait."><title>plugin_types in frame_suite - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">plugin_<wbr>types</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#syntax" title="Syntax">Syntax</a><ul><li><a href="#immutable-concrete-model" title="Immutable Concrete Model">Immutable Concrete Model</a></li><li><a href="#mutable-concrete-model" title="Mutable Concrete Model">Mutable Concrete Model</a></li><li><a href="#plugin-family-immutable-or-mutable" title="Plugin Family (Immutable or Mutable)">Plugin Family (Immutable or Mutable)</a></li></ul></li><li><a href="#lifetimes" title="Lifetimes">Lifetimes</a></li><li><a href="#context-bounds" title="Context Bounds">Context Bounds</a></li><li><a href="#input--output-constraints" title="Input / Output Constraints">Input / Output Constraints</a><ul><li><a href="#plugin-models-immutable--mutable" title="Plugin Models (Immutable &#38; Mutable)">Plugin Models (Immutable &amp; Mutable)</a></li><li><a href="#plugin-families" title="Plugin Families">Plugin Families</a></li></ul></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#concrete-model" title="Concrete Model">Concrete Model</a></li><li><a href="#plugin-family" title="Plugin Family">Plugin Family</a></li></ul></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">frame_suite</a></div><h1>Macro <span class="macro">plugin_types</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/frame_suite/plugins.rs.html#923-991">Source</a> </span></div><pre class="rust item-decl"><code>macro_rules! plugin_types {
+    (
+        input: $InputTy:ty,
+        output: $OutputTy:ty,
+        $(#[$model_meta:meta])*
+        model: $ModelAssoc:ident,
+        $(#[$ctx_meta:meta])*
+        context: $ContextAssoc:ident $(,)?
+    ) =&gt; { ... };
+    (
+        input: mut $MutateTy:ty,
+        output: $OutputTy:ty,
+        $(#[$model_meta:meta])*
+        model: $ModelAssoc:ident,
+        $(#[$ctx_meta:meta])*
+        context: $ContextAssoc:ident $(,)?
+    ) =&gt; { ... };
+    (
+        input: $(mut)? $InputTy:ty,
+        output: $OutputTy:ty,
+        $(borrow: [$($borrow_lt:lifetime)* $(,)?],)?
+        root: $Root:ident,
+        $(#[$model_meta:meta])*
+        family: $FamilyAssoc:ident,
+        $(#[$ctx_meta:meta])*
+        context: $ContextAssoc:ident
+        $(, provides: [$($provider:tt)*])? $(,)?
+    ) =&gt; { ... };
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Declares <strong>associated plugin types</strong> inside a trait.</p>
+<p>Supports both:</p>
+<ul>
+<li><strong>concrete plugin model binding</strong>, or</li>
+<li><strong>plugin family binding</strong> for late model selection.</li>
+</ul>
+<p>Exactly one of <code>model</code> or <code>family</code> must be specified.
+Exactly one of <code>input</code> or <code>input: mut</code> must be specified.</p>
+<h3 id="syntax"><a class="doc-anchor" href="#syntax">§</a>Syntax</h3><h4 id="immutable-concrete-model"><a class="doc-anchor" href="#immutable-concrete-model">§</a>Immutable Concrete Model</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_types!</span> {
+    input: InputType,        <span class="comment">// Required: immutable input type
+    </span>output: OutputType,      <span class="comment">// Required: output type
+    </span>model: ModelAssoc,       <span class="comment">// Required: associated plugin model
+    </span>context: ContextAssoc,   <span class="comment">// Required: associated context provider
+</span>}</code></pre></div>
+<h4 id="mutable-concrete-model"><a class="doc-anchor" href="#mutable-concrete-model">§</a>Mutable Concrete Model</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_types!</span> {
+    input: <span class="kw-2">mut </span>MutateType,   <span class="comment">// Required: mutable input type
+    </span>output: OutputType,      <span class="comment">// Required: output type
+    </span>model: ModelAssoc,       <span class="comment">// Required: associated plugin model
+    </span>context: ContextAssoc,   <span class="comment">// Required: associated context provider
+</span>}</code></pre></div>
+<h4 id="plugin-family-immutable-or-mutable"><a class="doc-anchor" href="#plugin-family-immutable-or-mutable">§</a>Plugin Family (Immutable or Mutable)</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_types!</span> {
+    input: InputType,        <span class="comment">// or: input: mut MutateType
+    </span>output: OutputType,      <span class="comment">// Required: output type
+    </span>borrow: [<span class="lifetime">'a</span>],            <span class="comment">// Optional: lifetime parameters of input/output
+    </span>root: PluginFamilyRoot,  <span class="comment">// Required: plugin family root trait
+    </span>family: FamilyAssoc,     <span class="comment">// Required: associated plugin family type
+    </span>context: ContextAssoc,   <span class="comment">// Required: associated context provider
+    </span>provides: [Send + Sync], <span class="comment">// Optional: bounds on context
+</span>}</code></pre></div>
+<h3 id="lifetimes"><a class="doc-anchor" href="#lifetimes">§</a>Lifetimes</h3>
+<ul>
+<li><code>lifetimes</code> expands to <code>&lt;...&gt;</code> on the <strong>family associated type</strong></li>
+<li>Enables lifetime-parameterized associated types (GATs)</li>
+</ul>
+<h3 id="context-bounds"><a class="doc-anchor" href="#context-bounds">§</a>Context Bounds</h3>
+<p>You may restrict the family’s <strong>context type</strong> using <code>provides</code>.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">plugin_types!</span> {
+    input: Input,
+    output: Output,
+    root: PluginFamilyRoot,
+    family: FamilyAssoc,    
+    context: MyContext,
+    provides: [Send + Sync + <span class="lifetime">'static</span>],
+}</code></pre></div>
+<p>Expands roughly to:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">type </span>MyContext: ModelContext&lt;Context: Send + Sync + <span class="lifetime">'static</span>&gt;;</code></pre></div>
+<h3 id="input--output-constraints"><a class="doc-anchor" href="#input--output-constraints">§</a>Input / Output Constraints</h3><h4 id="plugin-models-immutable--mutable"><a class="doc-anchor" href="#plugin-models-immutable--mutable">§</a>Plugin Models (Immutable &amp; Mutable)</h4>
+<p><code>Input</code> and <code>Output</code> must not contain generics or lifetime-based types (no GATs)</p>
+<h4 id="plugin-families"><a class="doc-anchor" href="#plugin-families">§</a>Plugin Families</h4>
+<ul>
+<li><code>Input</code> and <code>Output</code> may include <strong>lifetimes</strong></li>
+<li>Enabled via parameter <code>borrow: ['a]</code></li>
+<li>Type generics are still not supported</li>
+</ul>
+<div class="example-wrap"><pre class="language-text"><code>Model   -&gt; concrete associated types only (no generics, no lifetimes, no GATS)
+Family  -&gt; supports lifetimes only (via borrow)</code></pre></div><h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3><h4 id="concrete-model"><a class="doc-anchor" href="#concrete-model">§</a>Concrete Model</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub trait </span>Increment {
+    <span class="kw">type </span>Input;
+    <span class="kw">type </span>Output;
+
+    <span class="macro">plugin_types!</span> {
+        input: <span class="self">Self</span>::Input,
+        output: <span class="self">Self</span>::Output,
+        model: AddOneModel,
+        context: AddOneCtx,
+    }
+}</code></pre></div>
+<h4 id="plugin-family"><a class="doc-anchor" href="#plugin-family">§</a>Plugin Family</h4>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub trait </span>MathOps {
+    <span class="kw">type </span>Input;
+    <span class="kw">type </span>Output;
+
+    <span class="macro">plugin_types!</span> {
+        input: <span class="self">Self</span>::Input,
+        output: <span class="self">Self</span>::Output,
+        root: MathFamilyRoot,
+        family: MathFamily,
+        context: MathContext,
+    }
+}</code></pre></div>
+</div></details></section></div></main></body></html>

@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["pallet_authors",[["impl&lt;T: <a class=\"trait\" href=\"pallet_authors/pallet/trait.Config.html\" title=\"trait pallet_authors::pallet::Config\">Config</a>&gt; GetDispatchInfo for <a class=\"enum\" href=\"pallet_authors/pallet/enum.Call.html\" title=\"enum pallet_authors::pallet::Call\">Call</a>&lt;T&gt;"]]],["pallet_chain_manager",[["impl&lt;T: <a class=\"trait\" href=\"pallet_chain_manager/pallet/trait.Config.html\" title=\"trait pallet_chain_manager::pallet::Config\">Config</a>&gt; GetDispatchInfo for <a class=\"enum\" href=\"pallet_chain_manager/pallet/enum.Call.html\" title=\"enum pallet_chain_manager::pallet::Call\">Call</a>&lt;T&gt;"]]],["pallet_commitment",[["impl&lt;T: <a class=\"trait\" href=\"pallet_commitment/pallet/trait.Config.html\" title=\"trait pallet_commitment::pallet::Config\">Config</a>&lt;I&gt;, I: 'static&gt; GetDispatchInfo for <a class=\"enum\" href=\"pallet_commitment/pallet/enum.Call.html\" title=\"enum pallet_commitment::pallet::Call\">Call</a>&lt;T, I&gt;"]]],["pallet_xp",[["impl&lt;T: <a class=\"trait\" href=\"pallet_xp/pallet/trait.Config.html\" title=\"trait pallet_xp::pallet::Config\">Config</a>&lt;I&gt;, I: 'static&gt; GetDispatchInfo for <a class=\"enum\" href=\"pallet_xp/pallet/enum.Call.html\" title=\"enum pallet_xp::pallet::Call\">Call</a>&lt;T, I&gt;"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[311,342,351,311]}

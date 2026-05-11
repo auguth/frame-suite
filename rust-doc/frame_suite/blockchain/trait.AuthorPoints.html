@@ -1,0 +1,93 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Trait representing temporary, abstract points assigned to authors."><title>AuthorPoints in frame_suite::blockchain - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Author<wbr>Points</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#design-notes" title="Design notes">Design notes</a></li><li><a href="#ephemeral-behavior" title="Ephemeral behavior">Ephemeral behavior</a></li><li><a href="#type-parameters" title="Type Parameters">Type Parameters</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.clear_points" title="clear_points">clear_points</a></li><li><a href="#tymethod.iter_points" title="iter_points">iter_points</a></li><li><a href="#tymethod.points_of" title="points_of">points_of</a></li><li><a href="#tymethod.set_points" title="set_points">set_points</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.add_point" title="add_point">add_point</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>blockchain</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">blockchain</a></div><h1>Trait <span class="trait">AuthorPoints</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/blockchain.rs.html#295-371">Source</a> </span></div><pre class="rust item-decl"><code>pub trait AuthorPoints&lt;Author, Points&gt;<div class="where">where
+    Author: <a class="trait" href="../base/trait.Keyed.html" title="trait frame_suite::base::Keyed">Keyed</a>,
+    Points: <a class="trait" href="../base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a>,</div>{
+    // Required methods
+    fn <a href="#tymethod.points_of" class="fn">points_of</a>(author: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Points, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.iter_points" class="fn">iter_points</a>() -&gt; impl <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/iter/traits/iterator/trait.Iterator.html" title="trait core::iter::traits::iterator::Iterator">Iterator</a>&lt;Item = <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.tuple.html">(Author, Points)</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_points" class="fn">set_points</a>(author: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>, points: Points) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.clear_points" class="fn">clear_points</a>();
+
+    // Provided method
+    fn <a href="#method.add_point" class="fn">add_point</a>(author: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Trait representing <strong>temporary, abstract points assigned to authors</strong>.</p>
+<p>These points are <strong>not finalized rewards or assets</strong>, but rather a
+lightweight mechanism to track “good behavior” or participation within a
+specific, temporary context, such as:</p>
+<ul>
+<li>A single author round.</li>
+<li>A session of block production.</li>
+<li>A single task or contribution that is ephemeral in nature.</li>
+</ul>
+<h3 id="design-notes"><a class="doc-anchor" href="#design-notes">§</a>Design notes</h3>
+<ul>
+<li>Points are <strong>incremented one at a time</strong> using <a href="trait.AuthorPoints.html#method.add_point"><code>Self::add_point</code></a>, rather
+than in bulk. This enforces a clear, single-event granularity per point. It also
+simplifies logic for ephemeral metrics and prevents accidental double-counting.</li>
+<li>Different implementations of this trait can represent <strong>distinct points systems</strong>
+or contexts. For example, one implementation could track “block production points”,
+while another tracks “validation participation points”.</li>
+</ul>
+<h3 id="ephemeral-behavior"><a class="doc-anchor" href="#ephemeral-behavior">§</a>Ephemeral behavior</h3>
+<ul>
+<li>Points do not correspond to finalized payments or balances.</li>
+<li>They are <strong>temporary</strong>: cleared via <a href="trait.AuthorPoints.html#tymethod.clear_points"><code>Self::clear_points</code></a> at the end of the round
+or session.</li>
+<li>They provide a way to accumulate <strong>good behavior metrics</strong> for temporary evaluation.</li>
+</ul>
+<h3 id="type-parameters"><a class="doc-anchor" href="#type-parameters">§</a>Type Parameters</h3>
+<ul>
+<li><code>Author</code>: The entity receiving points (e.g., <code>AccountId</code> or validator identifier).</li>
+<li><code>Points</code>: The numeric type representing points; typically <code>u32</code>, <code>u64</code>. This type
+can be used to compute metrics, rankings, or temporary rewards.</li>
+</ul>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.points_of" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#315">Source</a><h4 class="code-header">fn <a href="#tymethod.points_of" class="fn">points_of</a>(author: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Points, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Returns the current points of a given author, if any.</p>
+<p>Points are <strong>temporary</strong> and reflect only the current round or session.
+Returns a <code>DispatchError</code> if there is an issue reading storage or runtime state.</p>
+<h6 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h6>
+<ul>
+<li><code>author</code>: The author whose points are queried.</li>
+</ul>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(points)</code> if the author has points.</li>
+<li><code>Err(DispatchError)</code> if reading fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.iter_points" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#329">Source</a><h4 class="code-header">fn <a href="#tymethod.iter_points" class="fn">iter_points</a>() -&gt; impl <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/iter/traits/iterator/trait.Iterator.html" title="trait core::iter::traits::iterator::Iterator">Iterator</a>&lt;Item = <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.tuple.html">(Author, Points)</a>&gt;</h4></section></summary><div class="docblock"><p>Returns an iterator over all authors and their current points.</p>
+<p>This provides a view of the <strong>entire ephemeral points state</strong> for the
+current round or session, typically used by runtime operations such as
+reward computation, ranking, or evaluation.</p>
+<p>Since points are <strong>ephemeral</strong>, any such operation is expected to
+eventually clear them via <a href="trait.AuthorPoints.html#tymethod.clear_points"><code>Self::clear_points</code></a>, which is left to
+the caller’s discretion.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li>An iterator yielding <code>(Author, Points)</code> pairs.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_points" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#344">Source</a><h4 class="code-header">fn <a href="#tymethod.set_points" class="fn">set_points</a>(author: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>, points: Points) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Sets the points for a given author.</p>
+<p>This is the <strong>primitive write operation</strong> for point state.
+All mutations to points (including increments) should be expressed
+in terms of this method to ensure consistency.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the update succeeds.</li>
+<li><code>Err(DispatchError)</code> if the operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.clear_points" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#370">Source</a><h4 class="code-header">fn <a href="#tymethod.clear_points" class="fn">clear_points</a>()</h4></section></summary><div class="docblock"><p>Clears all points for all authors.</p>
+<ul>
+<li>Typically called at the end of a round or session to reset the
+ephemeral scoring.</li>
+<li>Ensures the points system remains <strong>context-specific</strong> and avoids
+carry-over between rounds.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.add_point" class="method"><a class="src rightside" href="../../src/frame_suite/blockchain.rs.html#358-362">Source</a><h4 class="code-header">fn <a href="#method.add_point" class="fn">add_point</a>(author: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Author</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Adds a single point to a given author.</p>
+<p>Each invocation represents <strong>one unit of contribution or good behavior</strong>.
+For bulk or weighted increments, implementers could wrap this in higher-level
+logic externally, keeping the trait focused on single-point increments.</p>
+<p>This default implementation:</p>
+<ul>
+<li>Reads the current points (or assumes zero if none exist)</li>
+<li>Performs a <strong>saturating addition</strong> of one point</li>
+<li>Writes the updated value via <a href="trait.AuthorPoints.html#tymethod.set_points"><code>Self::set_points</code></a></li>
+</ul>
+<p>Returns a <code>DispatchError</code> if updating fails (e.g., storage error or overflow).</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/blockchain/trait.AuthorPoints.js" async></script></section></div></main></body></html>

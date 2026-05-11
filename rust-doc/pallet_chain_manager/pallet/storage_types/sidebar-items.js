@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AffidavitBeginsAt","AffidavitEndsAt","AffidavitKeys","AffidavitTxPriority","AllowAffidavits","AuthorAffidavits","BlockPointsStore","CurrentSession","ElectionBeginsAt","ElectionRunnerPoints","ElectionRunnerPointsUpgrade","ElectionTxPriority","ElectsPreparedBy","FinalityAfter","FinalityTicks","SessionStartAt","ValidateTxPriority"]};

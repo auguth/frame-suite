@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["pallet_authors",[["impl&lt;T: <a class=\"trait\" href=\"pallet_authors/pallet/trait.Config.html\" title=\"trait pallet_authors::pallet::Config\">Config</a>&gt; WhitelistedStorageKeys for <a class=\"struct\" href=\"pallet_authors/pallet/struct.Pallet.html\" title=\"struct pallet_authors::pallet::Pallet\">Pallet</a>&lt;T&gt;"]]],["pallet_chain_manager",[["impl&lt;T: <a class=\"trait\" href=\"pallet_chain_manager/pallet/trait.Config.html\" title=\"trait pallet_chain_manager::pallet::Config\">Config</a>&gt; WhitelistedStorageKeys for <a class=\"struct\" href=\"pallet_chain_manager/pallet/struct.Pallet.html\" title=\"struct pallet_chain_manager::pallet::Pallet\">Pallet</a>&lt;T&gt;"]]],["pallet_commitment",[["impl&lt;T: <a class=\"trait\" href=\"pallet_commitment/pallet/trait.Config.html\" title=\"trait pallet_commitment::pallet::Config\">Config</a>&lt;I&gt;, I: 'static&gt; WhitelistedStorageKeys for <a class=\"struct\" href=\"pallet_commitment/pallet/struct.Pallet.html\" title=\"struct pallet_commitment::pallet::Pallet\">Pallet</a>&lt;T, I&gt;"]]],["pallet_xp",[["impl&lt;T: <a class=\"trait\" href=\"pallet_xp/pallet/trait.Config.html\" title=\"trait pallet_xp::pallet::Config\">Config</a>&lt;I&gt;, I: 'static&gt; WhitelistedStorageKeys for <a class=\"struct\" href=\"pallet_xp/pallet/struct.Pallet.html\" title=\"struct pallet_xp::pallet::Pallet\">Pallet</a>&lt;T, I&gt;"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[330,361,370,330]}

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["XpError"],"trait":["BeginXp","XpErrorHandler","XpLock","XpLockListener","XpMutate","XpMutateListener","XpOwner","XpOwnerListener","XpReap","XpReapListener","XpReserve","XpReserveListener","XpSystem","XpSystemExtensions"],"type":["Key","LockReason","Owner","Points","ReserveReason"]};

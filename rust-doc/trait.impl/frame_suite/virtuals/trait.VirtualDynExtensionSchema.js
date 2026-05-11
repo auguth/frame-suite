@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["frame_plugins",[["impl&lt;T&gt; <a class=\"trait\" href=\"frame_suite/virtuals/trait.VirtualDynExtensionSchema.html\" title=\"trait frame_suite::virtuals::VirtualDynExtensionSchema\">VirtualDynExtensionSchema</a>&lt;<a class=\"struct\" href=\"frame_suite/assets/struct.BalanceAddon.html\" title=\"struct frame_suite::assets::BalanceAddon\">BalanceAddon</a>&gt; for <a class=\"struct\" href=\"frame_plugins/balances/struct.ShareBalanceContext.html\" title=\"struct frame_plugins::balances::ShareBalanceContext\">ShareBalanceContext</a>&lt;T&gt;"],["impl&lt;T&gt; <a class=\"trait\" href=\"frame_suite/virtuals/trait.VirtualDynExtensionSchema.html\" title=\"trait frame_suite::virtuals::VirtualDynExtensionSchema\">VirtualDynExtensionSchema</a>&lt;<a class=\"struct\" href=\"frame_suite/assets/struct.ReceiptAddon.html\" title=\"struct frame_suite::assets::ReceiptAddon\">ReceiptAddon</a>&gt; for <a class=\"struct\" href=\"frame_plugins/balances/struct.ShareBalanceContext.html\" title=\"struct frame_plugins::balances::ShareBalanceContext\">ShareBalanceContext</a>&lt;T&gt;"],["impl&lt;T&gt; <a class=\"trait\" href=\"frame_suite/virtuals/trait.VirtualDynExtensionSchema.html\" title=\"trait frame_suite::virtuals::VirtualDynExtensionSchema\">VirtualDynExtensionSchema</a>&lt;<a class=\"struct\" href=\"frame_suite/assets/struct.SnapShotAddon.html\" title=\"struct frame_suite::assets::SnapShotAddon\">SnapShotAddon</a>&gt; for <a class=\"struct\" href=\"frame_plugins/balances/struct.ShareBalanceContext.html\" title=\"struct frame_plugins::balances::ShareBalanceContext\">ShareBalanceContext</a>&lt;T&gt;"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1612]}

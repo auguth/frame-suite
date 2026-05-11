@@ -1,0 +1,43 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines a unified abstraction layer for managing role-based logic within a runtime system."><title>frame_suite::roles - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module roles</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#overview" title="Overview">Overview</a><ul><li><a href="#currently-included-traits" title="Currently Included Traits">Currently Included Traits</a></li><li><a href="#future-extensions" title="Future Extensions">Future Extensions</a></li></ul></li><li><a href="#design-philosophy" title="Design Philosophy">Design Philosophy</a></li></ul><h3><a href="#traits">Module Items</a></h3><ul class="block"><li><a href="#traits" title="Traits">Traits</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a></div><h1>Module <span>roles</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/roles.rs.html#16-890">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines a <strong>unified abstraction layer</strong> for managing <em>role-based logic</em>
+within a runtime system.</p>
+<p>It provides <strong>trait-based contracts</strong> that describe the lifecycle, funding,
+and economic behaviors of entities that assume specific roles, such as:</p>
+<ul>
+<li>Validators and collators</li>
+<li>Governance council members</li>
+<li>Oracle operators or data feeders</li>
+<li>Curators, auditors, or relayers</li>
+</ul>
+<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
+<p>Each trait in this module represents a <strong>composable building block</strong> for defining
+how a role behaves in a decentralized system. These abstractions are designed to be
+generic, interoperable, and extensible across multiple pallets or runtime modules.</p>
+<h4 id="currently-included-traits"><a class="doc-anchor" href="#currently-included-traits">§</a>Currently Included Traits</h4>
+<ul>
+<li><a href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager"><code>RoleManager</code></a> - Core lifecycle and collateral management for role-bearing entities.</li>
+<li><a href="trait.FundRoles.html" title="trait frame_suite::roles::FundRoles"><code>FundRoles</code></a> - Extends <code>RoleManager</code> with <em>backing</em> and <em>funding</em> capabilities.</li>
+<li><a href="trait.CompensateRoles.html" title="trait frame_suite::roles::CompensateRoles"><code>CompensateRoles</code></a> - Extends <code>RoleManager</code> with <em>reward</em> and <em>penalty</em> mechanics.</li>
+<li><a href="trait.RoleProbation.html" title="trait frame_suite::roles::RoleProbation"><code>RoleProbation</code></a> - Extends <code>RoleManager</code> with <strong>probation</strong> and <strong>permanence</strong> privileges.</li>
+</ul>
+<h4 id="future-extensions"><a class="doc-anchor" href="#future-extensions">§</a>Future Extensions</h4>
+<p>These traits will compose together to form a <strong>role framework</strong> enabling complex
+behaviors (like staking, governance, delegation, conflict resolutions, etc)
+to be implemented consistently across different runtime modules.</p>
+<h3 id="design-philosophy"><a class="doc-anchor" href="#design-philosophy">§</a>Design Philosophy</h3>
+<ul>
+<li><strong>Composability:</strong> Each role trait defines minimal, orthogonal functionality that
+can be combined with others to form rich behavior.</li>
+<li><strong>Abstraction over implementation:</strong> These traits are <em>interfaces</em>, not storage-bound
+logic. Concrete modules implement them.</li>
+<li><strong>Interoperability:</strong> Enables higher-level systems (e.g. governance, incentives,
+or auditing) to operate generically across role types.</li>
+<li><strong>Auditability:</strong> Built-in temporal tracking (timestamps, holds, etc.) ensures
+transparent lifecycle and accounting for each role.</li>
+</ul>
+<p>This approach allows shared governance, staking, and incentive systems to operate on
+<strong>generic roles</strong> without being tightly coupled to any single pallet or implementation.</p>
+</div></details><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.CompensateRoles.html" title="trait frame_suite::roles::CompensateRoles">Compensate<wbr>Roles</a></dt><dd>Extends <a href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager"><code>RoleManager</code></a> to introduce <strong>reward and penalty mechanics</strong>
+for role-based systems.</dd><dt><a class="trait" href="trait.FundRoles.html" title="trait frame_suite::roles::FundRoles">Fund<wbr>Roles</a></dt><dd>Extends <a href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager"><code>RoleManager</code></a> to introduce <strong>funding and backing mechanics</strong>
+for role-based systems.</dd><dt><a class="trait" href="trait.RoleActivity.html" title="trait frame_suite::roles::RoleActivity">Role<wbr>Activity</a></dt><dd>A lightweight abstraction for determining whether a role-bearing <code>Candidate</code> is
+currently <strong>idle</strong> or <strong>actively performing duties</strong>.</dd><dt><a class="trait" href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager">Role<wbr>Manager</a></dt><dd>A <strong>universal abstraction</strong> for managing <em>roles</em> within a runtime context.</dd><dt><a class="trait" href="trait.RoleProbation.html" title="trait frame_suite::roles::RoleProbation">Role<wbr>Probation</a></dt><dd>Extends <a href="trait.RoleManager.html" title="trait frame_suite::roles::RoleManager"><code>RoleManager</code></a> to introduce <strong>probation and permanent status mechanics</strong>
+for role-based systems.</dd></dl></section></div></main></body></html>

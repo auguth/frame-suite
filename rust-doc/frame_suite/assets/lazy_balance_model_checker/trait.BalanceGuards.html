@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines validity checks for operations during state exploration."><title>BalanceGuards in frame_suite::assets::lazy_balance_model_checker - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Balance<wbr>Guards</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#flow" title="Flow">Flow</a></li><li><a href="#invariant" title="Invariant">Invariant</a></li><li><a href="#example" title="Example">Example</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.deposit" title="deposit">deposit</a></li><li><a href="#method.drain" title="drain">drain</a></li><li><a href="#method.flow" title="flow">flow</a></li><li><a href="#method.invariant" title="invariant">invariant</a></li><li><a href="#method.mint" title="mint">mint</a></li><li><a href="#method.reap" title="reap">reap</a></li><li><a href="#method.withdraw" title="withdraw">withdraw</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>assets::<wbr>lazy_<wbr>balance_<wbr>model_<wbr>checker</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">frame_suite</a>::<wbr><a href="../index.html">assets</a>::<wbr><a href="index.html">lazy_balance_model_checker</a></div><h1>Trait <span class="trait">BalanceGuards</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/frame_suite/assets.rs.html#2160-2223">Source</a> </span></div><pre class="rust item-decl"><code>pub trait BalanceGuards&lt;T: <a class="trait" href="../trait.LazyBalanceMarker.html" title="trait frame_suite::assets::LazyBalanceMarker">LazyBalanceMarker</a>, M: <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;T&gt;&gt; {
+    // Provided methods
+    fn <a href="#method.deposit" class="fn">deposit</a>(
+        _state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;,
+        _user: &amp;M::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>,
+        _amount: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>,
+        _subject: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>,
+    ) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.withdraw" class="fn">withdraw</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;, _user: &amp;M::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.mint" class="fn">mint</a>(
+        _state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;,
+        _value: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>,
+        _subject: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>,
+    ) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.reap" class="fn">reap</a>(
+        _state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;,
+        _value: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>,
+        _subject: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>,
+    ) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.drain" class="fn">drain</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.flow" class="fn">flow</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;, _next: &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;T, M&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.invariant" class="fn">invariant</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt; { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines validity checks for operations during state exploration.</p>
+<p>Each method determines whether a candidate operation (<a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a>) can be
+appended to the current trace, i.e., whether the next step in the sequence is
+valid given the current state.</p>
+<ul>
+<li>A <strong>sequence</strong> is an ordered list of operations (<code>Vec&lt;BalanceOp&gt;</code>) being explored.</li>
+<li>The <strong>trace</strong> is the current prefix of that sequence already applied
+to reach the current <a href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState"><code>BalanceState</code></a>.</li>
+</ul>
+<p>Each guard method receives the current state (derived from the trace)
+and the inputs of the next operation, and returns:</p>
+<ul>
+<li><code>true</code>: operation is allowed</li>
+<li><code>false</code>: operation is disallowed (guarded)</li>
+</ul>
+<p>During execution, an operation (<a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a>) is permitted if:</p>
+<div class="example-wrap"><pre class="language-text"><code>guard(...) || trap(...)</code></pre></div>
+<ul>
+<li><code>guard(...)</code> is the normal allow/disallow check (this trait)</li>
+<li><a href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps"><code>BalanceTraps</code></a> may override and allow a disallowed operation</li>
+</ul>
+<h3 id="flow"><a class="doc-anchor" href="#flow">§</a>Flow</h3>
+<p><code>flow</code> is an additional filter applied after guards:</p>
+<div class="example-wrap"><pre class="language-text"><code>guard_flow(...) &amp;&amp; trap_flow(...)</code></pre></div>
+<ul>
+<li>Both must return <code>true</code> for the operation to proceed</li>
+<li>Unlike guards, flow is combined (<code>&amp;&amp;</code>), not overridden</li>
+<li>Used only to control exploration, not correctness</li>
+</ul>
+<h3 id="invariant"><a class="doc-anchor" href="#invariant">§</a>Invariant</h3>
+<p><code>invariant</code> must hold for every state reached via the
+trace evaluated at each step</p>
+<h3 id="example"><a class="doc-anchor" href="#example">§</a>Example</h3><div class="example-wrap"><pre class="language-text"><code>trace:   [Deposit(A, 100)]
+next:    Withdraw(A)
+
+guard_withdraw(state, A) = true -&gt; allowed (valid transition)
+
+--------
+
+trace:   []
+next:    Withdraw(A)
+
+guard_withdraw(state, A) = false -&gt; disallowed (no receipt)
+
+trap_override(...) = true -&gt; allowed (forced invalid case for testing)
+
+flow(...) = false -&gt; blocked regardless of guard/trap</code></pre></div>
+<p>BalanceGuards should only express validity conditions for extending the
+sequence. They should not include exploration logic or testing behavior.</p>
+</div></details><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.deposit" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#2165-2172">Source</a><h4 class="code-header">fn <a href="#method.deposit" class="fn">deposit</a>(
+    _state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;,
+    _user: &amp;M::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>,
+    _amount: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>,
+    _subject: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>,
+) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if <a href="../enum.BalanceOp.html#variant.Deposit" title="variant frame_suite::assets::BalanceOp::Deposit"><code>BalanceOp::Deposit</code></a> is allowed to be appended
+to the current trace, given the current state and inputs.</p>
+<p><code>false</code> disallows the operation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.withdraw" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#2178-2180">Source</a><h4 class="code-header">fn <a href="#method.withdraw" class="fn">withdraw</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;, _user: &amp;M::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if <a href="../enum.BalanceOp.html#variant.Withdraw" title="variant frame_suite::assets::BalanceOp::Withdraw"><code>BalanceOp::Withdraw</code></a> is allowed to be appended
+to the current trace, given the current state and inputs.</p>
+<p><code>false</code> disallows the operation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.mint" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#2186-2188">Source</a><h4 class="code-header">fn <a href="#method.mint" class="fn">mint</a>(
+    _state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;,
+    _value: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>,
+    _subject: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>,
+) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if <a href="../enum.BalanceOp.html#variant.Mint" title="variant frame_suite::assets::BalanceOp::Mint"><code>BalanceOp::Mint</code></a> is allowed to be appended
+to the current trace, given the current state and inputs.</p>
+<p><code>false</code> disallows the operation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.reap" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#2194-2196">Source</a><h4 class="code-header">fn <a href="#method.reap" class="fn">reap</a>(
+    _state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;,
+    _value: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>,
+    _subject: &amp;T::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>,
+) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if <a href="../enum.BalanceOp.html#variant.Reap" title="variant frame_suite::assets::BalanceOp::Reap"><code>BalanceOp::Reap</code></a> is allowed to be appended
+to the current trace, given the current state and inputs.</p>
+<p><code>false</code> disallows the operation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.drain" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#2202-2204">Source</a><h4 class="code-header">fn <a href="#method.drain" class="fn">drain</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Returns <code>true</code> if <a href="../enum.BalanceOp.html#variant.Drain" title="variant frame_suite::assets::BalanceOp::Drain"><code>BalanceOp::Drain</code></a> is allowed to be appended
+to the current trace, given the current state and inputs.</p>
+<p><code>false</code> disallows the operation.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.flow" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#2211-2213">Source</a><h4 class="code-header">fn <a href="#method.flow" class="fn">flow</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;, _next: &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;T, M&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Additional exploration filter applied after guards.</p>
+<p>Returns <code>true</code> if the candidate operation should be explored further.
+Combined with <a href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps"><code>BalanceTraps</code></a> <code>flow</code> using logical AND (<code>&amp;&amp;</code>) if traps
+are initiated.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.invariant" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#2220-2222">Source</a><h4 class="code-header">fn <a href="#method.invariant" class="fn">invariant</a>(_state: &amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;T, M&gt;) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>, <a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;</h4></section></summary><div class="docblock"><p>Global invariant over the current state.</p>
+<p>Must hold for every state reached via the trace:</p>
+<ul>
+<li><code>Ok(())</code> -&gt; state is valid</li>
+<li><code>Err(reason)</code> -&gt; invariant violated, path terminates</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../../trait.impl/frame_suite/assets/lazy_balance_model_checker/trait.BalanceGuards.js" async></script></section></div></main></body></html>

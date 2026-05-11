@@ -1,0 +1,169 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Trait for mutating (modifying) XP entries and providing default support utilities."><title>XpMutate in frame_suite::xp - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">XpMutate</a></h2><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.init_xp" title="init_xp">init_xp</a></li><li><a href="#tymethod.new_xp" title="new_xp">new_xp</a></li><li><a href="#tymethod.quote_earn_xp" title="quote_earn_xp">quote_earn_xp</a></li><li><a href="#tymethod.set_xp" title="set_xp">set_xp</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.create_xp" title="create_xp">create_xp</a></li><li><a href="#method.earn_xp" title="earn_xp">earn_xp</a></li><li><a href="#method.on_xp_create" title="on_xp_create">on_xp_create</a></li><li><a href="#method.on_xp_earn" title="on_xp_earn">on_xp_earn</a></li><li><a href="#method.on_xp_slash" title="on_xp_slash">on_xp_slash</a></li><li><a href="#method.on_xp_update" title="on_xp_update">on_xp_update</a></li><li><a href="#method.reset_xp" title="reset_xp">reset_xp</a></li><li><a href="#method.slash_xp" title="slash_xp">slash_xp</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>xp</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">xp</a></div><h1>Trait <span class="trait">XpMutate</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/xp.rs.html#524-744">Source</a> </span></div><pre class="rust item-decl"><code>pub trait XpMutate<div class="where">where
+    Self: <a class="trait" href="trait.XpOwner.html" title="trait frame_suite::xp::XpOwner">XpOwner</a> + <a class="trait" href="trait.XpErrorHandler.html" title="trait frame_suite::xp::XpErrorHandler">XpErrorHandler</a> + <a class="trait" href="trait.XpSystem.html" title="trait frame_suite::xp::XpSystem">XpSystem</a>&lt;Extension: <a class="trait" href="trait.XpMutateListener.html" title="trait frame_suite::xp::XpMutateListener">XpMutateListener</a> + <a class="trait" href="trait.XpSystemExtensions.html" title="trait frame_suite::xp::XpSystemExtensions">XpSystemExtensions</a>&lt;Via = Self&gt;&gt;,</div>{
+    // Required methods
+    fn <a href="#tymethod.init_xp" class="fn">init_xp</a>() -&gt; Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>;
+<span class="item-spacer"></span>    fn <a href="#tymethod.new_xp" class="fn">new_xp</a>(owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>, key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>);
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_xp" class="fn">set_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.quote_earn_xp" class="fn">quote_earn_xp</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;;
+
+    // Provided methods
+    fn <a href="#method.create_xp" class="fn">create_xp</a>(owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>, key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult { ... }
+<span class="item-spacer"></span>    fn <a href="#method.earn_xp" class="fn">earn_xp</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.slash_xp" class="fn">slash_xp</a>(
+        key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+        points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.reset_xp" class="fn">reset_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_xp_create" class="fn">on_xp_create</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_xp_earn" class="fn">on_xp_earn</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, earned_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_xp_slash" class="fn">on_xp_slash</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, slashed_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_xp_update" class="fn">on_xp_update</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, current_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Trait for mutating (modifying) XP entries and providing default support utilities.</p>
+<p>This trait defines how XP is created, earned, set, reduced, and reset,
+and provides lifecycle hooks for reacting to XP changes.</p>
+<p>XP mutation is <strong>non-transferable</strong> and always scoped to a specific <code>XpKey</code>.</p>
+<p>Ownership, locking, and reserving are handled in separate traits.</p>
+<p>If <code>XpMutate</code> is implemented, it typically implies that the runtime supports
+dynamic XP mutation via intents-either from trusted system actors or untrusted
+user inputs.</p>
+<p>Additionally, this trait includes default support methods for common mutation
+patterns such as slashing and burning XP. These methods encapsulate reusable
+logic for safely reducing or resetting XP balances while handling edge cases.</p>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.init_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#537">Source</a><h4 class="code-header">fn <a href="#tymethod.init_xp" class="fn">init_xp</a>() -&gt; Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a></h4></section></summary><div class="docblock"><p>Returns the initial XP value for a newly created XP entry.</p>
+<p>This defines the starting point assigned during <a href="trait.XpMutate.html#method.create_xp"><code>create_xp</code></a>.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.new_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#570">Source</a><h4 class="code-header">fn <a href="#tymethod.new_xp" class="fn">new_xp</a>(owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>, key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>)</h4></section></summary><div class="docblock"><p>Creates a new XP entry under the given key and owner.</p>
+<p>Initializes the XP record in storage and associates it with the provided
+owner. This establishes the foundational XP entry that can then be mutated
+through other operations like earning or setting XP values.</p>
+<p>This operation must be idempotent, meaning it is safe to retry with respect
+to already-initialized keys without causing errors or state corruption.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#589">Source</a><h4 class="code-header">fn <a href="#tymethod.set_xp" class="fn">set_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p><strong>Use with caution!</strong> Directly sets the liquid XP for the given key.</p>
+<p>This function bypasses typical XP flow and permission checks, allowing direct
+manipulation of XP values. It is intended strictly for low-level runtime intents
+such as migrations, internal resets, or administrative operations.</p>
+<p>This method must <strong>never</strong> be exposed to users or XP providers, as XP is meant
+to reflect earned value only through controlled mechanisms like <a href="trait.XpMutate.html#method.earn_xp" title="associated function frame_suite::xp::XpMutate::earn_xp"><code>XpMutate::earn_xp</code></a>.
+Direct setting can undermine the integrity of the XP system’s earned-value principle.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the XP value is successfully set.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or the operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.quote_earn_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#623-626">Source</a><h4 class="code-header">fn <a href="#tymethod.quote_earn_xp" class="fn">quote_earn_xp</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Quotes the effective XP that would be earned for the given key.</p>
+<p>This method applies runtime-specific constraints such as caps, rate limits,
+or validation rules, and returns the final amount that will be applied if
+<a href="trait.XpMutate.html#method.earn_xp"><code>Self::earn_xp</code></a> is executed.</p>
+<p>The implementation should handle overflow gracefully using saturating or checked
+arithmetic to prevent system instability. Runtime-specific constraints such as
+earning caps, rate limits, or validation rules should be enforced internally.</p>
+<h6 id="note"><a class="doc-anchor" href="#note">§</a>Note</h6>
+<p>This does not mutate state and serves as a pure computation step.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the adjusted XP to be earned.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or validation fails.</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.create_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#554-560">Source</a><h4 class="code-header">fn <a href="#method.create_xp" class="fn">create_xp</a>(owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>, key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Creates and initializes a new XP entry under the given key and owner.</p>
+<p>This is a high-level helper that:</p>
+<ul>
+<li>Initializes the XP entry via <a href="trait.XpMutate.html#tymethod.new_xp"><code>Self::new_xp</code></a></li>
+<li>Sets the initial XP using <a href="trait.XpMutate.html#tymethod.init_xp"><code>Self::init_xp</code></a> and <a href="trait.XpMutate.html#tymethod.set_xp"><code>Self::set_xp</code></a></li>
+<li>Triggers the creation hook via <a href="trait.XpMutate.html#method.on_xp_create"><code>Self::on_xp_create</code></a></li>
+</ul>
+<h6 id="note-1"><a class="doc-anchor" href="#note-1">§</a>Note</h6>
+<p>This is one of the recommended way to create XP entries (along with
+<a href="trait.BeginXp.html#method.begin_xp" title="associated function frame_suite::xp::BeginXp::begin_xp"><code>BeginXp::begin_xp</code></a>), ensuring consistent initialization and
+lifecycle handling.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.earn_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#600-605">Source</a><h4 class="code-header">fn <a href="#method.earn_xp" class="fn">earn_xp</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Increases the liquid XP associated with a given key by the specified number of points.</p>
+<p>This is the primary mechanism for XP growth, designed for use in reward systems,
+leveling mechanics, achievement unlocks, and other scenarios where users earn XP
+through legitimate activities or contributions.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the actual XP earned after applying any internal adjustments.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or the operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.slash_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#641-655">Source</a><h4 class="code-header">fn <a href="#method.slash_xp" class="fn">slash_xp</a>(
+    key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>,
+    points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Reduces the liquid XP for the given key by the specified points.</p>
+<p>This is the preferred method for applying penalties. It provides a safe,
+high-level abstraction over XP reduction.</p>
+<p>This method attempts to slash the requested amount from the liquid XP balance.
+If sufficient liquid XP is available, the exact amount is slashed and returned.
+If available liquid XP is insufficient, all available liquid XP is burned instead
+and the actual burned amount is returned.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the actual points slashed or burned.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or the operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.reset_xp" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#673-680">Source</a><h4 class="code-header">fn <a href="#method.reset_xp" class="fn">reset_xp</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Resets (burns) all liquid XP for the given key, returning the points burned.</p>
+<p>This method completely resets the liquid XP balance to <code>zero</code> and returns the
+previous value. This is a destructive operation that cannot be undone and
+represents a total forfeiture of the liquid XP balance.</p>
+<p>Burning is typically used for low-level runtime operations such as internal
+resets or state corrections.</p>
+<h6 id="note-2"><a class="doc-anchor" href="#note-2">§</a>Note</h6>
+<p>This is a low-level primitive. For penalty logic, prefer using <a href="trait.XpMutate.html#method.slash_xp"><code>Self::slash_xp</code></a>,
+which provides a safer and intention-revealing abstraction.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Points)</code> containing the amount of XP that was burned.</li>
+<li><code>Err(DispatchError)</code> if the XP key does not exist or the operation fails.</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_xp_create" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#696-698">Source</a><h4 class="code-header">fn <a href="#method.on_xp_create" class="fn">on_xp_create</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, owner: &amp;Self::<a class="associatedtype" href="trait.XpOwner.html#associatedtype.Owner" title="type frame_suite::xp::XpOwner::Owner">Owner</a>)</h4></section></summary><div class="docblock"><p>Hook invoked after a new XP identity is created.</p>
+<p>This is called once during initialization and does not reflect
+subsequent balance updates.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit creation events</li>
+<li>Initialize metadata or indexes</li>
+<li>Trigger side effects tied to XP identity creation (optionally
+via listener <a href="trait.XpMutateListener.html#method.xp_created" title="associated function frame_suite::xp::XpMutateListener::xp_created">XpMutateListener::xp_created</a>)</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_xp_earn" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#709-711">Source</a><h4 class="code-header">fn <a href="#method.on_xp_earn" class="fn">on_xp_earn</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, earned_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>)</h4></section></summary><div class="docblock"><p>Hook invoked after XP is earned for a given key.</p>
+<p>This reflects XP accumulation through valid actions.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit earning events</li>
+<li>Update metadata or statistics</li>
+<li>Trigger side effects related to XP accrual (optionally
+via listener <a href="trait.XpMutateListener.html#method.xp_earned" title="associated function frame_suite::xp::XpMutateListener::xp_earned">XpMutateListener::xp_earned</a>)</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_xp_slash" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#722-724">Source</a><h4 class="code-header">fn <a href="#method.on_xp_slash" class="fn">on_xp_slash</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, slashed_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>)</h4></section></summary><div class="docblock"><p>Hook invoked after XP is slashed for a given key.</p>
+<p>This reflects a reduction in XP due to penalties or protocol actions.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit slashing events</li>
+<li>Update metadata or statistics</li>
+<li>Trigger side effects related to XP reduction (optionally
+via listener <a href="trait.XpMutateListener.html#method.xp_slashed" title="associated function frame_suite::xp::XpMutateListener::xp_slashed">XpMutateListener::xp_slashed</a>)</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_xp_update" class="method"><a class="src rightside" href="../../src/frame_suite/xp.rs.html#741-743">Source</a><h4 class="code-header">fn <a href="#method.on_xp_update" class="fn">on_xp_update</a>(key: &amp;Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.XpKey" title="type frame_suite::xp::XpSystem::XpKey">XpKey</a>, current_points: Self::<a class="associatedtype" href="trait.XpSystem.html#associatedtype.Points" title="type frame_suite::xp::XpSystem::Points">Points</a>)</h4></section></summary><div class="docblock"><p>Hook invoked after XP is updated for a given key without a specific intent.</p>
+<p>This reflects a change in XP that is not explicitly categorized as earning,
+slashing, or resetting. It is typically used for internal adjustments,
+migrations, or state corrections where the cause is not semantically
+meaningful at the domain level.</p>
+<p>The <code>current_points</code> parameter represents the latest liquid XP after
+the update.</p>
+<p>This method is a no-op by default, but can be overridden to:</p>
+<ul>
+<li>Emit generic update events</li>
+<li>Synchronize external state or indexes</li>
+<li>Trigger side effects that depend on the current XP value (optionally
+via listener <a href="trait.XpMutateListener.html#method.xp_updated" title="associated function frame_suite::xp::XpMutateListener::xp_updated"><code>XpMutateListener::xp_updated</code></a>)</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/xp/trait.XpMutate.js" async></script></section></div></main></body></html>

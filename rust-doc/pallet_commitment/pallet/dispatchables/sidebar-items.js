@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["deposit_reserve","inspect_asset_to_issue","inspect_asset_to_reap","inspect_commit_value","inspect_digest_model","inspect_entries_value","inspect_entry_value","inspect_index_value","inspect_pool_commission","inspect_pool_manager","inspect_pool_value","inspect_reason_value","inspect_slot_value","inspect_slots_value","withdraw_reserve"]};

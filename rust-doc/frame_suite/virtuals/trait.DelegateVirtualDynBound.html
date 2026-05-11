@@ -1,0 +1,44 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Delegates bound resolution to an external `VirtualDynBound` provider."><title>DelegateVirtualDynBound in frame_suite::virtuals - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Delegate<wbr>Virtual<wbr>DynBound</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#representation" title="Representation">Representation</a></li><li><a href="#roles" title="Roles">Roles</a></li><li><a href="#default-discriminant" title="Default Discriminant">Default Discriminant</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>virtuals</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">virtuals</a></div><h1>Trait <span class="trait">DelegateVirtualDynBound</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/virtuals.rs.html#1518-1524">Source</a> </span></div><pre class="rust item-decl"><code>pub trait DelegateVirtualDynBound&lt;Provider, Discriminant = <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.unit.html">()</a>&gt;<div class="where">where
+    Provider: <a class="trait" href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound">VirtualDynBound</a>&lt;Discriminant&gt;,
+    Discriminant: <a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a>,
+    Self: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div>{ }</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Delegates bound resolution to an external <a href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound"><code>VirtualDynBound</code></a> provider.</p>
+<p>This trait is used when a type participates in a <a href="trait.VirtualDynField.html" title="trait frame_suite::virtuals::VirtualDynField"><code>VirtualDynField</code></a>
+but does not define or own its bounds.</p>
+<p>Instead, bounds are supplied externally via <code>Provider</code>,
+allowing constraints (such as capacity) to be defined independently
+of the field or its storage.</p>
+<h3 id="representation"><a class="doc-anchor" href="#representation">§</a>Representation</h3>
+<p>The delegated bound is a <strong>runtime-resolved value</strong> (via [<code>Get&lt;u32&gt;</code>]),
+enabling flexible, dynamically bounded behavior.</p>
+<h3 id="roles"><a class="doc-anchor" href="#roles">§</a>Roles</h3>
+<ul>
+<li>
+<p><strong>Container (<code>Self</code>)</strong></p>
+<ul>
+<li>provides storage for the field</li>
+</ul>
+</li>
+<li>
+<p><strong>Bounds (<code>Provider</code>)</strong></p>
+<ul>
+<li>supplies constraints for that field</li>
+</ul>
+</li>
+</ul>
+<p>This separation enables:</p>
+<ul>
+<li>composability</li>
+<li>reuse across contexts</li>
+<li>decoupling of storage and constraints</li>
+</ul>
+<h3 id="default-discriminant"><a class="doc-anchor" href="#default-discriminant">§</a>Default Discriminant</h3>
+<ul>
+<li><code>Discriminant = ()</code>: delegates a single default bound,
+meaning one dynamically bounded field is assumed.</li>
+</ul>
+</div></details><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-DelegateVirtualDynBound%3CProvider,+Discriminant%3E-for-T" class="impl"><a class="src rightside" href="../../src/frame_suite/virtuals.rs.html#1528-1534">Source</a><a href="#impl-DelegateVirtualDynBound%3CProvider,+Discriminant%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;Provider, Discriminant, T&gt; <a class="trait" href="trait.DelegateVirtualDynBound.html" title="trait frame_suite::virtuals::DelegateVirtualDynBound">DelegateVirtualDynBound</a>&lt;Provider, Discriminant&gt; for T<div class="where">where
+    Provider: <a class="trait" href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound">VirtualDynBound</a>&lt;Discriminant&gt;,
+    Discriminant: <a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">DiscriminantTag</a>,
+    T: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,</div></h3><div class="docblock"><p>Blanket implementation enabling all types to delegate
+dynamic bound resolution to a <a href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound"><code>VirtualDynBound</code></a> provider.</p>
+</div></section></div><script src="../../trait.impl/frame_suite/virtuals/trait.DelegateVirtualDynBound.js" async></script></section></div></main></body></html>

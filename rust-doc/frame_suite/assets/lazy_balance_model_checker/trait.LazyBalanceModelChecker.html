@@ -1,0 +1,433 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Unified model checker interface over the lazy balance model checker module."><title>LazyBalanceModelChecker in frame_suite::assets::lazy_balance_model_checker - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Lazy<wbr>Balance<wbr>Model<wbr>Checker</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#underlying-system" title="Underlying System">Underlying System</a></li><li><a href="#what-happens-during-execution" title="What happens during execution">What happens during execution</a></li><li><a href="#usage" title="Usage">Usage</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.FlowFn" title="FlowFn">FlowFn</a></li><li><a href="#associatedtype.Hasher" title="Hasher">Hasher</a></li><li><a href="#associatedtype.LazyBalance" title="LazyBalance">LazyBalance</a></li><li><a href="#associatedtype.ManualBalance" title="ManualBalance">ManualBalance</a></li><li><a href="#associatedtype.TrapFn" title="TrapFn">TrapFn</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.explore" title="explore">explore</a></li><li><a href="#method.explore_custom" title="explore_custom">explore_custom</a></li><li><a href="#method.explore_traps" title="explore_traps">explore_traps</a></li><li><a href="#method.initiate_results" title="initiate_results">initiate_results</a></li><li><a href="#method.write_reports" title="write_reports">write_reports</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>assets::<wbr>lazy_<wbr>balance_<wbr>model_<wbr>checker</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">frame_suite</a>::<wbr><a href="../index.html">assets</a>::<wbr><a href="index.html">lazy_balance_model_checker</a></div><h1>Trait <span class="trait">LazyBalanceModelChecker</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/frame_suite/assets.rs.html#1429-1775">Source</a> </span></div><pre class="rust item-decl"><code>pub trait LazyBalanceModelChecker: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a> {
+    type <a href="#associatedtype.LazyBalance" class="associatedtype">LazyBalance</a>: <a class="trait" href="../trait.LazyBalanceMarker.html" title="trait frame_suite::assets::LazyBalanceMarker">LazyBalanceMarker</a>;
+    type <a href="#associatedtype.ManualBalance" class="associatedtype">ManualBalance</a>: <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt; + <a class="trait" href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher">BalanceStateHasher</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt; + <a class="trait" href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards">BalanceGuards</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a>;
+    type <a href="#associatedtype.TrapFn" class="associatedtype">TrapFn</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;, &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>;
+    type <a href="#associatedtype.FlowFn" class="associatedtype">FlowFn</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;, &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>;
+    type <a href="#associatedtype.Hasher" class="associatedtype">Hasher</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u64.html">u64</a>;
+
+    // Provided methods
+    fn <a href="#method.initiate_results" class="fn">initiate_results</a>(    ) -&gt; <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.explore" class="fn">explore</a>(
+        users: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a> as <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt;&gt;::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>],
+        deposits: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+        adjustments: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+        subjects: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>],
+        max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        allowed_bps: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        allowed_diff: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        results: &amp;mut <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+    )
+       <span class="where">where &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Id" title="type frame_suite::assets::LazyBalance::Id">Id</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>,
+             &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt;</span> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.explore_traps" class="fn">explore_traps</a>(
+        users: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a> as <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt;&gt;::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>],
+        deposits: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+        adjustments: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+        subjects: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>],
+        max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        allowed_bps: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        allowed_diff: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        traps: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps">BalanceTraps</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.TrapFn" title="type frame_suite::assets::LazyBalanceModelChecker::TrapFn">TrapFn</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.FlowFn" title="type frame_suite::assets::LazyBalanceModelChecker::FlowFn">FlowFn</a>&gt;&gt;,
+        results: &amp;mut <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+    )
+       <span class="where">where &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Id" title="type frame_suite::assets::LazyBalance::Id">Id</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>,
+             &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt;</span> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.explore_custom" class="fn">explore_custom</a>(
+        users: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a> as <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt;&gt;::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>],
+        deposits: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+        adjustments: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+        subjects: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>],
+        max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        allowed_bps: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        allowed_diff: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+        traps: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps">BalanceTraps</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.TrapFn" title="type frame_suite::assets::LazyBalanceModelChecker::TrapFn">TrapFn</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.FlowFn" title="type frame_suite::assets::LazyBalanceModelChecker::FlowFn">FlowFn</a>&gt;&gt;,
+        hasher: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.Hasher" title="type frame_suite::assets::LazyBalanceModelChecker::Hasher">Hasher</a>&gt;,
+        results: &amp;mut <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+    )
+       <span class="where">where &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Id" title="type frame_suite::assets::LazyBalance::Id">Id</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>,
+             &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt;</span> { ... }
+<span class="item-spacer"></span>    fn <a href="#method.write_reports" class="fn">write_reports</a>(
+        dir: <a class="struct" href="https://doc.rust-lang.org/1.90.0/std/path/struct.PathBuf.html" title="struct std::path::PathBuf">PathBuf</a>,
+        results: &amp;<a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+        write_pass: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+        write_exit: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+        write_trap: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+    ) { ... }
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Unified model checker interface over the lazy balance
+model checker module.</p>
+<p>This trait provides a <strong>single entrypoint API</strong> to access
+all model-checking utilities.</p>
+<p>By implementing this trait on a tester type, you bind:</p>
+<ul>
+<li>the lazy model (<a href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance"><code>Self::LazyBalance</code></a>) under test</li>
+<li>the manual reference model (<a href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance"><code>Self::ManualBalance</code></a>)</li>
+<li>guards, hashing, and execution semantics</li>
+</ul>
+<h3 id="underlying-system"><a class="doc-anchor" href="#underlying-system">§</a>Underlying System</h3>
+<ul>
+<li><a href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel"><code>ManualBalanceModel</code></a>: eager balance reference model</li>
+<li><a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a>: balance operations set</li>
+<li><a href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState"><code>BalanceState</code></a>: execution state (lazy + manual + trace)</li>
+<li><a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a>: operation validity rules</li>
+<li><a href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps"><code>BalanceTraps</code></a>: controlled invalid execution</li>
+<li><a href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults"><code>BalanceModelResults</code></a>: result aggregation</li>
+</ul>
+<h3 id="what-happens-during-execution"><a class="doc-anchor" href="#what-happens-during-execution">§</a>What happens during execution</h3>
+<ul>
+<li>sequences of <a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a> are explored (breadth-first)</li>
+<li>each step builds on a <strong>trace</strong> to form a <a href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState"><code>BalanceState</code></a></li>
+<li>operations are filtered using:
+<ul>
+<li><a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a> -&gt; define normal validity</li>
+<li><a href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps"><code>BalanceTraps</code></a> -&gt; allow controlled invalid cases</li>
+</ul>
+</li>
+</ul>
+<p>An operation is considered <strong>valid for execution</strong> if:</p>
+<ul>
+<li>it passes the <code>guard</code>, OR</li>
+<li>it is explicitly allowed by a <code>trap</code></li>
+</ul>
+<p>Additionally, exploration is further controlled by <code>flow</code>:</p>
+<ul>
+<li>
+<p>both <code>guard flow</code> and <code>trap flow</code> must allow the operation</p>
+</li>
+<li>
+<p>if either blocks it, the operation is not explored further</p>
+</li>
+<li>
+<p>both models are executed:</p>
+<ul>
+<li>lazy: <a href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance"><code>Self::LazyBalance</code></a> via <a href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance"><code>LazyBalance</code></a></li>
+<li>manual: <a href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance"><code>Self::ManualBalance</code></a> vi <a href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel"><code>ManualBalanceModel</code></a></li>
+</ul>
+</li>
+<li>
+<p>results are classified into:</p>
+<ul>
+<li><a href="../struct.BalanceFailure.html" title="struct frame_suite::assets::BalanceFailure"><code>BalanceFailure</code></a>: execution error</li>
+<li><a href="../struct.BalanceExit.html" title="struct frame_suite::assets::BalanceExit"><code>BalanceExit</code></a>: drift between models</li>
+<li><code>pass</code>: successful sequence</li>
+<li><code>trap</code>: expected failure via <a href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps"><code>BalanceTraps</code></a></li>
+</ul>
+</li>
+</ul>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">struct </span>Tester;
+
+<span class="kw">impl </span>LazyBalanceModelChecker <span class="kw">for </span>Tester {
+    <span class="kw">type </span>LazyBalance = Balance;
+    <span class="kw">type </span>ManualBalance = Manual;
+
+    <span class="kw">type </span>TrapFn = <span class="kw">fn</span>(
+        <span class="kw-2">&amp;</span>BalanceState&lt;<span class="self">Self</span>::LazyBalance, <span class="self">Self</span>::ManualBalance&gt;,
+        <span class="kw-2">&amp;</span>BalanceOp&lt;<span class="self">Self</span>::LazyBalance, <span class="self">Self</span>::ManualBalance&gt;,
+    ) -&gt; bool;
+
+    <span class="kw">type </span>FlowFn = <span class="kw">fn</span>(
+        <span class="kw-2">&amp;</span>BalanceState&lt;<span class="self">Self</span>::LazyBalance, <span class="self">Self</span>::ManualBalance&gt;,
+        <span class="kw-2">&amp;</span>BalanceOp&lt;<span class="self">Self</span>::LazyBalance, <span class="self">Self</span>::ManualBalance&gt;,
+    ) -&gt; bool;
+
+    <span class="kw">type </span>Hasher = <span class="kw">fn</span>(
+        <span class="kw-2">&amp;</span>BalanceState&lt;<span class="self">Self</span>::LazyBalance, <span class="self">Self</span>::ManualBalance&gt;,
+    ) -&gt; u64;
+}
+
+<span class="kw">let </span><span class="kw-2">mut </span>results = Tester::initiate_results();
+
+Tester::explore(..., <span class="kw-2">&amp;mut </span>results);
+<span class="comment">// or
+</span>Tester::explore_with_traps(..., <span class="prelude-val">Some</span>(traps), <span class="kw-2">&amp;mut </span>results);
+<span class="comment">// or
+</span>Tester::explore_custom(..., <span class="prelude-val">Some</span>(traps), <span class="kw-2">&amp;mut </span>results);
+
+Tester::write_reports(path, <span class="kw-2">&amp;</span>results, <span class="bool-val">false</span>, <span class="bool-val">false</span>, <span class="bool-val">false</span>);</code></pre></div>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.LazyBalance" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1431">Source</a><h4 class="code-header">type <a href="#associatedtype.LazyBalance" class="associatedtype">LazyBalance</a>: <a class="trait" href="../trait.LazyBalanceMarker.html" title="trait frame_suite::assets::LazyBalanceMarker">LazyBalanceMarker</a></h4></section></summary><div class="docblock"><p>Lazy balance implementation.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.ManualBalance" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1451-1454">Source</a><h4 class="code-header">type <a href="#associatedtype.ManualBalance" class="associatedtype">ManualBalance</a>: <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt; + <a class="trait" href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher">BalanceStateHasher</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt; + <a class="trait" href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards">BalanceGuards</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a></h4></section></summary><div class="docblock"><p>Manual (reference) model used for validation.</p>
+<p>This type provides an <strong>eager execution layer</strong> over the lazy model:</p>
+<ul>
+<li>consumes resolved outputs from <a href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance"><code>Self::LazyBalance</code></a> via <a href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance"><code>LazyBalance</code></a></li>
+<li>maintains a concrete, user-facing state</li>
+</ul>
+<p>Unlike the lazy model, this operates as a <strong>direct global
+state model</strong> via <a href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel"><code>ManualBalanceModel</code></a> methods:</p>
+<ul>
+<li>no deferred receipts</li>
+<li>no lazy resolution</li>
+<li>updates are applied immediately to a single state</li>
+</ul>
+<p>It must also define:</p>
+<ul>
+<li><a href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher"><code>BalanceStateHasher</code></a>: for state deduplication during exploration</li>
+<li><a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a>: for operation validity and invariants</li>
+</ul>
+<p>Acts as the <strong>reference baseline</strong> against which the lazy model
+is evaluated for correctness and precision.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.TrapFn" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1475-1478">Source</a><h4 class="code-header">type <a href="#associatedtype.TrapFn" class="associatedtype">TrapFn</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;, &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Trap predicate used for trap-based testing.</p>
+<p>Represents a <strong>single trap condition</strong> applied across all operations:</p>
+<ul>
+<li>evaluated per <code>(state, op)</code></li>
+<li>returns <code>true</code> to override guards defined in <a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a>
+via <a href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance"><code>Self::ManualBalance</code></a></li>
+</ul>
+<p>This trap is <strong>injected globally</strong> during exploration, so it will be
+evaluated for every operation (<a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a>). Implementations should therefore:</p>
+<ul>
+<li>precisely target the intended operation/condition</li>
+<li>return <code>false</code> for all unrelated operations</li>
+</ul>
+<p>Unlike <a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a>, which define validity for all operations at once,
+this is defined <strong>per invocation</strong> to inject a specific invalid scenario.</p>
+<p>Used to enable controlled violations:</p>
+<div class="example-wrap"><pre class="language-text"><code>guard(...) || trap(...)</code></pre></div></div></details><details class="toggle" open><summary><section id="associatedtype.FlowFn" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1502-1505">Source</a><h4 class="code-header">type <a href="#associatedtype.FlowFn" class="associatedtype">FlowFn</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;, &amp;<a class="enum" href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp">BalanceOp</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a></h4></section></summary><div class="docblock"><p>Flow predicate used to control exploration.</p>
+<p>Applied globally across all operations:</p>
+<ul>
+<li>evaluated per <code>(state, op)</code></li>
+<li>returns <code>true</code> to allow the candidate operation <a href="../enum.BalanceOp.html" title="enum frame_suite::assets::BalanceOp"><code>BalanceOp</code></a> to proceed</li>
+<li>returns <code>false</code> to block exploration of that operation</li>
+</ul>
+<p>Combined with the base guard flow as:</p>
+<div class="example-wrap"><pre class="language-text"><code>guard_flow(...) &amp;&amp; trap_flow(...)</code></pre></div>
+<p>Unlike <a href="../trait.LazyBalanceModelChecker.html#associatedtype.TrapFn"><code>Self::TrapFn</code></a>, this does <strong>not override validity</strong>;
+it only restricts whether an operation is explored.</p>
+<p>Since this is combined using <code>&amp;&amp;</code>, returning <code>false</code> will
+<strong>prevent the operation from being explored entirely</strong>.
+Therefore implementations should:</p>
+<ul>
+<li>return <code>true</code> by default</li>
+<li>only return <code>false</code> when explicitly pruning a specific case</li>
+</ul>
+<p>Used to shape the search space (e.g., pruning, targeting).</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Hasher" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1524">Source</a><h4 class="code-header">type <a href="#associatedtype.Hasher" class="associatedtype">Hasher</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/ops/function/trait.Fn.html" title="trait core::ops::function::Fn">Fn</a>(&amp;<a class="struct" href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState">BalanceState</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;) -&gt; <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u64.html">u64</a></h4></section></summary><div class="docblock"><p>Optional additional custom state hasher.</p>
+<p>Provides an additional hashing layer over <a href="../struct.BalanceState.html" title="struct frame_suite::assets::BalanceState"><code>BalanceState</code></a> during exploration:</p>
+<ul>
+<li>evaluated alongside <a href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher"><code>BalanceStateHasher</code></a> from <a href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance"><code>Self::ManualBalance</code></a></li>
+<li>used for further deduplication of states</li>
+</ul>
+<p>Since <a href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance"><code>Self::ManualBalance</code></a> already defines a primary hashing strategy via
+<a href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher"><code>BalanceStateHasher</code></a>, this acts as an <strong>optional second-stage filter</strong>.</p>
+<p>This is particularly useful when:</p>
+<ul>
+<li>multiple exploration strategies or model checkers are run</li>
+<li>additional pruning is needed beyond the primary state hash</li>
+</ul>
+<p>In such cases, this hasher can be applied <strong>on top of the base hasher</strong>
+to refine state uniqueness and avoid revisiting equivalent states.</p>
+<p>If provided, both hashes are used during exploration.</p>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.initiate_results" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1527-1529">Source</a><h4 class="code-header">fn <a href="#method.initiate_results" class="fn">initiate_results</a>() -&gt; <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;</h4></section></summary><div class="docblock"><p>Creates a new <a href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults"><code>BalanceModelResults</code></a> container.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.explore" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1560-1584">Source</a><h4 class="code-header">fn <a href="#method.explore" class="fn">explore</a>(
+    users: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a> as <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt;&gt;::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>],
+    deposits: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    adjustments: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    subjects: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>],
+    max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_bps: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_diff: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    results: &amp;mut <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+)<div class="where">where
+    &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Id" title="type frame_suite::assets::LazyBalance::Id">Id</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>,
+    &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt;,</div></h4></section></summary><div class="docblock"><p>Runs model exploration under valid conditions (guards only).</p>
+<p>Explores sequences of operations using <a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a> without any
+trap overrides.</p>
+<h6 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h6>
+<ul>
+<li><code>users</code>: set of users participating in operations</li>
+<li><code>deposits</code>: input values used for deposit operations</li>
+<li><code>adjustments</code>: values used for mint / reap operations</li>
+<li><code>subjects</code>: contextual inputs (e.g. precision, forced flags)</li>
+<li><code>max_depth</code>: maximum sequence length to explore</li>
+<li><code>allowed_bps</code>: maximum allowed drift in basis points
+(e.g. 10 = 0.10%, 100 = 1%)</li>
+<li><code>allowed_diff</code>: maximum allowed absolute value difference
+(not percentage-based)</li>
+<li><code>results</code>: mutable container collecting outcomes</li>
+</ul>
+<h6 id="behavior"><a class="doc-anchor" href="#behavior">§</a>Behavior</h6>
+<ul>
+<li>generates operation sequences up to <code>max_depth</code></li>
+<li>filters using <a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a> (<code>guard(...)</code>)</li>
+<li>executes both lazy and manual models</li>
+<li>compares results and records:</li>
+<li><code>pass</code>: valid execution</li>
+<li><code>fail</code>: error</li>
+<li><code>exit</code>: withdrawals drifts between balance models</li>
+</ul>
+<p>This is the standard correctness check without testing invalid scenarios.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.explore_traps" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1631-1662">Source</a><h4 class="code-header">fn <a href="#method.explore_traps" class="fn">explore_traps</a>(
+    users: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a> as <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt;&gt;::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>],
+    deposits: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    adjustments: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    subjects: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>],
+    max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_bps: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_diff: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    traps: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps">BalanceTraps</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.TrapFn" title="type frame_suite::assets::LazyBalanceModelChecker::TrapFn">TrapFn</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.FlowFn" title="type frame_suite::assets::LazyBalanceModelChecker::FlowFn">FlowFn</a>&gt;&gt;,
+    results: &amp;mut <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+)<div class="where">where
+    &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Id" title="type frame_suite::assets::LazyBalance::Id">Id</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>,
+    &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt;,</div></h4></section></summary><div class="docblock"><p>Runs exploration with trap overrides (<code>guard || trap</code>).</p>
+<p>Extends <a href="../trait.LazyBalanceModelChecker.html#method.explore"><code>Self::explore</code></a> by allowing controlled violations
+of guards using <a href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps"><code>BalanceTraps</code></a>.</p>
+<h6 id="parameters-1"><a class="doc-anchor" href="#parameters-1">§</a>Parameters</h6>
+<ul>
+<li><code>users</code>: set of users participating in operations</li>
+<li><code>deposits</code>: input values used for deposit operations</li>
+<li><code>adjustments</code>: values used for mint / reap operations</li>
+<li><code>subjects</code>: contextual inputs (e.g. precision, forced flags)</li>
+<li><code>max_depth</code>: maximum sequence length to explore</li>
+<li><code>allowed_bps</code>: maximum allowed drift in basis points
+(e.g. 10 = 0.10%, 100 = 1%)</li>
+<li><code>allowed_diff</code>: maximum allowed absolute value difference</li>
+<li><code>traps</code>: optional trap configuration (trap, flow, reason)</li>
+<li><code>results</code>: mutable container collecting outcomes</li>
+</ul>
+<h6 id="behavior-1"><a class="doc-anchor" href="#behavior-1">§</a>Behavior</h6>
+<ul>
+<li>operations are allowed using:</li>
+</ul>
+<div class="example-wrap"><pre class="language-text"><code>guard(...) || trap(...)</code></pre></div>
+<ul>
+<li>
+<p><code>trap</code> is applied globally to every operation:</p>
+<ul>
+<li>should return <code>true</code> only for the intended operation(s)</li>
+<li>should return <code>false</code> by default for all unrelated operations</li>
+</ul>
+</li>
+<li>
+<p><code>flow</code> further filters exploration:</p>
+</li>
+</ul>
+<div class="example-wrap"><pre class="language-text"><code>guard_flow(...) &amp;&amp; trap_flow(...)</code></pre></div>
+<ul>
+<li>
+<p>should return <code>true</code> for the intended operation(s) or by default</p>
+</li>
+<li>
+<p>return <code>false</code> <strong>only to explicitly block</strong> exploration of a case</p>
+</li>
+<li>
+<p>typically used to:</p>
+<ul>
+<li>force invalid transitions</li>
+<li>trigger expected errors</li>
+<li>validate edge-case behavior</li>
+</ul>
+</li>
+<li>
+<p>executes both lazy and manual models and records:</p>
+<ul>
+<li>pass / fail / exit / trap outcomes</li>
+</ul>
+</li>
+</ul>
+<p>This is used for adversarial and trap-based testing.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.explore_custom" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1702-1736">Source</a><h4 class="code-header">fn <a href="#method.explore_custom" class="fn">explore_custom</a>(
+    users: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a> as <a class="trait" href="../trait.ManualBalanceModel.html" title="trait frame_suite::assets::ManualBalanceModel">ManualBalanceModel</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>&gt;&gt;::<a class="associatedtype" href="../trait.ManualBalanceModel.html#associatedtype.User" title="type frame_suite::assets::ManualBalanceModel::User">User</a>],
+    deposits: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    adjustments: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>],
+    subjects: &amp;[&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Subject" title="type frame_suite::assets::LazyBalance::Subject">Subject</a>],
+    max_depth: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_bps: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    allowed_diff: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.u32.html">u32</a>,
+    traps: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps">BalanceTraps</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.TrapFn" title="type frame_suite::assets::LazyBalanceModelChecker::TrapFn">TrapFn</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.FlowFn" title="type frame_suite::assets::LazyBalanceModelChecker::FlowFn">FlowFn</a>&gt;&gt;,
+    hasher: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.Hasher" title="type frame_suite::assets::LazyBalanceModelChecker::Hasher">Hasher</a>&gt;,
+    results: &amp;mut <a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+)<div class="where">where
+    &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Id" title="type frame_suite::assets::LazyBalance::Id">Id</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/default/trait.Default.html" title="trait core::default::Default">Default</a>,
+    &lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>: <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.From.html" title="trait core::convert::From">From</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt; + <a class="trait" href="https://doc.rust-lang.org/1.90.0/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a> as <a class="trait" href="../trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance">LazyBalance</a>&gt;::<a class="associatedtype" href="../trait.LazyBalance.html#associatedtype.Asset" title="type frame_suite::assets::LazyBalance::Asset">Asset</a>&gt;,</div></h4></section></summary><div class="docblock"><p>Runs full custom exploration (custom traps + optional additional hasher).</p>
+<p>This is the most flexible entrypoint, allowing control over:</p>
+<ul>
+<li>trap behavior</li>
+<li>additional state hashing</li>
+</ul>
+<h6 id="parameters-2"><a class="doc-anchor" href="#parameters-2">§</a>Parameters</h6>
+<ul>
+<li><code>users</code>: set of users participating in operations</li>
+<li><code>deposits</code>: input values used for deposit operations</li>
+<li><code>adjustments</code>: values used for mint / reap operations</li>
+<li><code>subjects</code>: contextual inputs (e.g. precision, forced flags)</li>
+<li><code>max_depth</code>: maximum sequence length to explore</li>
+<li><code>allowed_bps</code>: maximum allowed drift in basis points
+(e.g. <code>10</code> = 0.10%, <code>100</code> = 1%)</li>
+<li><code>allowed_diff</code>: maximum allowed absolute value difference</li>
+<li><code>traps</code>: optional trap configuration (<code>guard || trap</code>)</li>
+<li><code>hasher</code>: optional additional state hasher (second-stage pruning)</li>
+<li><code>results</code>: mutable container collecting outcomes</li>
+</ul>
+<h6 id="behavior-2"><a class="doc-anchor" href="#behavior-2">§</a>Behavior</h6>
+<ul>
+<li>
+<p>combines:</p>
+<ul>
+<li><a href="../trait.BalanceGuards.html" title="trait frame_suite::assets::BalanceGuards"><code>BalanceGuards</code></a> -&gt; base validity</li>
+<li><a href="../struct.BalanceTraps.html" title="struct frame_suite::assets::BalanceTraps"><code>BalanceTraps</code></a> -&gt; override (<code>guard || trap</code>)</li>
+<li><code>flow</code> -&gt; exploration control (<code>guard_flow &amp;&amp; trap_flow</code>)</li>
+</ul>
+</li>
+<li>
+<p>if <code>hasher</code> is provided:</p>
+<ul>
+<li>used alongside <a href="../trait.BalanceStateHasher.html" title="trait frame_suite::assets::BalanceStateHasher"><code>BalanceStateHasher</code></a> from <a href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance"><code>Self::ManualBalance</code></a></li>
+<li>enables additional state deduplication</li>
+</ul>
+</li>
+<li>
+<p>executes both lazy and manual models and records:</p>
+<ul>
+<li>pass / fail / exit / trap outcomes</li>
+</ul>
+</li>
+</ul>
+<p>Use this when:</p>
+<ul>
+<li>testing complex trap scenarios</li>
+<li>adding custom state pruning logic</li>
+<li>requiring full control over exploration behavior</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.write_reports" class="method"><a class="src rightside" href="../../../src/frame_suite/assets.rs.html#1766-1774">Source</a><h4 class="code-header">fn <a href="#method.write_reports" class="fn">write_reports</a>(
+    dir: <a class="struct" href="https://doc.rust-lang.org/1.90.0/std/path/struct.PathBuf.html" title="struct std::path::PathBuf">PathBuf</a>,
+    results: &amp;<a class="struct" href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults">BalanceModelResults</a>&lt;Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.LazyBalance" title="type frame_suite::assets::LazyBalanceModelChecker::LazyBalance">LazyBalance</a>, Self::<a class="associatedtype" href="../trait.LazyBalanceModelChecker.html#associatedtype.ManualBalance" title="type frame_suite::assets::LazyBalanceModelChecker::ManualBalance">ManualBalance</a>&gt;,
+    write_pass: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+    write_exit: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+    write_trap: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.bool.html">bool</a>,
+)</h4></section></summary><div class="docblock"><p>Writes CSV reports for analysis.</p>
+<p>Exports the contents of <a href="../struct.BalanceModelResults.html" title="struct frame_suite::assets::BalanceModelResults"><code>BalanceModelResults</code></a> into CSV files
+under the given directory.</p>
+<h6 id="parameters-3"><a class="doc-anchor" href="#parameters-3">§</a>Parameters</h6>
+<ul>
+<li><code>dir</code>: output directory where CSV files will be created</li>
+<li><code>results</code>: collected model checking results</li>
+<li><code>write_pass</code>: whether to write successful sequences</li>
+<li><code>write_exit</code>: whether to write drift cases (<a href="../struct.BalanceExit.html" title="struct frame_suite::assets::BalanceExit"><code>BalanceExit</code></a>)</li>
+<li><code>write_trap</code>: whether to write trapped sequences</li>
+</ul>
+<h6 id="behavior-3"><a class="doc-anchor" href="#behavior-3">§</a>Behavior</h6>
+<ul>
+<li>
+<p>always writes <strong>failures</strong></p>
+</li>
+<li>
+<p>optionally writes:</p>
+<ul>
+<li><code>pass</code>: successful executions</li>
+<li><code>exit</code>: drift between lazy and manual models</li>
+<li><code>trap</code>: expected trap-triggered sequences</li>
+</ul>
+</li>
+<li>
+<p>file names are timestamped to avoid overwriting</p>
+</li>
+<li>
+<p>prints a summary of results after writing</p>
+</li>
+</ul>
+<p>Useful for:</p>
+<ul>
+<li>debugging failures</li>
+<li>analyzing drift behavior</li>
+<li>validating trap scenarios</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../../trait.impl/frame_suite/assets/lazy_balance_model_checker/trait.LazyBalanceModelChecker.js" async></script></section></div></main></body></html>

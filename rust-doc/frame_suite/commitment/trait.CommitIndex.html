@@ -1,0 +1,482 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="`CommitIndex` extends `Commitment` by providing a higher-level financial abstraction that groups multiple commitments under a single “index”."><title>CommitIndex in frame_suite::commitment - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Commit<wbr>Index</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#use-cases" title="Use Cases">Use Cases</a></li><li><a href="#why-commitindex" title="Why `CommitIndex`?">Why <code>CommitIndex</code>?</a></li><li><a href="#core-principles" title="Core Principles">Core Principles</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#example-1-portfolio-staking" title="Example 1: Portfolio Staking">Example 1: Portfolio Staking</a></li><li><a href="#example-2-betting-pool" title="Example 2: Betting Pool">Example 2: Betting Pool</a></li><li><a href="#example-3-market-position-index" title="Example 3: Market Position Index">Example 3: Market Position Index</a></li><li><a href="#example-4-escrow-pool" title="Example 4: Escrow Pool">Example 4: Escrow Pool</a></li></ul></li><li><a href="#invariants" title="Invariants">Invariants</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Index" title="Index">Index</a></li><li><a href="#associatedtype.Shares" title="Shares">Shares</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.entry_exists" title="entry_exists">entry_exists</a></li><li><a href="#tymethod.gen_index_digest" title="gen_index_digest">gen_index_digest</a></li><li><a href="#tymethod.get_entries_shares" title="get_entries_shares">get_entries_shares</a></li><li><a href="#tymethod.get_entry_value" title="get_entry_value">get_entry_value</a></li><li><a href="#tymethod.get_entry_value_for" title="get_entry_value_for">get_entry_value_for</a></li><li><a href="#tymethod.get_index" title="get_index">get_index</a></li><li><a href="#tymethod.has_index" title="has_index">has_index</a></li><li><a href="#tymethod.index_exists" title="index_exists">index_exists</a></li><li><a href="#tymethod.prepare_index" title="prepare_index">prepare_index</a></li><li><a href="#tymethod.reap_index" title="reap_index">reap_index</a></li><li><a href="#tymethod.set_entry_shares" title="set_entry_shares">set_entry_shares</a></li><li><a href="#tymethod.set_index" title="set_index">set_index</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.get_entries_value" title="get_entries_value">get_entries_value</a></li><li><a href="#method.get_entries_value_for" title="get_entries_value_for">get_entries_value_for</a></li><li><a href="#method.get_index_value" title="get_index_value">get_index_value</a></li><li><a href="#method.get_index_value_for" title="get_index_value_for">get_index_value_for</a></li><li><a href="#method.on_reap_index" title="on_reap_index">on_reap_index</a></li><li><a href="#method.on_set_index" title="on_set_index">on_set_index</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>commitment</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">commitment</a></div><h1>Trait <span class="trait">CommitIndex</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/commitment.rs.html#958-1304">Source</a> </span></div><pre class="rust item-decl"><code>pub trait CommitIndex&lt;Proprietor&gt;: <a class="trait" href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment">Commitment</a>&lt;Proprietor&gt; {
+    type <a href="#associatedtype.Index" class="associatedtype">Index</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a>;
+    type <a href="#associatedtype.Shares" class="associatedtype">Shares</a>: <a class="trait" href="../base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a>;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 18 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.index_exists" class="fn">index_exists</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.entry_exists" class="fn">entry_exists</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.has_index" class="fn">has_index</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_index" class="fn">get_index</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_entries_shares" class="fn">get_entries_shares</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_entry_value" class="fn">get_entry_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_entry_value_for" class="fn">get_entry_value_for</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.gen_index_digest" class="fn">gen_index_digest</a>(
+        from: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index: &amp;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.prepare_index" class="fn">prepare_index</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        entries: &amp;[(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>)],
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_index" class="fn">set_index</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index: &amp;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>,
+        digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_entry_shares" class="fn">set_entry_shares</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        shares: Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reap_index" class="fn">reap_index</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+
+    // Provided methods
+    fn <a href="#method.get_index_value" class="fn">get_index_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_entries_value" class="fn">get_entries_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_entries_value_for" class="fn">get_entries_value_for</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_index_value_for" class="fn">get_index_value_for</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_set_index" class="fn">on_set_index</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _index: &amp;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_reap_index" class="fn">on_reap_index</a>(
+        _index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _dust: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p><code>CommitIndex</code> extends <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> by providing a <strong>higher-level financial abstraction</strong>
+that groups multiple commitments under a single “index”.</p>
+<p>This enables proprietors to manage related commitments collectively,
+while preserving the <strong>atomicity</strong> and <strong>immutability</strong> guarantees of <code>Commitment</code>.</p>
+<h3 id="use-cases"><a class="doc-anchor" href="#use-cases">§</a>Use Cases</h3>
+<ul>
+<li>Portfolio management: Aggregate commitments.</li>
+<li>Betting pools: Collective tracking and settlement.</li>
+<li>Multi-asset contracts: Manage grouped assets with shares.</li>
+<li>Escrow pools: Efficient tracking of grouped escrows.</li>
+<li>Market positions: Aggregate for easier tracking.</li>
+</ul>
+<h3 id="why-commitindex"><a class="doc-anchor" href="#why-commitindex">§</a>Why <code>CommitIndex</code>?</h3>
+<p>The base <code>Commitment</code> trait enforces:</p>
+<blockquote>
+<p>“One reason -&gt; one digest”.</p>
+</blockquote>
+<p>This is restrictive when:</p>
+<ul>
+<li>A proprietor needs to manage <strong>multiple related commitments under one reason</strong>.</li>
+<li>Aggregation of commitments is required.</li>
+<li>Ownership of grouped commitments must be tracked proportionally.</li>
+<li>Trustless, composable structures are desired.</li>
+</ul>
+<p><code>CommitIndex</code> solves this by introducing <strong>indexes</strong>:</p>
+<ul>
+<li>An <strong>index digest</strong> references multiple committed digests (entries).</li>
+<li>Each entry remains an independent <code>Commitment</code>.</li>
+<li>The index enables aggregation, share-tracking, and collective management
+without breaking core commitment rules.</li>
+</ul>
+<h3 id="core-principles"><a class="doc-anchor" href="#core-principles">§</a>Core Principles</h3>
+<ol>
+<li>
+<p><strong>Wrapper over commitments</strong></p>
+<ul>
+<li>Index digest groups multiple committed digests.</li>
+<li>Entries retain individual commitment properties.</li>
+</ul>
+</li>
+<li>
+<p><strong>Management layer</strong></p>
+<ul>
+<li>Tracks shares and values for each entry.</li>
+<li>Aggregates entry values into a single index value.</li>
+</ul>
+</li>
+<li>
+<p><strong>Integrity</strong></p>
+<ul>
+<li>Entries remain independent commitments.</li>
+<li>Index creation does not alter entry commitments.</li>
+</ul>
+</li>
+<li>
+<p><strong>Trustless design</strong></p>
+<ul>
+<li>Anyone can interact with indexes without requiring creator consent,
+provided the share structure allows it.</li>
+</ul>
+</li>
+</ol>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3><h4 id="example-1-portfolio-staking"><a class="doc-anchor" href="#example-1-portfolio-staking">§</a>Example 1: Portfolio Staking</h4>
+<p>Alice stakes multiple digests under a single reason to manage risk:</p>
+<div><table><thead><tr><th>Reason</th><th>Digest</th><th>Value</th></tr></thead><tbody>
+<tr><td>“staking”</td><td>“digest_a123”</td><td>100</td></tr>
+<tr><td>“staking”</td><td>“digest_b456”</td><td>200</td></tr>
+<tr><td>“staking”</td><td>“digest_c789”</td><td>300</td></tr>
+</tbody></table>
+</div>
+<p>Each row is an independent commitment.
+Alice creates a <code>CommitIndex</code>:</p>
+<ul>
+<li>Reason = <code>"staking"</code></li>
+<li>Digest = <code>"index_digest_xyz"</code></li>
+<li>Entries = <code>[digest_a123, digest_b456, digest_c789]</code></li>
+<li>Shares = <code>[1, 2, 3]</code></li>
+</ul>
+<p>Total value = <code>600</code>, with proportional share tracking.</p>
+<h4 id="example-2-betting-pool"><a class="doc-anchor" href="#example-2-betting-pool">§</a>Example 2: Betting Pool</h4>
+<p>Bettors commit value for different bets under the same reason:</p>
+<div><table><thead><tr><th>Reason</th><th>Digest</th><th>Value</th></tr></thead><tbody>
+<tr><td>“betting_pool”</td><td>“digest_bet101”</td><td>50</td></tr>
+<tr><td>“betting_pool”</td><td>“digest_bet102”</td><td>80</td></tr>
+</tbody></table>
+</div>
+<p>CommitIndex:</p>
+<ul>
+<li>Reason = <code>"betting_pool"</code></li>
+<li>Digest = <code>"index_digest_betting"</code></li>
+<li>Entries = <code>[digest_bet101, digest_bet102]</code></li>
+<li>Shares = <code>[2, 3]</code></li>
+</ul>
+<p>Total value = <code>130</code>, with proportional share tracking.</p>
+<h4 id="example-3-market-position-index"><a class="doc-anchor" href="#example-3-market-position-index">§</a>Example 3: Market Position Index</h4>
+<p>Dave aggregates multiple market positions:</p>
+<div><table><thead><tr><th>Reason</th><th>Digest</th><th>Value</th></tr></thead><tbody>
+<tr><td>“market_positions”</td><td>“digest_order1”</td><td>500</td></tr>
+<tr><td>“market_positions”</td><td>“digest_order2”</td><td>300</td></tr>
+</tbody></table>
+</div>
+<p>CommitIndex:</p>
+<ul>
+<li>Reason = <code>"market_positions"</code></li>
+<li>Digest = <code>"index_digest_market"</code></li>
+<li>Entries = <code>[digest_order1, digest_order2]</code></li>
+<li>Shares = <code>[5, 3]</code></li>
+</ul>
+<p>Aggregates positions without altering atomic commitments.</p>
+<h4 id="example-4-escrow-pool"><a class="doc-anchor" href="#example-4-escrow-pool">§</a>Example 4: Escrow Pool</h4>
+<p>Multiple escrows under one reason:</p>
+<div><table><thead><tr><th>Reason</th><th>Digest</th><th>Value</th></tr></thead><tbody>
+<tr><td>“escrow_pool”</td><td>“digest_escrow1”</td><td>1000</td></tr>
+<tr><td>“escrow_pool”</td><td>“digest_escrow2”</td><td>1500</td></tr>
+</tbody></table>
+</div>
+<p>CommitIndex:</p>
+<ul>
+<li>Reason = <code>"escrow_pool"</code></li>
+<li>Digest = <code>"index_digest_escrow"</code></li>
+<li>Entries = <code>[digest_escrow1, digest_escrow2]</code></li>
+<li>Shares = <code>[1, 1.5]</code></li>
+</ul>
+<p>Tracks total escrow commitments (<code>2500</code>) and proportional ownership.</p>
+<h3 id="invariants"><a class="doc-anchor" href="#invariants">§</a>Invariants</h3>
+<ul>
+<li>An index digest is a managed wrapper over multiple committed digests.</li>
+<li>Each entry is an independent <code>Commitment</code>.</li>
+<li>Index creation preserves atomicity, immutability, and reason-digest invariants.</li>
+<li>Shares define proportional ownership of aggregated commitments.</li>
+<li>Must maintain the base-invariant “One Reason -&gt; One Digest”</li>
+</ul>
+<p>Generics:</p>
+<ul>
+<li><strong>Proprietor</strong> - the entity that owns the asset and can make commitments.</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#961">Source</a><h4 class="code-header">type <a href="#associatedtype.Index" class="associatedtype">Index</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a></h4></section></summary><div class="docblock"><p>The type representing an index.
+This could be a struct containing entries and shares.</p>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Shares" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#966">Source</a><h4 class="code-header">type <a href="#associatedtype.Shares" class="associatedtype">Shares</a>: <a class="trait" href="../base/trait.Countable.html" title="trait frame_suite::base::Countable">Countable</a></h4></section></summary><div class="docblock"><p>The type representing shares for an entry.</p>
+<p>Should be a simple unsigned numeric type.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.index_exists" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#977">Source</a><h4 class="code-header">fn <a href="#tymethod.index_exists" class="fn">index_exists</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether an index exists for the given reason and index digest.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the index exists</li>
+<li><code>Err(DispatchError)</code> if the index is not found</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.entry_exists" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#987-991">Source</a><h4 class="code-header">fn <a href="#tymethod.entry_exists" class="fn">entry_exists</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether a specific entry exists within the given index.</p>
+<p>Verifies that the specified entry digest is part of the index’s
+entry list under the given reason.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the entry exists within the index</li>
+<li><code>Err(DispatchError)</code> if the entry is not found in the index</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.has_index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1001">Source</a><h4 class="code-header">fn <a href="#tymethod.has_index" class="fn">has_index</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether any index exists for the given reason.</p>
+<p>Verifies that at least one index has been created under the
+specified reason across all proprietors.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if at least one index exists for the reason</li>
+<li><code>Err(DispatchError)</code> if no indexes are found for the reason</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1016-1019">Source</a><h4 class="code-header">fn <a href="#tymethod.get_index" class="fn">get_index</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the complete index structure for the given reason and index digest.</p>
+<p>Returns the full index object containing all entries, shares, and
+associated metadata for inspection or processing.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Index)</code> containing the complete index structure i.e.,
+<a href="trait.CommitIndex.html#associatedtype.Index" title="associated type frame_suite::commitment::CommitIndex::Index"><code>CommitIndex::Index</code></a></li>
+<li><code>Err(DispatchError)</code> if the index does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_entries_shares" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1054-1057">Source</a><h4 class="code-header">fn <a href="#tymethod.get_entries_shares" class="fn">get_entries_shares</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the shares of each entry in the given index.</p>
+<p>Returns a list of entry digests paired with their corresponding shares,
+representing each entry’s proportional weight within the index.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;(Self::Digest, Self::Shares)&gt;)</code> containing entry-share pairs</li>
+<li><code>Err(DispatchError)</code> if the index does not exist or retrieval fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_entry_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1094-1098">Source</a><h4 class="code-header">fn <a href="#tymethod.get_entry_value" class="fn">get_entry_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time committed value of a specific entry within an index.</p>
+<p>Returns the current value for the given entry digest under the specified
+reason and index. Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest values
+to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects the
+<strong>live state</strong> rather than the original deposit.</p>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the entry’s current committed value</li>
+<li><code>Err(DispatchError)</code> if the index or entry does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_entry_value_for" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1139-1144">Source</a><h4 class="code-header">fn <a href="#tymethod.get_entry_value_for" class="fn">get_entry_value_for</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time value of a proprietor’s commitment to a specific
+entry within an index.</p>
+<p>Returns the live committed value for the given proprietor and entry digest.
+Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest values to be updated via
+<a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects the <strong>current state</strong> rather
+than the deposited total.</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the proprietor’s current commitment to the entry</li>
+<li><code>Err(DispatchError)</code> if the index or entry does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.gen_index_digest" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1183-1187">Source</a><h4 class="code-header">fn <a href="#tymethod.gen_index_digest" class="fn">gen_index_digest</a>(
+    from: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index: &amp;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Generates a unique digest for the given index object.</p>
+<p>Creates a distinct identifier derived from the proprietor, reason, and
+index structure (including entries and shares). The generated digest
+must be collision-resistant and unique across all indexes of reason.</p>
+<h6 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Digest)</code> containing the generated unique index digest</li>
+<li><code>Err(DispatchError)</code> if digest generation fails due to invalid inputs</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.prepare_index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1205-1209">Source</a><h4 class="code-header">fn <a href="#tymethod.prepare_index" class="fn">prepare_index</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    entries: &amp;[(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>)],
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Prepares an index object from the provided entry data.</p>
+<p>Constructs a valid index structure from a list of <code>(Digest, Shares)</code> pairs,
+where each pair represents:</p>
+<ul>
+<li><strong>Digest</strong>: The unique identifier of an entry within the index</li>
+<li><strong>Shares</strong>: The proportional weight or ownership of that entry</li>
+</ul>
+<p>This method:</p>
+<ul>
+<li>Validates entry data for consistency and integrity</li>
+<li>Ensures no duplicate digests exist</li>
+<li>Rejects entries with nil/empty digests or zero shares</li>
+<li>Creates an immutable, atomic index object</li>
+</ul>
+<h6 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Index)</code> containing the prepared index structure</li>
+<li><code>Err(DispatchError)</code> if preparation fails due to invalid data or validation errors</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1230-1235">Source</a><h4 class="code-header">fn <a href="#tymethod.set_index" class="fn">set_index</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index: &amp;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>,
+    digest: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Binds the prepared index to the specified digest under the given reason.</p>
+<p>Associates the provided digest with the index structure, making it
+queryable and usable within the commitment system. The index object
+should be safely prepared via <a href="trait.CommitIndex.html#tymethod.prepare_index" title="associated function frame_suite::commitment::CommitIndex::prepare_index"><code>CommitIndex::prepare_index</code></a> before
+calling this method.</p>
+<p>This operation ensures:</p>
+<ul>
+<li>The digest uniquely identifies the index</li>
+<li>All entries and shares are preserved with integrity</li>
+<li>The index conforms to <a href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a> invariants</li>
+</ul>
+<h6 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the index is successfully set</li>
+<li><code>Err(DispatchError)</code> if the operation fails due to invalid data or conflicts</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_entry_shares" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1255-1261">Source</a><h4 class="code-header">fn <a href="#tymethod.set_entry_shares" class="fn">set_entry_shares</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    shares: Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Updates the shares of a single entry within an existing index.</p>
+<p>Since indexes are immutable once created, this method internally:</p>
+<ol>
+<li>Prepares a new index with the updated share for the specified entry</li>
+<li>Generates a new digest for the modified index</li>
+<li>Returns the new index digest</li>
+</ol>
+<p>Since no explicit entry-removal methods are provided, this method may be
+used to remove an entry when its share is set to zero.</p>
+<p>By invariant, commitment indexes must not contain entries with zero shares.</p>
+<p>For updating multiple entries, use <a href="trait.CommitIndex.html#tymethod.prepare_index" title="associated function frame_suite::commitment::CommitIndex::prepare_index"><code>CommitIndex::prepare_index</code></a> and
+<a href="trait.CommitIndex.html#tymethod.set_index" title="associated function frame_suite::commitment::CommitIndex::set_index"><code>CommitIndex::set_index</code></a> to create a completely new index structure.</p>
+<h6 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Digest)</code> containing the new index digest after share update</li>
+<li><code>Err(DispatchError)</code> if the index or entry does not exist, or update fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reap_index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1272">Source</a><h4 class="code-header">fn <a href="#tymethod.reap_index" class="fn">reap_index</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>, index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Removes an index if it contains no active commitments.</p>
+<p>Permanently deletes the specified index digest under the given reason,
+freeing associated resources. Indexes can only be reaped when they have
+no committed entries or remaining balances.</p>
+<h6 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the index is successfully removed</li>
+<li><code>Err(DispatchError)</code> if the index does not exist or contains active commitments</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.get_index_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1033-1044">Source</a><h4 class="code-header">fn <a href="#method.get_index_value" class="fn">get_index_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time aggregated value of the specified index.</p>
+<p>Computes the total value by summing the current values of all entry digests
+under the index. Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest values
+to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects the
+<strong>live state</strong> rather than historical deposits.</p>
+<p>Ensures each entry’s digest value is current before aggregation.</p>
+<h6 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the total aggregated value of the index</li>
+<li><code>Err(DispatchError)</code> if the index does not exist or value computation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_entries_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1070-1082">Source</a><h4 class="code-header">fn <a href="#method.get_entries_value" class="fn">get_entries_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time values of all entries within the specified index.</p>
+<p>Each entry’s value is fetched individually and reflects any changes since
+the commitment was created, as the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest
+values to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>.</p>
+<p>Returns a list of entry digests paired with their current committed values.</p>
+<h6 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;(Self::Digest, Self::Asset)&gt;)</code> containing entry-value pairs</li>
+<li><code>Err(DispatchError)</code> if the index does not exist or value retrieval fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_entries_value_for" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1113-1126">Source</a><h4 class="code-header">fn <a href="#method.get_entries_value_for" class="fn">get_entries_value_for</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time values of a proprietor’s commitments to all entries
+within the specified index.</p>
+<p>Each entry’s value is computed individually for the given proprietor and
+reflects any changes since commitment, as the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a>
+allows digest values to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>.</p>
+<p>Returns a list of entry digests paired with their current committed values
+for the specified proprietor.</p>
+<h6 id="returns-14"><a class="doc-anchor" href="#returns-14">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;(Self::Digest, Self::Asset)&gt;)</code> containing entry-value pairs for the proprietor</li>
+<li><code>Err(DispatchError)</code> if the index does not exist or value retrieval fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_index_value_for" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1156-1168">Source</a><h4 class="code-header">fn <a href="#method.get_index_value_for" class="fn">get_index_value_for</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time total value of a proprietor’s commitment to an index.</p>
+<p>Aggregates the live committed values of all entry digests within the index
+for the given proprietor. Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest
+values to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects
+the <strong>current total</strong> rather than historical deposits.</p>
+<h6 id="returns-15"><a class="doc-anchor" href="#returns-15">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the proprietor’s total commitment to the index</li>
+<li><code>Err(DispatchError)</code> if the index does not exist or computation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_set_index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1285-1291">Source</a><h4 class="code-header">fn <a href="#method.on_set_index" class="fn">on_set_index</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _index: &amp;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after an index is created and its digest is set by a proprietor.</p>
+<p>Provides an extension point for triggering side-effects such as events,
+logging, recalculations, or external state updates when a new index is
+established.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_reap_index" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1303">Source</a><h4 class="code-header">fn <a href="#method.on_reap_index" class="fn">on_reap_index</a>(
+    _index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _dust: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after an index is reaped (removed).</p>
+<p>Provides an extension point for cleanup tasks, logging, freeing
+related resources, or triggering external notifications when an index
+is permanently removed from the system.</p>
+<p><code>dust</code> represents any residual value that was unclaimable and
+effectively considered dead.</p>
+<p>Default implementation is a no-op.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/commitment/trait.CommitIndex.js" async></script></section></div></main></body></html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="`CommitPool` extends `Commitment` and `CommitIndex` to provide a managed, dynamic commitment abstraction."><title>CommitPool in frame_suite::commitment - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Commit<wbr>Pool</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#purpose" title="Purpose">Purpose</a></li><li><a href="#core-principles" title="Core Principles">Core Principles</a></li><li><a href="#examples" title="Examples">Examples</a><ul><li><a href="#example-1-managed-staking-pool" title="Example 1: Managed Staking Pool">Example 1: Managed Staking Pool</a></li><li><a href="#example-2-managed-liquidity-pool" title="Example 2: Managed Liquidity Pool">Example 2: Managed Liquidity Pool</a></li><li><a href="#example-3-escrow-pool-with-commission" title="Example 3: Escrow Pool with Commission">Example 3: Escrow Pool with Commission</a></li><li><a href="#example-4-delegated-investment-pool" title="Example 4: Delegated Investment Pool">Example 4: Delegated Investment Pool</a></li></ul></li><li><a href="#invariants" title="Invariants">Invariants</a></li><li><a href="#summary" title="Summary">Summary</a></li></ul><h3><a href="#required-associated-types">Required Associated Types</a></h3><ul class="block"><li><a href="#associatedtype.Commission" title="Commission">Commission</a></li><li><a href="#associatedtype.Pool" title="Pool">Pool</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.gen_pool_digest" title="gen_pool_digest">gen_pool_digest</a></li><li><a href="#tymethod.get_commission" title="get_commission">get_commission</a></li><li><a href="#tymethod.get_manager" title="get_manager">get_manager</a></li><li><a href="#tymethod.get_pool" title="get_pool">get_pool</a></li><li><a href="#tymethod.get_slot_value" title="get_slot_value">get_slot_value</a></li><li><a href="#tymethod.get_slot_value_for" title="get_slot_value_for">get_slot_value_for</a></li><li><a href="#tymethod.get_slots_shares" title="get_slots_shares">get_slots_shares</a></li><li><a href="#tymethod.has_pool" title="has_pool">has_pool</a></li><li><a href="#tymethod.pool_exists" title="pool_exists">pool_exists</a></li><li><a href="#tymethod.reap_pool" title="reap_pool">reap_pool</a></li><li><a href="#tymethod.set_pool" title="set_pool">set_pool</a></li><li><a href="#tymethod.set_pool_manager" title="set_pool_manager">set_pool_manager</a></li><li><a href="#tymethod.set_slot_shares" title="set_slot_shares">set_slot_shares</a></li><li><a href="#tymethod.slot_exists" title="slot_exists">slot_exists</a></li></ul><h3><a href="#provided-methods">Provided Methods</a></h3><ul class="block"><li><a href="#method.get_pool_value" title="get_pool_value">get_pool_value</a></li><li><a href="#method.get_pool_value_for" title="get_pool_value_for">get_pool_value_for</a></li><li><a href="#method.get_slots_value" title="get_slots_value">get_slots_value</a></li><li><a href="#method.get_slots_value_for" title="get_slots_value_for">get_slots_value_for</a></li><li><a href="#method.on_reap_pool" title="on_reap_pool">on_reap_pool</a></li><li><a href="#method.on_set_manager" title="on_set_manager">on_set_manager</a></li><li><a href="#method.on_set_pool" title="on_set_pool">on_set_pool</a></li><li><a href="#method.on_set_slot_shares" title="on_set_slot_shares">on_set_slot_shares</a></li><li><a href="#method.set_commission" title="set_commission">set_commission</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>commitment</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">commitment</a></div><h1>Trait <span class="trait">CommitPool</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/commitment.rs.html#1468-1912">Source</a> </span></div><pre class="rust item-decl"><code>pub trait CommitPool&lt;Proprietor&gt;: <a class="trait" href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment">Commitment</a>&lt;Proprietor&gt; + <a class="trait" href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex">CommitIndex</a>&lt;Proprietor&gt; {
+    type <a href="#associatedtype.Pool" class="associatedtype">Pool</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a>;
+    type <a href="#associatedtype.Commission" class="associatedtype">Commission</a>: <a class="trait" href="../base/trait.Percentage.html" title="trait frame_suite::base::Percentage">Percentage</a>;
+
+<details class="toggle type-contents-toggle"><summary class="hideme"><span>Show 23 methods</span></summary>    // Required methods
+    fn <a href="#tymethod.pool_exists" class="fn">pool_exists</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.slot_exists" class="fn">slot_exists</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.has_pool" class="fn">has_pool</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_manager" class="fn">get_manager</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Proprietor, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_commission" class="fn">get_commission</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_pool" class="fn">get_pool</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Pool" title="type frame_suite::commitment::CommitPool::Pool">Pool</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_slots_shares" class="fn">get_slots_shares</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>)&gt;, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_slot_value" class="fn">get_slot_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_slot_value_for" class="fn">get_slot_value_for</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.gen_pool_digest" class="fn">gen_pool_digest</a>(
+        manager: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        commission: Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_pool" class="fn">set_pool</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        commission: Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_pool_manager" class="fn">set_pool_manager</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        manager: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_slot_shares" class="fn">set_slot_shares</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        shares: Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+    ) -&gt; DispatchResult;
+<span class="item-spacer"></span>    fn <a href="#tymethod.reap_pool" class="fn">reap_pool</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; DispatchResult;
+
+    // Provided methods
+    fn <a href="#method.get_pool_value" class="fn">get_pool_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_slots_value" class="fn">get_slots_value</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_slots_value_for" class="fn">get_slots_value_for</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.get_pool_value_for" class="fn">get_pool_value_for</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.set_commission" class="fn">set_commission</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        commission: Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt; { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_set_pool" class="fn">on_set_pool</a>(
+        _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _pool: &amp;Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Pool" title="type frame_suite::commitment::CommitPool::Pool">Pool</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_set_slot_shares" class="fn">on_set_slot_shares</a>(
+        _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _shares: Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_set_manager" class="fn">on_set_manager</a>(
+        _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _manager: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    ) { ... }
+<span class="item-spacer"></span>    fn <a href="#method.on_reap_pool" class="fn">on_reap_pool</a>(
+        _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        _dust: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+    ) { ... }
+</details>}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p><code>CommitPool</code> extends <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> and <a href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a> to provide a <strong>managed,
+dynamic commitment abstraction</strong>.</p>
+<p>It enables a trusted manager to actively manage where deposited assets are committed</p>
+<ul>
+<li>effectively controlling how and where value is allocated across different digests
+within a pool.</li>
+</ul>
+<p>While <code>CommitIndex</code> aggregates multiple commitments under a single digest,
+<code>CommitPool</code> introduces <strong>live management</strong>:</p>
+<ul>
+<li>Proprietors deposit assets into a managed pool.</li>
+<li>The pool manager determines how these assets are allocated across underlying
+commitments to optimize yield, diversify risk, or execute specific strategies.</li>
+<li>Proprietors trust the manager to act within agreed rules and immutable commission terms.</li>
+</ul>
+<p>In short, Pool digests are stable identities; index digests are content hashes.</p>
+<h3 id="purpose"><a class="doc-anchor" href="#purpose">§</a>Purpose</h3>
+<p>Pools are useful for:</p>
+<ul>
+<li>Managed staking or investment</li>
+<li>Delegated liquidity provision</li>
+<li>Escrow pools with oversight</li>
+<li>Collective asset management with dynamic strategy</li>
+</ul>
+<p>They preserve the atomicity and immutability of individual commitments while enabling
+flexible allocation.</p>
+<h3 id="core-principles"><a class="doc-anchor" href="#core-principles">§</a>Core Principles</h3>
+<ol>
+<li>
+<p><strong>Managed aggregation</strong></p>
+<ul>
+<li>Pools group commitments under a single digest for a given reason.</li>
+<li>Slots remain immutable commitments.</li>
+</ul>
+</li>
+<li>
+<p><strong>Dynamic shares</strong></p>
+<ul>
+<li>Managers adjust shares to change exposure or strategy.</li>
+<li>Share changes require releasing and recovering the pool.</li>
+</ul>
+</li>
+<li>
+<p><strong>Semi-trusted management</strong></p>
+<ul>
+<li>Managers cannot withdraw deposits directly.</li>
+<li>Operations are restricted by pool rules and fixed commission rates.</li>
+</ul>
+</li>
+<li>
+<p><strong>Immutable commission</strong></p>
+<ul>
+<li>Commission rates are fixed at pool creation for transparency and trust.</li>
+</ul>
+</li>
+</ol>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3><h4 id="example-1-managed-staking-pool"><a class="doc-anchor" href="#example-1-managed-staking-pool">§</a>Example 1: Managed Staking Pool</h4>
+<p>Manager Dave creates a managed pool:</p>
+<ul>
+<li>Reason = <code>"managed_staking"</code></li>
+<li>Digest = <code>"dave_pool"</code></li>
+<li>Entries = <code>[digest_a123, digest_b456, digest_c789]</code></li>
+<li>Shares = <code>[1, 2, 3]</code></li>
+<li>Commission = <code>2%</code></li>
+</ul>
+<p>Alice, Bob, and Carol deposit tokens into a staking pool managed by Dave:</p>
+<div><table><thead><tr><th>Proprietor</th><th>Reason</th><th>Digest</th><th>Value</th></tr></thead><tbody>
+<tr><td>Alice</td><td>staking</td><td>dave_pool</td><td>100</td></tr>
+<tr><td>Bob</td><td>staking</td><td>dave_pool</td><td>200</td></tr>
+<tr><td>Carol</td><td>staking</td><td>dave_pool</td><td>300</td></tr>
+</tbody></table>
+</div>
+<p>The pool holds a total value of <code>600</code>, managed dynamically without altering deposits.</p>
+<p>Dave can rebalance the pool or add new staking positions (new entry digests)<br />
+as opportunities arise, while depositors retain proportional ownership.</p>
+<p>This makes <code>CommitPool</code> distinct from <code>CommitIndex</code>,<br />
+which has <strong>static entries and immutable share structures</strong>.</p>
+<h5 id="dynamic-reallocation-and-expansion"><a class="doc-anchor" href="#dynamic-reallocation-and-expansion">§</a>Dynamic Reallocation and Expansion</h5>
+<p>After creation, the manager can <strong>update both shares and entries</strong>:</p>
+<ul>
+<li>
+<p>Before:</p>
+<ul>
+<li>Entries = <code>[digest_a123, digest_b456, digest_c789]</code></li>
+<li>Shares  = <code>[1, 2, 3]</code></li>
+</ul>
+</li>
+<li>
+<p>After:</p>
+<ul>
+<li>Entries = <code>[digest_a123, digest_b456, digest_c789, digest_d999]</code></li>
+<li>Shares  = <code>[2, 1, 4, 2]</code></li>
+</ul>
+</li>
+</ul>
+<p>This allows the pool to grow by adding new slots (digests)<br />
+and to rebalance proportional exposure.<br />
+Proprietors can view current allocations at any time,<br />
+but allocations and entries may change as part of active management.</p>
+<h4 id="example-2-managed-liquidity-pool"><a class="doc-anchor" href="#example-2-managed-liquidity-pool">§</a>Example 2: Managed Liquidity Pool</h4>
+<p>Manager creates:</p>
+<ul>
+<li>Reason = <code>"liquidity"</code></li>
+<li>Digest = <code>"pool_digest_lp"</code></li>
+<li>Entries = <code>[digest_lp_001, digest_lp_002]</code></li>
+<li>Shares = <code>[5, 7]</code></li>
+<li>Commission = <code>1%</code></li>
+</ul>
+<p>The pool manager may later add new liquidity positions (e.g., <code>digest_lp_003</code>)<br />
+or adjust existing shares to respond to market demand.<br />
+Depositors continue to share in the aggregated performance of the evolving pool.</p>
+<h4 id="example-3-escrow-pool-with-commission"><a class="doc-anchor" href="#example-3-escrow-pool-with-commission">§</a>Example 3: Escrow Pool with Commission</h4>
+<p>Carol and Bob deposit into a managed escrow pool:</p>
+<div><table><thead><tr><th>Proprietor</th><th>Reason</th><th>Digest</th><th>Value</th></tr></thead><tbody>
+<tr><td>Carol</td><td>escrow</td><td>pool_digest_escrow</td><td>1000</td></tr>
+<tr><td>Bob</td><td>escrow</td><td>pool_digest_escrow</td><td>1500</td></tr>
+</tbody></table>
+</div>
+<p>Manager creates:</p>
+<ul>
+<li>Reason = <code>"escrow"</code></li>
+<li>Digest = <code>"pool_digest_escrow"</code></li>
+<li>Shares = <code>[1, 1.5]</code></li>
+<li>Commission = <code>0.5%</code></li>
+</ul>
+<p>The manager can later add new escrow digests or rebalance shares<br />
+to adjust allocations, while commission is paid automatically upon resolution.</p>
+<h4 id="example-4-delegated-investment-pool"><a class="doc-anchor" href="#example-4-delegated-investment-pool">§</a>Example 4: Delegated Investment Pool</h4>
+<p>Investors deposit:</p>
+<div><table><thead><tr><th>Proprietor</th><th>Reason</th><th>Digest</th><th>Value</th></tr></thead><tbody>
+<tr><td>A</td><td>investment</td><td>inv_pool</td><td>1000</td></tr>
+<tr><td>B</td><td>investment</td><td>inv_pool</td><td>2000</td></tr>
+</tbody></table>
+</div>
+<p>Manager creates:</p>
+<ul>
+<li>Reason = <code>"investment"</code></li>
+<li>Digest = <code>"inv_pool"</code></li>
+<li>Shares = <code>[1, 2]</code></li>
+<li>Commission = <code>1.5%</code></li>
+</ul>
+<p>After creation:</p>
+<ul>
+<li>The manager may add new investment digests or update existing ones.</li>
+<li>Proprietors can see current allocations, but these can change over time.</li>
+</ul>
+<h3 id="invariants"><a class="doc-anchor" href="#invariants">§</a>Invariants</h3>
+<ul>
+<li>A pool digest wraps multiple committed entries.</li>
+<li>Pools are created from indexes.</li>
+<li>Mutations require full release and recovering.</li>
+<li>Managers cannot withdraw deposits, only adjust shares.</li>
+<li>Commission rate is fixed at creation.</li>
+<li>Commission is paid upon commitment resolution.</li>
+<li>Share adjustments must preserve proportional commitments.</li>
+</ul>
+<h3 id="summary"><a class="doc-anchor" href="#summary">§</a>Summary</h3>
+<p><code>CommitPool</code> enables managed aggregation of commitments with dynamic share adjustment,
+preserving safety, immutability, and fixed commission rates.</p>
+<p>Ideal for managed staking, liquidity provision, delegated investment, escrow pools,
+and collective asset management where live management is required.</p>
+<p>Generics:</p>
+<ul>
+<li><strong>Proprietor</strong> - the entity that owns the asset and can make commitments.</li>
+</ul>
+</div></details><h2 id="required-associated-types" class="section-header">Required Associated Types<a href="#required-associated-types" class="anchor">§</a></h2><div class="methods"><details class="toggle" open><summary><section id="associatedtype.Pool" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1476">Source</a><h4 class="code-header">type <a href="#associatedtype.Pool" class="associatedtype">Pool</a>: <a class="trait" href="../base/trait.Elastic.html" title="trait frame_suite::base::Elastic">Elastic</a> + <a class="trait" href="../base/trait.Storable.html" title="trait frame_suite::base::Storable">Storable</a></h4></section></summary><div class="docblock"><p>The type representing a managed pool.</p>
+<p>Typically a struct that includes:</p>
+<ul>
+<li>The pool’s manager (of type <code>Proprietor</code>)</li>
+<li>A list of slot digests and their shares</li>
+<li>The commission rate</li>
+<li>Metadata</li>
+</ul>
+</div></details><details class="toggle" open><summary><section id="associatedtype.Commission" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1482">Source</a><h4 class="code-header">type <a href="#associatedtype.Commission" class="associatedtype">Commission</a>: <a class="trait" href="../base/trait.Percentage.html" title="trait frame_suite::base::Percentage">Percentage</a></h4></section></summary><div class="docblock"><p>The type representing a pool’s commission.</p>
+<p>Can be a numeric percentage, ratio, or more complex type
+encoding the manager’s commission or performance fee model.</p>
+</div></details></div><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.pool_exists" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1493">Source</a><h4 class="code-header">fn <a href="#tymethod.pool_exists" class="fn">pool_exists</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>, pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether a pool exists for the given reason and pool digest.</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the pool exists</li>
+<li><code>Err(DispatchError)</code> if the pool is not found</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.slot_exists" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1503-1507">Source</a><h4 class="code-header">fn <a href="#tymethod.slot_exists" class="fn">slot_exists</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether a specific slot exists within the given pool.</p>
+<p>Verifies that the specified slot digest is part of the pool’s
+slot list under the given reason.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the slot exists within the pool</li>
+<li><code>Err(DispatchError)</code> if the slot is not found in the pool</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.has_pool" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1517">Source</a><h4 class="code-header">fn <a href="#tymethod.has_pool" class="fn">has_pool</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Checks whether any pool exists for the given reason.</p>
+<p>Verifies that at least one pool has been created under the
+specified reason across all managers.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if at least one pool exists for the reason</li>
+<li><code>Err(DispatchError)</code> if no pools are found for the reason</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_manager" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1531-1534">Source</a><h4 class="code-header">fn <a href="#tymethod.get_manager" class="fn">get_manager</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Proprietor, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the manager (controller) of the specified pool.</p>
+<p>Returns the proprietor who is responsible for managing the pool’s
+allocations, slot configurations, and commission distribution.</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Proprietor)</code> containing the pool’s manager</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_commission" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1544-1547">Source</a><h4 class="code-header">fn <a href="#tymethod.get_commission" class="fn">get_commission</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the commission rate associated with the specified pool.</p>
+<p>Returns the fixed commission structure that determines what portion
+of the pool’s yield or value the manager is entitled to receive.</p>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Commission)</code> containing the pool’s commission structure</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_pool" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1557-1558">Source</a><h4 class="code-header">fn <a href="#tymethod.get_pool" class="fn">get_pool</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Pool" title="type frame_suite::commitment::CommitPool::Pool">Pool</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the complete pool structure for the given reason and pool digest.</p>
+<p>Returns the full pool object containing all slots, shares, manager identity,
+commission details, and associated metadata for inspection or processing.</p>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Pool)</code> containing the complete pool structure</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_slots_shares" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1595-1598">Source</a><h4 class="code-header">fn <a href="#tymethod.get_slots_shares" class="fn">get_slots_shares</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the shares of all slots within the specified pool.</p>
+<p>Returns a list of slot digests paired with their corresponding shares,
+representing each slot’s proportional weight within the pool’s
+managed allocation strategy.</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;(Self::Digest, Self::Shares)&gt;)</code> containing slot-share pairs</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist or retrieval fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_slot_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1638-1642">Source</a><h4 class="code-header">fn <a href="#tymethod.get_slot_value" class="fn">get_slot_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time committed value of a specific slot within a pool.</p>
+<p>Returns the current value for the given slot digest under the specified
+reason and pool. Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest values
+to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects the
+<strong>live state</strong> rather than the original allocation.</p>
+<p>If no funds are available in a valid slot, it is expected to return zero.</p>
+<h6 id="returns-7"><a class="doc-anchor" href="#returns-7">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the slot’s current committed value</li>
+<li><code>Err(DispatchError)</code> if the pool or slot does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_slot_value_for" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1684-1689">Source</a><h4 class="code-header">fn <a href="#tymethod.get_slot_value_for" class="fn">get_slot_value_for</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time value of a proprietor’s commitment to a specific
+slot within a pool.</p>
+<p>Returns the live committed value for the given proprietor and slot digest.
+Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest values to be updated via
+<a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects the <strong>current state</strong> rather
+than the deposited total.</p>
+<h6 id="returns-8"><a class="doc-anchor" href="#returns-8">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the proprietor’s current commitment to the slot</li>
+<li><code>Err(DispatchError)</code> if the pool or slot does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.gen_pool_digest" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1738-1743">Source</a><h4 class="code-header">fn <a href="#tymethod.gen_pool_digest" class="fn">gen_pool_digest</a>(
+    manager: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    commission: Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Generates a unique digest that serves as the identifier for a pool configuration.</p>
+<p>Creates a collision-resistant identifier derived from:</p>
+<ul>
+<li>The manager’s identity</li>
+<li>The reason (category/purpose)</li>
+<li>The underlying index digest</li>
+<li>The commission structure</li>
+</ul>
+<p>The generated digest acts as a <strong>globally unique identifier</strong> across all pools,
+ensuring that even similar configurations or identical indexes result in
+distinct pool identities when managed by different entities or with different
+commission rates.</p>
+<h6 id="returns-9"><a class="doc-anchor" href="#returns-9">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Digest)</code> containing the generated unique pool digest</li>
+<li><code>Err(DispatchError)</code> if digest generation fails due to invalid inputs</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_pool" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1771-1777">Source</a><h4 class="code-header">fn <a href="#tymethod.set_pool" class="fn">set_pool</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    commission: Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Creates a managed pool from an existing index with a fixed commission rate.</p>
+<p>Links the pool to an existing index structure under the specified reason
+and pool digest, establishing a managed aggregation layer with dynamic
+allocation capabilities.</p>
+<p>This method:</p>
+<ul>
+<li>Validates that the base index exists and is accessible</li>
+<li>Ensures the pool digest is unique and available</li>
+<li>Records the manager (who) and immutable commission rate</li>
+<li>Enables trustless participation for depositors who rely on the index structure</li>
+</ul>
+<p><strong>Pools can be created from any valid index</strong>, regardless of who created it,
+enabling permissionless pool creation while maintaining security.</p>
+<p>Once created, the pool introduces <strong>managed control and commission logic</strong> over
+the linked index, allowing the manager to dynamically update slots, adjust slot shares
+and allocations.</p>
+<h6 id="returns-10"><a class="doc-anchor" href="#returns-10">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the pool is successfully created</li>
+<li><code>Err(DispatchError)</code> if the index does not exist, pool digest conflicts, or validation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_pool_manager" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1790-1794">Source</a><h4 class="code-header">fn <a href="#tymethod.set_pool_manager" class="fn">set_pool_manager</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    manager: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Assigns or updates the manager of an existing pool.</p>
+<p>Transfers management control of the pool to a new proprietor, who then
+assumes responsibility for slot configuration, share adjustments, and commission control.</p>
+<p>This operation preserves all existing commitments, shares, and commission
+structures while changing only the entity authorized to manage the pool.</p>
+<h6 id="returns-11"><a class="doc-anchor" href="#returns-11">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the manager is successfully updated</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist or authorization fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_slot_shares" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1809-1815">Source</a><h4 class="code-header">fn <a href="#tymethod.set_slot_shares" class="fn">set_slot_shares</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    shares: Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Updates the shares of a specific slot within an existing pool.</p>
+<p>Allows the pool manager to dynamically reallocate exposure between slots
+without recreating the entire pool structure. This enables responsive
+strategy adjustments based on market conditions, performance metrics,
+or risk management requirements.</p>
+<p>The operation preserves all existing commitments while adjusting the
+proportional weight of the specified slot within the pool’s allocation.</p>
+<h6 id="returns-12"><a class="doc-anchor" href="#returns-12">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the slot shares are successfully updated</li>
+<li><code>Err(DispatchError)</code> if the pool or slot does not exist, or authorization fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.reap_pool" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1855">Source</a><h4 class="code-header">fn <a href="#tymethod.reap_pool" class="fn">reap_pool</a>(reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>, pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>) -&gt; DispatchResult</h4></section></summary><div class="docblock"><p>Removes a pool if it contains no active commitments.</p>
+<p>Permanently deletes the specified pool digest under the given reason,
+freeing associated resources and references. Pools can only be reaped when
+<strong>no proprietors have active commitments</strong> to any of its slots.</p>
+<p>Attempting to reap a non-empty pool must return an error.</p>
+<h6 id="returns-13"><a class="doc-anchor" href="#returns-13">§</a>Returns</h6>
+<ul>
+<li><code>Ok(())</code> if the pool is successfully removed</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist or contains active commitments</li>
+</ul>
+</div></details></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="method.get_pool_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1573-1584">Source</a><h4 class="code-header">fn <a href="#method.get_pool_value" class="fn">get_pool_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time aggregated value of the specified pool.</p>
+<p>Computes the total value by summing the current values of all slot digests
+under the pool. Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest values
+to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects the
+<strong>live state</strong> rather than historical deposits.</p>
+<p>The aggregated value represents the total exposure of all depositors
+across all slots managed by the pool.</p>
+<h6 id="returns-14"><a class="doc-anchor" href="#returns-14">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the total aggregated value of the pool</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist or value computation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_slots_value" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1612-1624">Source</a><h4 class="code-header">fn <a href="#method.get_slots_value" class="fn">get_slots_value</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time values of all slots within the specified pool.</p>
+<p>Each slot’s value is fetched individually and reflects any changes since
+the commitment was created, as the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest
+values to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>.</p>
+<p>Returns a list of slot digests paired with their current committed values,
+representing the live state of the pool’s allocation.</p>
+<h6 id="returns-15"><a class="doc-anchor" href="#returns-15">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;(Self::Digest, Self::Asset)&gt;)</code> containing slot-value pairs</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist or value retrieval fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_slots_value_for" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1658-1671">Source</a><h4 class="code-header">fn <a href="#method.get_slots_value_for" class="fn">get_slots_value_for</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>)&gt;, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time values of a proprietor’s commitments to all slots
+within the specified pool.</p>
+<p>Each slot’s value is computed individually for the given proprietor and
+reflects any changes since commitment, as the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a>
+allows digest values to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>.</p>
+<p>Returns a list of slot digests paired with their current committed values
+for the specified proprietor, showing their proportional exposure across
+the pool’s managed allocation.</p>
+<h6 id="returns-16"><a class="doc-anchor" href="#returns-16">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Vec&lt;(Self::Digest, Self::Asset)&gt;)</code> containing slot-value pairs for the proprietor</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist or value retrieval fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_pool_value_for" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1704-1716">Source</a><h4 class="code-header">fn <a href="#method.get_pool_value_for" class="fn">get_pool_value_for</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the real-time total value of a proprietor’s commitment to a pool.</p>
+<p>Aggregates the live committed values of all slot digests within the pool
+for the given proprietor. Since the supertrait <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> allows digest
+values to be updated via <a href="trait.Commitment.html#tymethod.set_digest_value" title="associated function frame_suite::commitment::Commitment::set_digest_value"><code>Commitment::set_digest_value</code></a>, this reflects
+the <strong>current total</strong> rather than historical deposits.</p>
+<p>Represents the proprietor’s total exposure to the pool’s managed allocation
+strategy.</p>
+<h6 id="returns-17"><a class="doc-anchor" href="#returns-17">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Asset)</code> containing the proprietor’s total commitment to the pool</li>
+<li><code>Err(DispatchError)</code> if the pool does not exist or computation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.set_commission" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1833-1842">Source</a><h4 class="code-header">fn <a href="#method.set_commission" class="fn">set_commission</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    commission: Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Commission" title="type frame_suite::commitment::CommitPool::Commission">Commission</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Creates a new pool digest from an index with a specified commission rate.</p>
+<p>Generates a unique pool identifier by combining the index structure with
+a commission rate, enabling multiple pools with different commission
+structures to be created from the same underlying index.</p>
+<p>Since commission rates are <strong>immutable</strong> after pool creation to protect
+depositors, this method allows participants to create or select pools
+with their preferred commission terms without altering existing pools.</p>
+<p>The generated digest serves as the unique identifier for the new pool
+configuration and can be used for subsequent pool operations.</p>
+<h6 id="returns-18"><a class="doc-anchor" href="#returns-18">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Digest)</code> containing the newly generated pool digest</li>
+<li><code>Err(DispatchError)</code> if pool creation fails due to invalid parameters or conflicts</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_set_pool" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1869-1875">Source</a><h4 class="code-header">fn <a href="#method.on_set_pool" class="fn">on_set_pool</a>(
+    _who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _pool: &amp;Self::<a class="associatedtype" href="trait.CommitPool.html#associatedtype.Pool" title="type frame_suite::commitment::CommitPool::Pool">Pool</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a pool is successfully created by a proprietor (assumed to be
+the current pool-manager).</p>
+<p>Provides an extension point for triggering side-effects such as events,
+logging, recalculations, or external state updates when a pool is
+established or modified.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_set_slot_shares" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1884-1890">Source</a><h4 class="code-header">fn <a href="#method.on_set_slot_shares" class="fn">on_set_slot_shares</a>(
+    _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _slot_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _shares: Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after slot shares are updated within a pool.</p>
+<p>Provides an extension point for triggering recalculations, propagating
+changes to related state, or emitting events when a slot’s shares are
+adjusted as part of the pool’s dynamic allocation strategy.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_set_manager" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1899">Source</a><h4 class="code-header">fn <a href="#method.on_set_manager" class="fn">on_set_manager</a>(
+    _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _manager: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a pool’s manager is changed.</p>
+<p>Provides an extension point for triggering governance events, audit logging,
+or external notifications when management control of a pool is transferred
+to a new proprietor.</p>
+<p>Default implementation is a no-op.</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.on_reap_pool" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#1911">Source</a><h4 class="code-header">fn <a href="#method.on_reap_pool" class="fn">on_reap_pool</a>(
+    _pool_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    _reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    _dust: Self::<a class="associatedtype" href="trait.InspectAsset.html#associatedtype.Asset" title="type frame_suite::commitment::InspectAsset::Asset">Asset</a>,
+)</h4></section></summary><div class="docblock"><p>Hook called after a pool is reaped (removed).</p>
+<p>Provides an extension point for cleanup tasks, audit logging, freeing
+related resources, or triggering external notifications when a pool
+is permanently removed from the system.</p>
+<p><code>dust</code> represents any residual value that was unclaimable and
+effectively considered dead.</p>
+<p>Default implementation is a no-op.</p>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/commitment/trait.CommitPool.js" async></script></section></div></main></body></html>

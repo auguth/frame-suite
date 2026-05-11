@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A trait for managing and querying variants of index entries and its commitments."><title>IndexVariant in frame_suite::commitment - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Index<wbr>Variant</a></h2><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.get_entry_variant" title="get_entry_variant">get_entry_variant</a></li><li><a href="#tymethod.prepare_index_of_variants" title="prepare_index_of_variants">prepare_index_of_variants</a></li><li><a href="#tymethod.set_entry_of_variant" title="set_entry_of_variant">set_entry_of_variant</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In frame_<wbr>suite::<wbr>commitment</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a>::<wbr><a href="index.html">commitment</a></div><h1>Trait <span class="trait">IndexVariant</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/commitment.rs.html#2303-2382">Source</a> </span></div><pre class="rust item-decl"><code>pub trait IndexVariant&lt;Proprietor&gt;: <a class="trait" href="trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant">CommitVariant</a>&lt;Proprietor&gt; + <a class="trait" href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex">CommitIndex</a>&lt;Proprietor&gt; {
+    // Required methods
+    fn <a href="#tymethod.prepare_index_of_variants" class="fn">prepare_index_of_variants</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        entries: <a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>, Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>)&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.get_entry_variant" class="fn">get_entry_variant</a>(
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>, DispatchError&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.set_entry_of_variant" class="fn">set_entry_of_variant</a>(
+        who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+        reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+        index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+        variant: Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+        shares: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>&gt;,
+    ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;;
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A trait for managing and querying <strong>variants</strong> of index entries and its commitments.</p>
+<p>Extends <a href="trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant"><code>CommitVariant</code></a> and <a href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a>, allowing indexed commitments
+to carry additional positional/variant metadata.</p>
+<p>This trait enables tracking, setting, and preparing variant entries in an index context.</p>
+<p>Generics:</p>
+<ul>
+<li><strong>Proprietor</strong> - the entity that owns the asset and can make commitments.</li>
+</ul>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.prepare_index_of_variants" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2324-2328">Source</a><h4 class="code-header">fn <a href="#tymethod.prepare_index_of_variants" class="fn">prepare_index_of_variants</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    entries: <a class="struct" href="https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>, Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>)&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Index" title="type frame_suite::commitment::CommitIndex::Index">Index</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Prepares an index from entry data with explicit variant classification.</p>
+<p>Constructs a variant-aware index structure from a list of <code>(Digest, Shares, Position)</code> tuples,
+where each tuple represents:</p>
+<ul>
+<li><strong>Digest</strong>: The unique identifier of an entry within the index</li>
+<li><strong>Shares</strong>: The proportional weight or ownership of that entry</li>
+<li><strong>Position</strong>: The variant classification for that entry</li>
+</ul>
+<p>This extends <a href="trait.CommitIndex.html#tymethod.prepare_index" title="associated function frame_suite::commitment::CommitIndex::prepare_index"><code>CommitIndex::prepare_index</code></a> by adding variant specification for each entry.
+When both traits are implemented:</p>
+<ul>
+<li><a href="trait.CommitIndex.html#tymethod.prepare_index" title="associated function frame_suite::commitment::CommitIndex::prepare_index"><code>CommitIndex::prepare_index</code></a> may assign a <strong>default variant</strong> to all entries</li>
+<li>This method allows <strong>explicit variant specification</strong> per entry</li>
+</ul>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Index)</code> containing the prepared variant-aware index structure</li>
+<li><code>Err(DispatchError)</code> if preparation fails</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.get_entry_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2343-2347">Source</a><h4 class="code-header">fn <a href="#tymethod.get_entry_variant" class="fn">get_entry_variant</a>(
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Retrieves the variant associated with a specific entry within an index.</p>
+<p>Returns the position classification for the given entry digest under the
+specified reason and index digest. This enables querying the directional
+or positional semantics of individual entries within a mixed-variant index.</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Position)</code> containing the entry’s variant</li>
+<li><code>Err(DispatchError)</code> if the index or entry does not exist</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.set_entry_of_variant" class="method"><a class="src rightside" href="../../src/frame_suite/commitment.rs.html#2374-2381">Source</a><h4 class="code-header">fn <a href="#tymethod.set_entry_of_variant" class="fn">set_entry_of_variant</a>(
+    who: <a class="primitive" href="https://doc.rust-lang.org/1.90.0/std/primitive.reference.html">&amp;Proprietor</a>,
+    reason: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Reason" title="type frame_suite::commitment::Commitment::Reason">Reason</a>,
+    index_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    entry_of: &amp;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>,
+    variant: Self::<a class="associatedtype" href="trait.CommitVariant.html#associatedtype.Position" title="type frame_suite::commitment::CommitVariant::Position">Position</a>,
+    shares: <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Self::<a class="associatedtype" href="trait.CommitIndex.html#associatedtype.Shares" title="type frame_suite::commitment::CommitIndex::Shares">Shares</a>&gt;,
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.90.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;Self::<a class="associatedtype" href="trait.Commitment.html#associatedtype.Digest" title="type frame_suite::commitment::Commitment::Digest">Digest</a>, DispatchError&gt;</h4></section></summary><div class="docblock"><p>Associates or updates a variant for a specific entry within an index.</p>
+<p>Records a position (variant) for an entry digest within the context of a given
+index digest and reason. If shares are provided, they are updated alongside the variant.</p>
+<p>Since indexes are <strong>immutable</strong> once created, this method internally
+generates a new digest for the modified index and returns the new index digest.</p>
+<p>For updating multiple entry variants simultaneously, use
+<a href="trait.IndexVariant.html#tymethod.prepare_index_of_variants" title="associated function frame_suite::commitment::IndexVariant::prepare_index_of_variants"><code>IndexVariant::prepare_index_of_variants</code></a> to construct a completely new index structure.</p>
+<p>This behavior partly mirrors <a href="trait.CommitIndex.html#tymethod.set_index" title="associated function frame_suite::commitment::CommitIndex::set_index"><code>CommitIndex::set_index</code></a>, and can be
+considered a higher-level wrapper around index reconstruction and binding.</p>
+<p>As such, it is assumed that any side-effects or lifecycle handling are
+delegated through the underlying <a href="trait.CommitIndex.html#tymethod.set_index" title="associated function frame_suite::commitment::CommitIndex::set_index"><code>CommitIndex::set_index</code></a> call, and
+therefore this method does <strong>not</strong> introduce a separate hook.</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<ul>
+<li><code>Ok(Digest)</code> containing the new index digest after variant update</li>
+<li><code>Err(DispatchError)</code> if the index or entry does not exist, or update fails</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/1.90.0/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"></div><script src="../../trait.impl/frame_suite/commitment/trait.IndexVariant.js" async></script></section></div></main></body></html>

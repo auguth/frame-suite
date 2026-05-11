@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Call","Error","Event","FreezeReason","HoldReason"],"mod":["dispatchables","storage_types"],"struct":["CommitHelpers","GenesisConfig","Instance1","Pallet"],"trait":["Config"],"type":["AssetToIssue","AssetToReap","BalanceSnapShots","CommitMap","DigestMap","EntryMap","IndexMap","Module","PoolManager","PoolMap","ReasonValue"]};

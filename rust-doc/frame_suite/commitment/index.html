@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A composable framework for expressing financial intent as immutable commitments."><title>frame_suite::commitment - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module commitment</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#mental-model" title="Mental Model">Mental Model</a></li><li><a href="#trait-architecture" title="Trait Architecture">Trait Architecture</a><ul><li><a href="#foundation" title="Foundation">Foundation</a></li><li><a href="#grouping" title="Grouping">Grouping</a></li><li><a href="#semantics" title="Semantics">Semantics</a></li></ul></li><li><a href="#core-properties" title="Core Properties">Core Properties</a></li><li><a href="#why-this-exists" title="Why This Exists">Why This Exists</a></li><li><a href="#invariants" title="Invariants">Invariants</a></li><li><a href="#use-cases" title="Use Cases">Use Cases</a></li><li><a href="#summary" title="Summary">Summary</a></li></ul><h3><a href="#enums">Module Items</a></h3><ul class="block"><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#traits" title="Traits">Traits</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a></div><h1>Module <span>commitment</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/commitment.rs.html#16-2468">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A composable framework for expressing financial intent as <strong>immutable commitments</strong>.</p>
+<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
+<p>This module defines a comprehensive set of traits for building financial
+commitment systems that are <strong>semantic, composable, transparent, and consistent</strong>.</p>
+<p>At its core, a commitment represents <strong>bonding value to a specific digest under a reason</strong>.</p>
+<p>Instead of treating value as passive balance, this framework models value as
+something actively <strong>bound with purpose and context</strong>.</p>
+<p>Every commitment binds an asset to:</p>
+<ul>
+<li>a <strong>Reason</strong> - why the value is committed</li>
+<li>a <strong>Digest</strong> - the exact terms or context the value is bonded to</li>
+</ul>
+<p>Together, they form a <strong>verifiable, immutable agreement</strong>.</p>
+<p>Commitments can carry meaning through variants (e.g., long/short,
+for/against, positive/negative), support grouping via indexes and pools,
+and allow real-time inspection of state.</p>
+<p>The <strong>reason provider (runtime logic)</strong> governs how committed value evolves:
+it can update digest-level values, effectively managing all bonded funds
+under that reason. Individual commitments are <strong>resolved lazily</strong>, meaning
+adjustments are realized only when commitments are settled.</p>
+<h3 id="mental-model"><a class="doc-anchor" href="#mental-model">§</a>Mental Model</h3>
+<p>A commitment can be understood as:</p>
+<p>“Bond this value, for this purpose, to this exact context.”</p>
+<ul>
+<li>Reason provides intent (staking, escrow, trade, vote)</li>
+<li>Digest defines the binding target (hash, identifier, agreement)</li>
+<li>Asset represents the value being bonded</li>
+</ul>
+<p>This abstraction unifies patterns across financial systems such as
+staking, escrow, betting, trading, and governance.</p>
+<h3 id="trait-architecture"><a class="doc-anchor" href="#trait-architecture">§</a>Trait Architecture</h3>
+<p>The framework is layered:</p>
+<h4 id="foundation"><a class="doc-anchor" href="#foundation">§</a>Foundation</h4>
+<ul>
+<li><a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> - atomic bonding and lifecycle of commitments</li>
+<li><a href="trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset"><code>InspectAsset</code></a> - available funds introspection</li>
+<li><a href="trait.DigestModel.html" title="trait frame_suite::commitment::DigestModel"><code>DigestModel</code></a> - digest classification</li>
+</ul>
+<h4 id="grouping"><a class="doc-anchor" href="#grouping">§</a>Grouping</h4>
+<ul>
+<li>
+<p><a href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a> - a single commitment distributed across multiple digests
+under a reason, as if placed individually</p>
+</li>
+<li>
+<p><a href="trait.CommitPool.html" title="trait frame_suite::commitment::CommitPool"><code>CommitPool</code></a> - manager-controlled allocation of bonded funds across
+multiple digests under a reason, without custodial ownership</p>
+</li>
+</ul>
+<h4 id="semantics"><a class="doc-anchor" href="#semantics">§</a>Semantics</h4>
+<ul>
+<li><a href="trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant"><code>CommitVariant</code></a> - directional meaning (long/short, for/against)</li>
+<li><a href="trait.IndexVariant.html" title="trait frame_suite::commitment::IndexVariant"><code>IndexVariant</code></a> - variants applied to indexed commitments</li>
+<li><a href="trait.PoolVariant.html" title="trait frame_suite::commitment::PoolVariant"><code>PoolVariant</code></a> - variants applied to pooled commitments</li>
+</ul>
+<p>These traits compose into a layered system:</p>
+<ul>
+<li>Base layer: <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a>, <a href="trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset"><code>InspectAsset</code></a>, <a href="trait.DigestModel.html" title="trait frame_suite::commitment::DigestModel"><code>DigestModel</code></a></li>
+<li>Grouping layer: <a href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a>, <a href="trait.CommitPool.html" title="trait frame_suite::commitment::CommitPool"><code>CommitPool</code></a></li>
+<li>Variant layer: <a href="trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant"><code>CommitVariant</code></a>, <a href="trait.IndexVariant.html" title="trait frame_suite::commitment::IndexVariant"><code>IndexVariant</code></a>, <a href="trait.PoolVariant.html" title="trait frame_suite::commitment::PoolVariant"><code>PoolVariant</code></a></li>
+</ul>
+<h3 id="core-properties"><a class="doc-anchor" href="#core-properties">§</a>Core Properties</h3>
+<ul>
+<li><strong>Atomic</strong> - bonded commitments cannot be partially altered</li>
+<li><strong>Immutable</strong> - <a href="trait.Commitment.html#associatedtype.Digest" title="associated type frame_suite::commitment::Commitment::Digest"><code>Commitment::Digest</code></a> and reason define permanent binding</li>
+<li><strong>Value-bound</strong> - always tied to quantifiable assets</li>
+<li><strong>Composable</strong> - higher-level abstractions reuse the same rules</li>
+<li><strong>Inspectable</strong> - real-time bonded state is always queryable</li>
+</ul>
+<h3 id="why-this-exists"><a class="doc-anchor" href="#why-this-exists">§</a>Why This Exists</h3>
+<p>Many financial systems repeatedly implement the same primitives:</p>
+<ul>
+<li>locking or bonding funds</li>
+<li>enforcing rules</li>
+<li>tracking intent</li>
+<li>preventing duplication</li>
+</ul>
+<p>This framework provides a unified abstraction to express all of them
+consistently and safely.</p>
+<h3 id="invariants"><a class="doc-anchor" href="#invariants">§</a>Invariants</h3>
+<ul>
+<li>One commitment per <code>(proprietor, reason)</code></li>
+<li>Commitments are immutable (value may only increase via
+<a href="trait.Commitment.html#tymethod.raise_commit" title="associated function frame_suite::commitment::Commitment::raise_commit"><code>Commitment::raise_commit</code></a>)</li>
+<li><a href="trait.Commitment.html#associatedtype.Digest" title="associated type frame_suite::commitment::Commitment::Digest"><code>Commitment::Digest</code></a> defines the binding target and scope</li>
+<li>State reflects current values via <a href="trait.Commitment.html#tymethod.get_digest_value" title="associated function frame_suite::commitment::Commitment::get_digest_value"><code>Commitment::get_digest_value</code></a>,
+not historical deposits</li>
+</ul>
+<h3 id="use-cases"><a class="doc-anchor" href="#use-cases">§</a>Use Cases</h3>
+<p>This framework is applicable across domains such as:</p>
+<ul>
+<li>Financial systems (bets, trades, hedges)</li>
+<li>Prediction markets (affirmative/negative stakes)</li>
+<li>Voting protocols (for/against commitments)</li>
+<li>Portfolio management (indexed and pooled commitments)</li>
+<li>Escrow and contract systems</li>
+</ul>
+<h3 id="summary"><a class="doc-anchor" href="#summary">§</a>Summary</h3>
+<p><strong>Commitment = bonding value to a digest under a reason</strong></p>
+<p>This module transforms raw assets into structured, meaningful agreements
+that can be composed into complex financial systems.</p>
+</div></details><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.CommitError.html" title="enum frame_suite::commitment::CommitError">Commit<wbr>Error</a></dt><dd>Commitment-related error type used in trait defaults.</dd></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.CommitErrorHandler.html" title="trait frame_suite::commitment::CommitErrorHandler">Commit<wbr>Error<wbr>Handler</a></dt><dd>A trait for mapping <strong>domain-level Commitment errors</strong> into
+<strong>caller- or pallet-specific error types</strong>.</dd><dt><a class="trait" href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex">Commit<wbr>Index</a></dt><dd><code>CommitIndex</code> extends <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> by providing a <strong>higher-level financial abstraction</strong>
+that groups multiple commitments under a single “index”.</dd><dt><a class="trait" href="trait.CommitPool.html" title="trait frame_suite::commitment::CommitPool">Commit<wbr>Pool</a></dt><dd><code>CommitPool</code> extends <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> and <a href="trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a> to provide a <strong>managed,
+dynamic commitment abstraction</strong>.</dd><dt><a class="trait" href="trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant">Commit<wbr>Variant</a></dt><dd><code>CommitVariant</code> extends <a href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> by introducing <strong>variant-based commitments</strong> -
+allowing each commitment to represent a specific <em>position</em> or <em>type</em>,
+such as positive/negative, long/short, or other directional states.</dd><dt><a class="trait" href="trait.Commitment.html" title="trait frame_suite::commitment::Commitment">Commitment</a></dt><dd>Represents an <strong>atomic, immutable financial agreement</strong> between parties.</dd><dt><a class="trait" href="trait.DigestModel.html" title="trait frame_suite::commitment::DigestModel">Digest<wbr>Model</a></dt><dd>A trait for determining the model variant of a digest.</dd><dt><a class="trait" href="trait.IndexVariant.html" title="trait frame_suite::commitment::IndexVariant">Index<wbr>Variant</a></dt><dd>A trait for managing and querying <strong>variants</strong> of index entries and its commitments.</dd><dt><a class="trait" href="trait.InspectAsset.html" title="trait frame_suite::commitment::InspectAsset">Inspect<wbr>Asset</a></dt><dd>A trait for inspecting the total available funds of an proprietor.</dd><dt><a class="trait" href="trait.PoolVariant.html" title="trait frame_suite::commitment::PoolVariant">Pool<wbr>Variant</a></dt><dd>A trait for managing and querying <strong>variants</strong> of pool slots and their commitments.</dd></dl></section></div></main></body></html>

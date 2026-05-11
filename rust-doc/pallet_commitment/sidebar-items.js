@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["balance","commitment","helpers","pallet","traits","types","weights"]};

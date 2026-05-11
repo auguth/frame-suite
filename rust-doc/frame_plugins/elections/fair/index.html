@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Contains FairElection plugin models, which rank entities using a fair weight, where each entity’s weight is derived from a list of contributors and their individual contributions."><title>frame_plugins::elections::fair - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="frame_plugins" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../frame_plugins/index.html">frame_<wbr>plugins</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module fair</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#characteristics" title="Characteristics">Characteristics</a></li><li><a href="#example-flow" title="Example Flow">Example Flow</a></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In frame_<wbr>plugins::<wbr>elections</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">frame_plugins</a>::<wbr><a href="../index.html">elections</a></div><h1>Module <span>fair</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/frame_plugins/elections.rs.html#297">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Contains <strong>FairElection plugin models</strong>, which rank entities using a
+<strong>fair weight</strong>, where each entity’s weight is derived from a <strong>list of
+contributors</strong> and their individual contributions.</p>
+<p>In this model:</p>
+<ul>
+<li>Each entity is represented as <code>(entity, fair_weight)</code>.</li>
+<li>The <code>fair_weight</code> itself is a <strong>collection of <code>(contributor, contribution)</code>
+pairs</strong>.</li>
+<li>The plugin aggregates or evaluates these individual contributions according
+to its algorithm to produce a ranked output.</li>
+</ul>
+<h3 id="characteristics"><a class="doc-anchor" href="#characteristics">§</a>Characteristics</h3>
+<ul>
+<li>Requires a <strong>list of entities with their fair weights</strong> as input.</li>
+<li>Each fair weight preserves the <strong>granularity of individual contributions</strong>,
+unlike flat weights.</li>
+<li>Produces a <strong>sorted list of entities</strong>, taking into account the distribution and
+magnitude of contributions.</li>
+<li>Ideal for scenarios where <strong>fairness or proportional representation</strong> matters,
+rather than just total aggregated value.</li>
+</ul>
+<h3 id="example-flow"><a class="doc-anchor" href="#example-flow">§</a>Example Flow</h3>
+<ol>
+<li>Prepare a list of entities with their fair weights:
+<code>[(entity1, [(c1, v1), (c2, v2)]), ...]</code>.</li>
+<li>Pass this list to a FairElection plugin model.</li>
+<li>The model computes a ranking based on the <strong>individual contributions within
+each fair weight</strong> and outputs entities in order.</li>
+</ol>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.BalancedModel.html" title="struct frame_plugins::elections::fair::BalancedModel">Balanced<wbr>Model</a></dt><dd>The <strong>BalancedFair</strong> model evaluates candidates by combining both the
+<strong>total backing</strong> and the <strong>average backing per backer</strong>. This approach
+balances candidates who have a few very large backers versus those with
+many smaller backers.</dd><dt><a class="struct" href="struct.MaxMinLoadModel.html" title="struct frame_plugins::elections::fair::MaxMinLoadModel">MaxMin<wbr>Load<wbr>Model</a></dt><dd>The <strong>Max-Min Load Fair</strong> model ranks candidates to achieve a <strong>fair
+distribution of influence among all backers</strong>. It selects candidates
+sequentially to <strong>minimize the maximum load any backer bears</strong>, ensuring
+no single backer is disproportionately overrepresented.</dd><dt><a class="struct" href="struct.PhragmenModel.html" title="struct frame_plugins::elections::fair::PhragmenModel">Phragmen<wbr>Model</a></dt><dd>The <strong>Phragmen</strong> model ranks candidates based on fair distribution of
+voter/backer load. Each candidate has <code>(Backer, Backed)</code> pairs representing
+support, and the algorithm selects candidates sequentially to <strong>minimize
+the maximum load</strong> among all backers.</dd><dt><a class="struct" href="struct.PhragmenModelConfig.html" title="struct frame_plugins::elections::fair::PhragmenModelConfig">Phragmen<wbr>Model<wbr>Config</a></dt><dd>Configuration for the <a href="struct.PhragmenModel.html" title="struct frame_plugins::elections::fair::PhragmenModel"><code>PhragmenModel</code></a> plugin model</dd><dt><a class="struct" href="struct.ThresholdFairModel.html" title="struct frame_plugins::elections::fair::ThresholdFairModel">Threshold<wbr>Fair<wbr>Model</a></dt><dd>Filters candidates whose <strong>total backing</strong> is below a configurable
+threshold.</dd><dt><a class="struct" href="struct.ThresholdFairModelConfig.html" title="struct frame_plugins::elections::fair::ThresholdFairModelConfig">Threshold<wbr>Fair<wbr>Model<wbr>Config</a></dt><dd>Defines the configuration for <a href="struct.ThresholdFairModel.html" title="struct frame_plugins::elections::fair::ThresholdFairModel"><code>ThresholdFairModel</code></a> election plugin.</dd><dt><a class="struct" href="struct.TopDownFairModel.html" title="struct frame_plugins::elections::fair::TopDownFairModel">TopDown<wbr>Fair<wbr>Model</a></dt><dd>The <strong>TopDownFair</strong> model evaluates candidates based on the <strong>aggregate
+support</strong> they receive from <strong>external backers</strong>.</dd></dl></section></div></main></body></html>

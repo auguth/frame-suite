@@ -1,0 +1,157 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Implementation crate for the `Commitment` family of traits."><title>pallet_commitment - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="pallet_commitment" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-68b7e25d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../pallet_commitment/index.html">pallet_<wbr>commitment</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#overview" title="Overview">Overview</a></li><li><a href="#key-responsibilities" title="Key Responsibilities">Key Responsibilities</a></li><li><a href="#core-features" title="Core Features">Core Features</a><ul><li><a href="#design-scope" title="Design Scope">Design Scope</a></li></ul></li><li><a href="#extrinsics-scope" title="Extrinsics Scope">Extrinsics Scope</a></li><li><a href="#native-commitment-reserve" title="Native Commitment Reserve">Native Commitment Reserve</a></li><li><a href="#instance-and-model" title="Instance and Model">Instance and Model</a></li><li><a href="#terminology" title="Terminology">Terminology</a></li><li><a href="#development-feature-gate" title="Development Feature Gate">Development Feature Gate</a></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>pallet_commitment</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/pallet_commitment/lib.rs.html#16-3383">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Implementation crate for the <a href="../frame_suite/commitment/index.html" title="mod frame_suite::commitment"><code>Commitment</code></a>
+family of traits.</p>
+<p>A semantic bonding layer that binds assets to caller-defined purpose and context,
+with collective management of bonded value and lazy adjustments.</p>
+<p>Used instead of direct fungible locks to enable richer control semantics and
+automated balance management. These are called commitments as they inherently
+carry a semantic reason defined by the consuming pallet.</p>
+<h3 id="overview"><a class="doc-anchor" href="#overview">§</a>Overview</h3>
+<ul>
+<li><a href="pallet/trait.Config.html" title="trait pallet_commitment::pallet::Config"><code>Config</code></a> - Runtime configuration</li>
+<li><a href="pallet/enum.Call.html" title="enum pallet_commitment::pallet::Call"><code>Call</code></a> - Dispatchable extrinsics</li>
+<li><a href="pallet/struct.Pallet.html" title="struct pallet_commitment::pallet::Pallet"><code>Pallet</code></a> - Trait implementation for external modules</li>
+</ul>
+<p>This pallet provides a <strong>generalized bonding (locking) mechanism</strong> for
+fungible (quantitative) assets, enabling other pallets to express
+<strong>structured financial intent</strong>.</p>
+<p>Instead of treating balances as passive values, this system allows assets to be:</p>
+<ul>
+<li><strong>Bonded under a reason</strong> (e.g., <code>LockReason</code>)</li>
+<li><strong>Bound to a digest</strong> (a context-specific identifier defined by the caller pallet)</li>
+</ul>
+<p>Together, this forms a <strong>Commitment</strong>:</p>
+<div class="example-wrap"><pre class="language-text"><code>Commitment = bond(asset) -&gt; (reason, digest)</code></pre></div><h3 id="key-responsibilities"><a class="doc-anchor" href="#key-responsibilities">§</a>Key Responsibilities</h3>
+<p>This pallet acts as a <strong>shared infrastructure layer</strong> that:</p>
+<ul>
+<li>Locks assets on behalf of any fungible account</li>
+<li>Groups commitments under <strong>runtime-defined reasons</strong></li>
+<li>Tracks and manages value at the <strong>digest level</strong></li>
+<li>Allows controlled updates to aggregated digest values</li>
+</ul>
+<p>The <strong>meaning and context of each digest</strong> are defined by the
+caller pallet (e.g., staking, escrow, trading, governance).</p>
+<h3 id="core-features"><a class="doc-anchor" href="#core-features">§</a>Core Features</h3>
+<ul>
+<li>
+<p><strong>Commitment</strong> - lock assets under <code>(reason, digest)</code>, enforcing one commitment per
+(proprietor, reason). Value can only increase per commitment, while aggregate
+digest values may be adjusted. Supports lazy resolution.</p>
+</li>
+<li>
+<p><strong>Digest Management</strong> - track and update aggregate value at the digest level,
+propagating changes to all commitments.</p>
+</li>
+<li>
+<p><strong>Digest Mint / Reap</strong> - increase or decrease the aggregate value of a digest,
+automatically adjusting all associated commitments proportionally.</p>
+</li>
+<li>
+<p><strong>Indexes</strong> - group multiple digests with share-based ownership
+(see <a href="../frame_suite/commitment/trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a>).</p>
+</li>
+<li>
+<p><strong>Pools</strong> - manager-controlled allocation with dynamic rebalancing and fixed
+commissions (see <a href="../frame_suite/commitment/trait.CommitPool.html" title="trait frame_suite::commitment::CommitPool"><code>CommitPool</code></a>).</p>
+</li>
+<li>
+<p><strong>Variants</strong> - semantic differentiation (e.g., long/short, positive/negative)
+(see <a href="../frame_suite/commitment/trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant"><code>CommitVariant</code></a>).</p>
+</li>
+<li>
+<p><strong>Lazy Evaluation</strong> - values reflect live digest state and are realized on query
+or resolution.</p>
+</li>
+<li>
+<p><strong>Asset Agnostic</strong> - works with any fungible asset type implementing required traits.</p>
+</li>
+</ul>
+<p>Each commitment is scoped by a <strong>Reason</strong> and anchored to a <strong>Digest</strong>.</p>
+<h4 id="design-scope"><a class="doc-anchor" href="#design-scope">§</a>Design Scope</h4>
+<p>The pallet is a <strong>generic implementation</strong> of
+<a href="../frame_suite/commitment/trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a>,
+designed to be <strong>loosely coupled</strong> with consumer pallets via their <code>Config</code> traits.</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="comment">// Consumer pallet configuration
+</span><span class="kw">pub trait </span>Config {
+    <span class="doccomment">/// Commitment adapter providing bonding logic
+    </span><span class="kw">type </span>CommitmentAdapter: Commitment&lt;<span class="self">Self</span>::AccountId&gt;;
+}</code></pre></div>
+<p>It handles commitment accounting and lifecycle management, while consumer
+pallets define domain-specific logic and user interactions.</p>
+<p>This provides a <strong>bonding abstraction over basic fungible locks</strong>, enabling
+rich economic behaviors without duplicating core logic.</p>
+<h3 id="extrinsics-scope"><a class="doc-anchor" href="#extrinsics-scope">§</a>Extrinsics Scope</h3>
+<p>This pallet exposes <strong>no user-facing extrinsics for commitments</strong>.</p>
+<p>Commitment operations are accessed by consumer pallets through the traits,
+ensuring controlled and domain-specific usage.</p>
+<p>Only minimal extrinsics for <strong>basic deposit and withdrawal</strong> for a
+default <code>PrepareForCommit</code> hold/reserve are provided and some read-only
+APIs (see <a href="pallet/enum.Call.html" title="enum pallet_commitment::pallet::Call"><code>Call</code></a>).</p>
+<h3 id="native-commitment-reserve"><a class="doc-anchor" href="#native-commitment-reserve">§</a>Native Commitment Reserve</h3>
+<p>This pallet exposes only minimal extrinsics to deposit and withdraw
+funds into a native reserve (<a href="pallet/enum.HoldReason.html#variant.PrepareForCommit" title="variant pallet_commitment::pallet::HoldReason::PrepareForCommit"><code>HoldReason::PrepareForCommit</code></a>), which acts
+as the default funding source for all commitment operations.</p>
+<p>Commitments consume assets from this reserve under
+<a href="frame_support::traits::tokens::Fortitude"><code>Fortitude::Polite</code></a>,
+allowing users to pre-fund commitments once and reuse the
+same reserve across all consumer pallets, ensuring efficient,
+directive-driven execution</p>
+<p>When <a href="frame_support::traits::tokens::Fortitude"><code>Fortitude::Force</code></a>
+is used, operations may fallback to the liquid (free) balance if
+reserve funds are insufficient.</p>
+<p>Consumer pallets utilizing commitments should account for this behavior:</p>
+<ul>
+<li>use polite semantics to operate strictly on reserved funds</li>
+<li>use force semantics to allow fallback to liquid balance when required</li>
+</ul>
+<h3 id="instance-and-model"><a class="doc-anchor" href="#instance-and-model">§</a>Instance and Model</h3>
+<p>The pallet supports <strong>multiple instances</strong>, each capable of handling
+commitments across diverse scenarios.</p>
+<ul>
+<li>
+<p>Each instance may define its own configuration via <a href="pallet/trait.Config.html" title="trait pallet_commitment::pallet::Config"><code>Config</code></a>,
+allowing independent behavior and specialization.</p>
+</li>
+<li>
+<p>Each instance supports <strong>multiple reasons</strong>, enabling different pallets
+or domains to operate within the same instance.</p>
+</li>
+<li>
+<p>A single instance can be shared across multiple consumer pallets,
+with separation maintained through reasons and digests.</p>
+</li>
+<li>
+<p>Instances may be separated when isolation is required.</p>
+</li>
+</ul>
+<p>This enables the pallet to act as a <strong>shared economic layer</strong> across use cases.</p>
+<h3 id="terminology"><a class="doc-anchor" href="#terminology">§</a>Terminology</h3>
+<ul>
+<li><strong>Proprietor</strong> - the account or entity that owns and manages commitments.</li>
+<li><strong>Reason</strong> - the categorical purpose of a commitment.</li>
+<li><strong>Digest</strong> - a unique identifier representing commitment context.</li>
+<li><strong>Direct Commitment</strong> - a commitment to a single digest.</li>
+<li><strong>Index</strong> - a collection of digests with shares
+(see <a href="../frame_suite/commitment/trait.CommitIndex.html" title="trait frame_suite::commitment::CommitIndex"><code>CommitIndex</code></a>).</li>
+<li><strong>Pool</strong> - a managed structure with allocation and commission
+(see <a href="../frame_suite/commitment/trait.CommitPool.html" title="trait frame_suite::commitment::CommitPool"><code>CommitPool</code></a>).</li>
+<li><strong>Entry</strong> - a digest component within an index.</li>
+<li><strong>Slot</strong> - a digest component within a pool.</li>
+<li><strong>Commission</strong> - manager’s share collected on resolution.</li>
+<li><strong>Variant</strong> - semantic position (see
+<a href="../frame_suite/commitment/trait.CommitVariant.html" title="trait frame_suite::commitment::CommitVariant"><code>CommitVariant</code></a>).</li>
+</ul>
+<h3 id="development-feature-gate"><a class="doc-anchor" href="#development-feature-gate">§</a>Development Feature Gate</h3>
+<p>This pallet includes a <code>dev</code> feature gate for development and testing.</p>
+<p>Core functionality is exposed via public APIs for RPC and UI usage.
+The <code>dev</code> feature provides thin wrapper extrinsics and extended
+events for direct inspection.</p>
+<p>This feature must be disabled in production runtimes due to additional debugging overhead.</p>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt><code>pub use <a class="mod" href="pallet/index.html" title="mod pallet_commitment::pallet">pallet</a>::*;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="balance/index.html" title="mod pallet_commitment::balance">balance</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd><a href="pallet/struct.Pallet.html" title="struct pallet_commitment::pallet::Pallet"><code>Pallet</code></a> implementation of <a href="../frame_suite/assets/trait.LazyBalance.html" title="trait frame_suite::assets::LazyBalance"><code>LazyBalance</code></a> using <a href="../frame_suite/virtuals/index.html" title="mod frame_suite::virtuals"><code>virtual</code></a>
+structs and <a href="../frame_suite/plugins/index.html" title="mod frame_suite::plugins"><code>plugins</code></a>.</dd><dt><a class="mod" href="commitment/index.html" title="mod pallet_commitment::commitment">commitment</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Implementation module of the <a href="../frame_suite/commitment/index.html" title="mod frame_suite::commitment"><code>Commitment Family</code></a>
+traits, where we utilize indexes, pools, and variants to create a flexible and
+semantic commitment system.</dd><dt><a class="mod" href="helpers/index.html" title="mod pallet_commitment::helpers">helpers</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Implementation of low-level <a href="traits/index.html" title="mod pallet_commitment::traits"><code>commit-helpers</code></a>
+traits for the internal <a href="pallet/struct.CommitHelpers.html" title="struct pallet_commitment::pallet::CommitHelpers"><code>CommitHelpers</code></a> Type.</dd><dt><a class="mod" href="pallet/index.html" title="mod pallet_commitment::pallet">pallet</a></dt><dd>The <code>pallet</code> module in each FRAME pallet hosts the most important items needed
+to construct this pallet.</dd><dt><a class="mod" href="traits/index.html" title="mod pallet_commitment::traits">traits</a></dt><dd>Defines helper traits for implementing a concrete <a href="../frame_suite/commitment/trait.Commitment.html" title="trait frame_suite::commitment::Commitment"><code>Commitment</code></a> system.
+All operations are <strong>low-level and unchecked</strong> - callers must ensure validity,
+equilibrium, and invariants before invoking these functions.</dd><dt><a class="mod" href="types/index.html" title="mod pallet_commitment::types">types</a></dt><dd><strong>Core types and aliases for the Commitment system.</strong></dd><dt><a class="mod" href="weights/index.html" title="mod pallet_commitment::weights">weights</a></dt><dd>Autogenerated weights for <code>pallet_commitment</code></dd></dl><script type="text/json" id="notable-traits-data">{"&'static [u8]":"<h3>Notable traits for <code>&amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a> for &amp;[<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>]</div>","Vec<u8>":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;</code></h3><pre><code><div class=\"where\">impl&lt;A&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.90.0/alloc/vec/struct.Vec.html\" title=\"struct alloc::vec::Vec\">Vec</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.90.0/std/primitive.u8.html\">u8</a>, A&gt;<div class=\"where\">where\n    A: <a class=\"trait\" href=\"https://doc.rust-lang.org/1.90.0/core/alloc/trait.Allocator.html\" title=\"trait core::alloc::Allocator\">Allocator</a>,</div></div>"}</script></section></div></main></body></html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Defines pluggable reward models for computing and distributing value across participants."><title>frame_plugins::rewards - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_plugins" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_plugins/index.html">frame_<wbr>plugins</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module rewards</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#payout-payout" title="Payout (`payout`)">Payout (<code>payout</code>)</a></li><li><a href="#payee-payee" title="Payee (`payee`)">Payee (<code>payee</code>)</a></li><li><a href="#purpose" title="Purpose">Purpose</a></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>plugins</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_plugins</a></div><h1>Module <span>rewards</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_plugins/rewards.rs.html#16-3438">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Defines <strong>pluggable reward models</strong> for computing and distributing value across
+participants.</p>
+<p>Rewards are abstracted into two main models:</p>
+<h3 id="payout-payout"><a class="doc-anchor" href="#payout-payout">§</a>Payout (<code>payout</code>)</h3>
+<ul>
+<li>Computes the <strong>total reward value</strong> to be distributed.</li>
+<li>Produces a single payout amount that acts as the <strong>source value</strong>
+for downstream distribution.</li>
+</ul>
+<p>In this model:</p>
+<ul>
+<li>Input is a scalar representing a measurable quantity (e.g., stake, era, score).</li>
+<li>Output is a <strong>total payout value</strong>.</li>
+</ul>
+<p>Useful for scenarios where:</p>
+<ul>
+<li>The system must determine <strong>how much value is available</strong> for distribution.</li>
+<li>Reward generation follows configurable economic or logical rules.</li>
+</ul>
+<h3 id="payee-payee"><a class="doc-anchor" href="#payee-payee">§</a>Payee (<code>payee</code>)</h3>
+<ul>
+<li>Distributes the computed payout among a set of participants.</li>
+<li>Consumes the payout value and allocates it across entities.</li>
+</ul>
+<p>In this model:</p>
+<ul>
+<li>Input is <code>(Payout, [(Id, Share)])</code>.</li>
+<li>Output is <code>[(Id, Payout)]</code> allocations.</li>
+</ul>
+<p>Useful for scenarios where:</p>
+<ul>
+<li>The total reward must be <strong>split among multiple participants</strong>.</li>
+<li>Allocation depends on contribution, weight, or equal participation.</li>
+</ul>
+<h3 id="purpose"><a class="doc-anchor" href="#purpose">§</a>Purpose</h3>
+<p>Separating reward computation into <code>payout</code> and <code>payee</code> provides flexibility:</p>
+<ul>
+<li><strong>Payout</strong> determines <em>how much total value</em> is available.</li>
+<li><strong>Payee</strong> determines <em>how that value is distributed</em>.</li>
+</ul>
+<p>This separation enables:</p>
+<ul>
+<li>Independent evolution of reward generation and distribution strategies.</li>
+<li>Composable reward pipelines.</li>
+<li>Extensibility without modifying existing models.</li>
+</ul>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt><code>pub use <a class="mod" href="payout/index.html" title="mod frame_plugins::rewards::payout">payout</a>::*;</code></dt><dt><code>pub use <a class="mod" href="payee/index.html" title="mod frame_plugins::rewards::payee">payee</a>::*;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="payee/index.html" title="mod frame_plugins::rewards::payee">payee</a></dt><dd>Defines <strong>pluggable payee models</strong> for distributing a total payout
+across a set of participants.</dd><dt><a class="mod" href="payout/index.html" title="mod frame_plugins::rewards::payout">payout</a></dt><dd>Defines <strong>pluggable payout models</strong> for computing the total reward value
+from an input signal.</dd></dl></section></div></main></body></html>

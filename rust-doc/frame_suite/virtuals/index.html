@@ -1,0 +1,181 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Virtual struct system mapping discriminants (ZSTs) to behavior via trait-driven schemas."><title>frame_suite::virtuals - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-aa0817cf.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="frame_suite" data-themes="" data-resource-suffix="" data-rustdoc-version="1.90.0 (1159e78c4 2025-09-14)" data-channel="1.90.0" data-search-js="search-fa3e91e5.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-68b7e25d.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-eebb9057.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../frame_suite/index.html">frame_<wbr>suite</a><span class="version">0.1.1</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module virtuals</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#mental-model-virtual-structs" title="Mental Model: Virtual Structs">Mental Model: Virtual Structs</a></li><li><a href="#discriminants-field-identifiers" title="Discriminants (Field Identifiers)">Discriminants (Field Identifiers)</a></li><li><a href="#trait-as-schema" title="Trait as Schema">Trait as Schema</a></li><li><a href="#field-behavior-cardinality-abstraction" title="Field Behavior (Cardinality Abstraction)">Field Behavior (Cardinality Abstraction)</a></li><li><a href="#key-insight" title="Key Insight">Key Insight</a></li><li><a href="#core-primitives" title="Core Primitives">Core Primitives</a><ul><li><a href="#virtual-fields" title="Virtual Fields">Virtual Fields</a></li><li><a href="#virtual-extensions" title="Virtual Extensions">Virtual Extensions</a></li><li><a href="#schemas--bounds" title="Schemas &#38; Bounds">Schemas &amp; Bounds</a></li><li><a href="#concrete-representations" title="Concrete Representations">Concrete Representations</a></li></ul></li><li><a href="#design-principles" title="Design Principles">Design Principles</a><ul><li><a href="#discriminant-keyed-design" title="Discriminant-Keyed Design">Discriminant-Keyed Design</a></li><li><a href="#tagged-conversions" title="Tagged Conversions">Tagged Conversions</a></li><li><a href="#layered-model" title="Layered Model">Layered Model</a></li><li><a href="#dynamic-vs-static" title="Dynamic vs Static">Dynamic vs Static</a></li></ul></li><li><a href="#helpers" title="Helpers">Helpers</a></li><li><a href="#summary" title="Summary">Summary</a></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate frame_<wbr>suite</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">frame_suite</a></div><h1>Module <span>virtuals</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/frame_suite/virtuals.rs.html#16-2862">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Virtual struct system mapping discriminants (ZSTs) to behavior via
+trait-driven schemas.</p>
+<p>Traditional Rust data structures require committing upfront to:</p>
+<ul>
+<li>a fixed shape (<code>Option&lt;T&gt;</code>, <code>Vec&lt;T&gt;</code>, <code>[T; N]</code>, struct fields)</li>
+<li>a fixed cardinality (single vs multiple)</li>
+<li>a fixed storage layout</li>
+</ul>
+<p>This makes evolution difficult:</p>
+<ul>
+<li>structure and storage are tightly coupled</li>
+<li>generic abstractions often hit coherence limits</li>
+<li>external composition (plugins, schemas) is hard</li>
+<li>changing a field (<code>None -&gt; Some -&gt; Many</code>) requires redesign</li>
+</ul>
+<p>This module introduces a system where <strong>structure, interpretation,
+and storage are decoupled</strong>, and resolved through types.</p>
+<h3 id="mental-model-virtual-structs"><a class="doc-anchor" href="#mental-model-virtual-structs">§</a>Mental Model: Virtual Structs</h3>
+<p>Think in terms of a <strong>virtual struct</strong>, whose fields are not stored
+directly, but defined through traits and discriminants:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">struct </span>&lt;T <span class="kw">as </span>Trait&gt;::Struct&lt;K&gt; {
+    FieldTag: T::Field, <span class="comment">// virtual field (identified by discriminant)
+    </span>ExtTag: K,          <span class="comment">// virtual extension (identified by discriminant)
+</span>}</code></pre></div>
+<p>This is not a concrete struct. Instead:</p>
+<ul>
+<li>fields are accessed via trait implementations</li>
+<li>each field is identified by a <strong>discriminant (type-level key)</strong></li>
+<li>storage is abstracted or external</li>
+</ul>
+<h3 id="discriminants-field-identifiers"><a class="doc-anchor" href="#discriminants-field-identifiers">§</a>Discriminants (Field Identifiers)</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">struct </span>FieldTag;
+<span class="kw">struct </span>ExtTag;</code></pre></div>
+<p>Discriminants are zero-sized types used as <strong>type-level field keys</strong>.</p>
+<p>They act as:</p>
+<ul>
+<li>field identifiers in the virtual struct</li>
+<li>selectors for behavior and interpretation</li>
+<li>disambiguators for generic implementations</li>
+</ul>
+<p>This ensures:</p>
+<ul>
+<li>multiple fields can coexist without ambiguity</li>
+<li>overlapping generic impls remain coherence-safe</li>
+</ul>
+<h3 id="trait-as-schema"><a class="doc-anchor" href="#trait-as-schema">§</a>Trait as Schema</h3>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">pub trait </span>Trait {
+    <span class="kw">type </span>Struct: VirtualDynField&lt;FieldTag, <span class="prelude-val">Some </span>= <span class="self">Self</span>::Field&gt;
+                + VirtualDynExtension&lt;ExtTag&gt;;
+
+    <span class="kw">type </span>Field;
+}</code></pre></div>
+<ul>
+<li><code>Struct</code> is the container (virtual struct)</li>
+<li><code>FieldTag</code> identifies a logical field</li>
+<li><code>ExtTag</code> identifies an extension slot</li>
+<li><code>Field</code> defines the logical type of the field</li>
+</ul>
+<p>Traits define the <strong>schema</strong>, not the storage.</p>
+<h3 id="field-behavior-cardinality-abstraction"><a class="doc-anchor" href="#field-behavior-cardinality-abstraction">§</a>Field Behavior (Cardinality Abstraction)</h3>
+<p>A virtual field supports:</p>
+<ul>
+<li><code>None</code>  - no value</li>
+<li><code>Some</code>  - one value</li>
+<li><code>Many</code>  - multiple values</li>
+</ul>
+<p>This replaces fixed representations like:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="prelude-ty">Option</span>&lt;T&gt; / Vec&lt;T&gt;</code></pre></div>
+<p>with a single abstraction that can evolve without redesign.</p>
+<h3 id="key-insight"><a class="doc-anchor" href="#key-insight">§</a>Key Insight</h3>
+<p>A virtual struct is not a fixed layout, but a <strong>composition of
+discriminant-keyed behaviors</strong>, where:</p>
+<ul>
+<li><strong>discriminants</strong> -&gt; field identifiers</li>
+<li><strong>traits</strong> -&gt; schema (what exists)</li>
+<li><strong>implementations</strong> -&gt; storage (how/where it exists)</li>
+</ul>
+<p>Structure is resolved by types, not encoded directly.</p>
+<h3 id="core-primitives"><a class="doc-anchor" href="#core-primitives">§</a>Core Primitives</h3>
+<p>The system is built from:</p>
+<h4 id="virtual-fields"><a class="doc-anchor" href="#virtual-fields">§</a>Virtual Fields</h4>
+<ul>
+<li><a href="trait.VirtualDynField.html" title="trait frame_suite::virtuals::VirtualDynField"><code>VirtualDynField</code></a> - dynamic, vector-like semantics</li>
+<li><a href="trait.VirtualStaticField.html" title="trait frame_suite::virtuals::VirtualStaticField"><code>VirtualStaticField</code></a> - static, array-like semantics</li>
+</ul>
+<h4 id="virtual-extensions"><a class="doc-anchor" href="#virtual-extensions">§</a>Virtual Extensions</h4>
+<ul>
+<li><a href="trait.VirtualDynExtension.html" title="trait frame_suite::virtuals::VirtualDynExtension"><code>VirtualDynExtension</code></a> / <a href="trait.VirtualStaticExtension.html" title="trait frame_suite::virtuals::VirtualStaticExtension"><code>VirtualStaticExtension</code></a></li>
+<li>externally defined fields via schemas</li>
+</ul>
+<h4 id="schemas--bounds"><a class="doc-anchor" href="#schemas--bounds">§</a>Schemas &amp; Bounds</h4>
+<ul>
+<li><a href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound"><code>VirtualDynBound</code></a> / <a href="trait.VirtualStaticBound.html" title="trait frame_suite::virtuals::VirtualStaticBound"><code>VirtualStaticBound</code></a></li>
+<li>constraints defined independently of storage</li>
+</ul>
+<h4 id="concrete-representations"><a class="doc-anchor" href="#concrete-representations">§</a>Concrete Representations</h4>
+<ul>
+<li><a href="enum.SumDynType.html" title="enum frame_suite::virtuals::SumDynType"><code>SumDynType</code></a> - bounded vector semantics (<code>None | Some | Many</code>)</li>
+<li><a href="enum.SumStaticType.html" title="enum frame_suite::virtuals::SumStaticType"><code>SumStaticType</code></a> - fixed array semantics</li>
+</ul>
+<h3 id="design-principles"><a class="doc-anchor" href="#design-principles">§</a>Design Principles</h3><h4 id="discriminant-keyed-design"><a class="doc-anchor" href="#discriminant-keyed-design">§</a>Discriminant-Keyed Design</h4>
+<p>All components are keyed by a <a href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag"><code>DiscriminantTag</code></a>.</p>
+<p>This:</p>
+<ul>
+<li>avoids ambiguity in generic implementations</li>
+<li>enables multiple independent fields on the same container</li>
+<li>ensures coherence-safe extensibility</li>
+</ul>
+<h4 id="tagged-conversions"><a class="doc-anchor" href="#tagged-conversions">§</a>Tagged Conversions</h4>
+<p>Instead of <code>From</code> / <code>Into</code>, the system uses:</p>
+<ul>
+<li><a href="trait.FromTag.html" title="trait frame_suite::virtuals::FromTag"><code>FromTag</code></a>, <a href="trait.IntoTag.html" title="trait frame_suite::virtuals::IntoTag"><code>IntoTag</code></a></li>
+<li><a href="trait.TryFromTag.html" title="trait frame_suite::virtuals::TryFromTag"><code>TryFromTag</code></a>, <a href="trait.TryIntoTag.html" title="trait frame_suite::virtuals::TryIntoTag"><code>TryIntoTag</code></a></li>
+</ul>
+<p>Conversions are disambiguated by discriminants:</p>
+<ul>
+<li><a href="struct.NoneTag.html" title="struct frame_suite::virtuals::NoneTag"><code>NoneTag</code></a> - absence</li>
+<li><a href="struct.SomeTag.html" title="struct frame_suite::virtuals::SomeTag"><code>SomeTag</code></a> - single value</li>
+<li><a href="struct.ManyTag.html" title="struct frame_suite::virtuals::ManyTag"><code>ManyTag</code></a> - multiple values</li>
+</ul>
+<p>This avoids overlapping implementations in generic contexts.</p>
+<h4 id="layered-model"><a class="doc-anchor" href="#layered-model">§</a>Layered Model</h4>
+<p>The system separates:</p>
+<ul>
+<li>
+<p><strong>Type-level layer</strong></p>
+<ul>
+<li>defines structure, schema, and behavior</li>
+</ul>
+</li>
+<li>
+<p><strong>Value-level layer</strong></p>
+<ul>
+<li>represents <code>None</code>, <code>Some</code>, <code>Many</code></li>
+</ul>
+</li>
+</ul>
+<p>This enables abstract structure with concrete representations.</p>
+<h4 id="dynamic-vs-static"><a class="doc-anchor" href="#dynamic-vs-static">§</a>Dynamic vs Static</h4><h5 id="dynamic-runtime-flexible"><a class="doc-anchor" href="#dynamic-runtime-flexible">§</a>Dynamic (Runtime Flexible)</h5>
+<ul>
+<li>vector-like semantics</li>
+<li>runtime bounds (<code>Get&lt;u32&gt;</code>)</li>
+<li>growable/shrinkable collections</li>
+</ul>
+<h5 id="static-compile-time-fixed"><a class="doc-anchor" href="#static-compile-time-fixed">§</a>Static (Compile-Time Fixed)</h5>
+<ul>
+<li>array-like semantics</li>
+<li>compile-time bounds (<code>const</code>)</li>
+<li>zero-overhead representations</li>
+</ul>
+<h3 id="helpers"><a class="doc-anchor" href="#helpers">§</a>Helpers</h3>
+<p>Ergonomic helpers are provided for working with virtual components:</p>
+<ul>
+<li><a href="trait.DynFieldHelpers.html" title="trait frame_suite::virtuals::DynFieldHelpers"><code>DynFieldHelpers</code></a> / <a href="trait.StaticFieldHelpers.html" title="trait frame_suite::virtuals::StaticFieldHelpers"><code>StaticFieldHelpers</code></a></li>
+<li><a href="trait.DynExtHelpers.html" title="trait frame_suite::virtuals::DynExtHelpers"><code>DynExtHelpers</code></a> / <a href="trait.StaticExtHelpers.html" title="trait frame_suite::virtuals::StaticExtHelpers"><code>StaticExtHelpers</code></a></li>
+</ul>
+<h3 id="summary"><a class="doc-anchor" href="#summary">§</a>Summary</h3>
+<p>This system enables:</p>
+<ul>
+<li>evolving data shapes without redesign</li>
+<li>discriminant-keyed field composition</li>
+<li>external composition via schemas and extensions</li>
+<li>reuse of storage across multiple logical fields</li>
+<li>coherence-safe generic abstractions</li>
+</ul>
+<p>It provides a <strong>type-level virtualization layer</strong> where:</p>
+<blockquote>
+<p>A virtual struct is a mapping from <strong>discriminants -&gt; behaviors</strong>,
+resolved through traits and implemented via storage.</p>
+</blockquote>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.ManyTag.html" title="struct frame_suite::virtuals::ManyTag">ManyTag</a></dt><dd>A discriminant representing multiple values in tagged conversions.</dd><dt><a class="struct" href="struct.NoneTag.html" title="struct frame_suite::virtuals::NoneTag">NoneTag</a></dt><dd>A discriminant representing the absence of a value in tagged conversions.</dd><dt><a class="struct" href="struct.SomeTag.html" title="struct frame_suite::virtuals::SomeTag">SomeTag</a></dt><dd>A discriminant representing a single value in tagged conversions.</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.SumDynType.html" title="enum frame_suite::virtuals::SumDynType">SumDyn<wbr>Type</a></dt><dd>A concrete representation of field cardinality: zero, one, or many values.</dd><dt><a class="enum" href="enum.SumStaticType.html" title="enum frame_suite::virtuals::SumStaticType">SumStatic<wbr>Type</a></dt><dd>A statically shaped representation of field cardinality.</dd></dl><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><dl class="item-table"><dt><a class="trait" href="trait.DelegateVirtualDynBound.html" title="trait frame_suite::virtuals::DelegateVirtualDynBound">Delegate<wbr>Virtual<wbr>DynBound</a></dt><dd>Delegates bound resolution to an external <a href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound"><code>VirtualDynBound</code></a> provider.</dd><dt><a class="trait" href="trait.DelegateVirtualDynExtension.html" title="trait frame_suite::virtuals::DelegateVirtualDynExtension">Delegate<wbr>Virtual<wbr>DynExtension</a></dt><dd>Constraint for delegating a virtual extension to an external schema.</dd><dt><a class="trait" href="trait.DelegateVirtualStaticBound.html" title="trait frame_suite::virtuals::DelegateVirtualStaticBound">Delegate<wbr>Virtual<wbr>Static<wbr>Bound</a></dt><dd>Delegates bound resolution to an external <a href="trait.VirtualStaticBound.html" title="trait frame_suite::virtuals::VirtualStaticBound"><code>VirtualStaticBound</code></a> provider.</dd><dt><a class="trait" href="trait.DelegateVirtualStaticExtension.html" title="trait frame_suite::virtuals::DelegateVirtualStaticExtension">Delegate<wbr>Virtual<wbr>Static<wbr>Extension</a></dt><dd>Constraint for delegating a virtual extension to an external
+<a href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema"><code>VirtualStaticExtensionSchema</code></a>.</dd><dt><a class="trait" href="trait.DiscriminantTag.html" title="trait frame_suite::virtuals::DiscriminantTag">Discriminant<wbr>Tag</a></dt><dd>Marker trait for type-level discriminants.</dd><dt><a class="trait" href="trait.DynExtHelpers.html" title="trait frame_suite::virtuals::DynExtHelpers">DynExt<wbr>Helpers</a></dt><dd>Helper methods for accessing and mutating values in a <a href="trait.VirtualDynExtension.html" title="trait frame_suite::virtuals::VirtualDynExtension"><code>VirtualDynExtension</code></a>.</dd><dt><a class="trait" href="trait.DynFieldHelpers.html" title="trait frame_suite::virtuals::DynFieldHelpers">DynField<wbr>Helpers</a></dt><dd>Helper methods for accessing and mutating values in a <a href="trait.VirtualDynField.html" title="trait frame_suite::virtuals::VirtualDynField"><code>VirtualDynField</code></a>.</dd><dt><a class="trait" href="trait.FromTag.html" title="trait frame_suite::virtuals::FromTag">FromTag</a></dt><dd>Converts a value <code>T</code> into <code>Self</code> under a given discriminant.</dd><dt><a class="trait" href="trait.IntoTag.html" title="trait frame_suite::virtuals::IntoTag">IntoTag</a></dt><dd>Converts <code>self</code> into another representation under a given discriminant.</dd><dt><a class="trait" href="trait.StaticExtHelpers.html" title="trait frame_suite::virtuals::StaticExtHelpers">Static<wbr>ExtHelpers</a></dt><dd>Helper methods for accessing and mutating values in a <a href="trait.VirtualStaticExtension.html" title="trait frame_suite::virtuals::VirtualStaticExtension"><code>VirtualStaticExtension</code></a>.</dd><dt><a class="trait" href="trait.StaticFieldHelpers.html" title="trait frame_suite::virtuals::StaticFieldHelpers">Static<wbr>Field<wbr>Helpers</a></dt><dd>Helper methods for accessing and mutating values in a <a href="trait.VirtualStaticField.html" title="trait frame_suite::virtuals::VirtualStaticField"><code>VirtualStaticField</code></a>.</dd><dt><a class="trait" href="trait.TryFromTag.html" title="trait frame_suite::virtuals::TryFromTag">TryFrom<wbr>Tag</a></dt><dd>Fallible version of <a href="trait.FromTag.html" title="trait frame_suite::virtuals::FromTag"><code>FromTag</code></a>.</dd><dt><a class="trait" href="trait.TryIntoTag.html" title="trait frame_suite::virtuals::TryIntoTag">TryInto<wbr>Tag</a></dt><dd>Fallible version of <a href="trait.IntoTag.html" title="trait frame_suite::virtuals::IntoTag"><code>IntoTag</code></a>.</dd><dt><a class="trait" href="trait.VirtualCollector.html" title="trait frame_suite::virtuals::VirtualCollector">Virtual<wbr>Collector</a></dt><dd>A virtual collector for values of type <code>T</code> under a discriminant.</dd><dt><a class="trait" href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound">Virtual<wbr>DynBound</a></dt><dd>Provides the bounds associated with a <a href="trait.VirtualDynField.html" title="trait frame_suite::virtuals::VirtualDynField"><code>VirtualDynField&lt;Discriminant&gt;</code></a>.</dd><dt><a class="trait" href="trait.VirtualDynExtension.html" title="trait frame_suite::virtuals::VirtualDynExtension">Virtual<wbr>DynExtension</a></dt><dd>Allocation interface for virtual extensions whose type and schema
+are defined externally.</dd><dt><a class="trait" href="trait.VirtualDynExtensionSchema.html" title="trait frame_suite::virtuals::VirtualDynExtensionSchema">Virtual<wbr>DynExtension<wbr>Schema</a></dt><dd>Defines the schema for a <a href="trait.VirtualDynExtension.html" title="trait frame_suite::virtuals::VirtualDynExtension"><code>VirtualDynExtension</code></a> identified by a <code>Discriminant</code>.</dd><dt><a class="trait" href="trait.VirtualDynField.html" title="trait frame_suite::virtuals::VirtualDynField">Virtual<wbr>DynField</a></dt><dd>A discriminant-keyed virtual field abstraction with flexible cardinality
+(<code>None</code>, <code>Some</code>, or <code>Many</code>).</dd><dt><a class="trait" href="trait.VirtualDynFieldWithDelegatedBounds.html" title="trait frame_suite::virtuals::VirtualDynFieldWithDelegatedBounds">Virtual<wbr>DynField<wbr>With<wbr>Delegated<wbr>Bounds</a></dt><dd>Constraint describing a virtual field whose bounds are delegated
+to an external <a href="trait.VirtualDynBound.html" title="trait frame_suite::virtuals::VirtualDynBound"><code>VirtualDynBound</code></a> provider.</dd><dt><a class="trait" href="trait.VirtualError.html" title="trait frame_suite::virtuals::VirtualError">Virtual<wbr>Error</a></dt><dd>Defines the error type associated with a virtual component
+identified by a <code>Discriminant</code>.</dd><dt><a class="trait" href="trait.VirtualMap.html" title="trait frame_suite::virtuals::VirtualMap">Virtual<wbr>Map</a></dt><dd>A storage-backed virtual map owned by a container in the virtual structure system.</dd><dt><a class="trait" href="trait.VirtualNMap.html" title="trait frame_suite::virtuals::VirtualNMap">VirtualN<wbr>Map</a></dt><dd>A storage-backed virtual n-map owned by a container in the virtual structure system.</dd><dt><a class="trait" href="trait.VirtualStaticBound.html" title="trait frame_suite::virtuals::VirtualStaticBound">Virtual<wbr>Static<wbr>Bound</a></dt><dd>Provides the bounds associated with a <a href="trait.VirtualStaticField.html" title="trait frame_suite::virtuals::VirtualStaticField"><code>VirtualStaticField&lt;Discriminant&gt;</code></a>.</dd><dt><a class="trait" href="trait.VirtualStaticExtension.html" title="trait frame_suite::virtuals::VirtualStaticExtension">Virtual<wbr>Static<wbr>Extension</a></dt><dd>Allocation interface for virtual extensions whose type and schema
+are defined externally and fully determined at compile time.</dd><dt><a class="trait" href="trait.VirtualStaticExtensionSchema.html" title="trait frame_suite::virtuals::VirtualStaticExtensionSchema">Virtual<wbr>Static<wbr>Extension<wbr>Schema</a></dt><dd>Defines the schema for a <a href="trait.VirtualStaticExtension.html" title="trait frame_suite::virtuals::VirtualStaticExtension"><code>VirtualStaticExtension</code></a> identified by a <code>Discriminant</code>.</dd><dt><a class="trait" href="trait.VirtualStaticField.html" title="trait frame_suite::virtuals::VirtualStaticField">Virtual<wbr>Static<wbr>Field</a></dt><dd>A discriminant-keyed virtual field abstraction with statically
+determined cardinality.</dd><dt><a class="trait" href="trait.VirtualStaticFieldWithDelegatedBounds.html" title="trait frame_suite::virtuals::VirtualStaticFieldWithDelegatedBounds">Virtual<wbr>Static<wbr>Field<wbr>With<wbr>Delegated<wbr>Bounds</a></dt><dd>Constraint describing a virtual field whose bounds are delegated
+to an external <a href="trait.VirtualStaticBound.html" title="trait frame_suite::virtuals::VirtualStaticBound"><code>VirtualStaticBound</code></a> provider.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.set_index.html" title="fn frame_suite::virtuals::set_index">set_<wbr>index</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Sets the value at a given index in a collection.</dd></dl></section></div></main></body></html>
