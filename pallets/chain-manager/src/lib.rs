@@ -144,6 +144,8 @@
 // `````````````````````````````````` MODULES ````````````````````````````````````
 // ===============================================================================
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 #[cfg(test)]
 pub(crate) mod mock;
 mod mocks {
@@ -1546,7 +1548,7 @@ pub mod pallet {
 
         /// Emitted by [`Pallet::inspect_affidavit`] for direct inspection of a
         /// stored affidavit and its declared election weights.
-        #[cfg(feature = "dev")]
+        #[cfg(any(feature = "dev", feature = "runtime-benchmarks"))]
         InspectAffidavit {
             author: AuthorOf<T>,
             afdt_id: AffidavitId<T>,
@@ -1556,14 +1558,14 @@ pub mod pallet {
 
         /// Emitted by [`Pallet::inspect_elects`] for direct inspection of the
         /// currently revealed elected author set.
-        #[cfg(feature = "dev")]
+        #[cfg(any(feature = "dev", feature = "runtime-benchmarks"))]
         InspectElects {
             elects: ElectionElects<T>
         },
 
         /// Emitted by [`Pallet::prepare_validation_payload`] exposing the signed
         /// payload and signature required to submit a [`Pallet::validate`] extrinsic.  
-        #[cfg(feature = "dev")]
+        #[cfg(any(feature = "dev", feature = "runtime-benchmarks"))]
         InspectValidatePayload {
             payload: ValidatePayloadOf<T>,
             signature: T::Signature,

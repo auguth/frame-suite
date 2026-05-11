@@ -30,7 +30,7 @@ use frame_support::{
     derive_impl,
     pallet_prelude::TransactionPriority,
     parameter_types,
-    traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, VariantCountOf},
+    traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, VariantCountOf, FindAuthor},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
         IdentityFee, Weight,
@@ -353,7 +353,7 @@ impl pallet_chain_manager::Config for Runtime {
     type RoleAdapter = Authors;
     type Asset = pallet_xp::Pallet<Self>;
     type InflateViaSupply = ConstBool<false>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_chain_manager::weights::SubstrateWeight<Runtime>;
     type PenaltyContext = MyPenaltyThresholdContext;
     type PenaltyModel = ThresholdPenalty;
     type NextSessionRotation = PeriodicSessions<Period, Offset>;

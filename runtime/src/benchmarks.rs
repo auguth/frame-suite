@@ -33,4 +33,5 @@ frame_benchmarking::define_benchmarks!(
 	[pallet_xp, Xp]
     [pallet_commitment, Commitment]
     [pallet_authors, Authors]
+    [pallet_chain_manager, ChainManager]
 );
