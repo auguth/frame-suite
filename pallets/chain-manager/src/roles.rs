@@ -190,3 +190,183 @@ impl<T: Config> RoleActivity<AuthorOf<T>, AuthorTimeStampOf<T>> for Pallet<T> {
         Ok(())
     }
 }
+
+// ===============================================================================
+// ````````````````````````````````` ROLES TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` IMPORTS ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::mock::*;
+
+    // --- FRAME Suite ---
+    use frame_suite::roles::*;
+
+    // --- FRAME Support ---
+    use frame_support::{assert_err, assert_ok, traits::tokens::Fortitude};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````````` ROLE ACTIVITY ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn is_idle_ok_author_cannot_be_mapped_to_session_validator_id() {
+        chain_manager_test_ext().execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, 1000, Fortitude::Force).unwrap();
+
+            assert_ok!(Pallet::is_idle(&BOB));
+        })
+    }
+
+    #[test]
+    fn is_idle_err_author_is_an_active_validator() {
+        chain_manager_test_ext().execute_with(|| {
+            set_session_config();
+            System::set_block_number(SESSION_START);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(CHARLIE).unwrap();
+            set_default_user_balance_and_hold(MIKE).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, CHARLIE]).unwrap();
+
+            direct_fund_author(MIKE, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(ALAN, BOB, LARGE_FUND).unwrap();
+
+            let aff_pairs = insert_affidavit_keys_for_authors(vec![ALICE, BOB, CHARLIE], 1);
+            let alice_aff = aff_pairs[0].2.clone();
+            let bob_aff = aff_pairs[1].2.clone();
+            let charlie_aff = aff_pairs[2].2.clone();
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            submit_affidavit_for_authors(vec![alice_aff, bob_aff, charlie_aff]).unwrap();
+
+            System::set_block_number(ELECTION_START);
+            let actual_elected = run_election_and_elect_authors(ALICE).unwrap();
+
+            let expected_elected = vec![BOB, ALICE, CHARLIE];
+            assert_eq!(actual_elected, expected_elected);
+            insert_into_validator_set(actual_elected).unwrap();
+
+            System::set_block_number(AFDT_SUBMISSION_END);
+            assert_err!(Pallet::is_idle(&BOB), AuthorActivity::SessionValidator);
+        })
+    }
+
+    #[test]
+    fn is_idle_ok_non_validating_author_idle_before_affidavit_window() {
+        chain_manager_test_ext().execute_with(|| {
+            set_session_config();
+            CurrentSession::put(0);
+            System::set_block_number(SESSION_START);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(CHARLIE).unwrap();
+            set_default_user_balance_and_hold(NIX).unwrap();
+
+            set_default_user_balance_and_hold(MIKE).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, CHARLIE, NIX]).unwrap();
+
+            direct_fund_author(MIKE, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(ALAN, BOB, LARGE_FUND).unwrap();
+
+            let aff_pairs = insert_affidavit_keys_for_authors(vec![ALICE, BOB, CHARLIE], 1);
+            let alice_aff = aff_pairs[0].2.clone();
+            let bob_aff = aff_pairs[1].2.clone();
+            let charlie_aff = aff_pairs[2].2.clone();
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            submit_affidavit_for_authors(vec![alice_aff, bob_aff, charlie_aff]).unwrap();
+
+            System::set_block_number(ELECTION_START);
+            let actual_elected = run_election_and_elect_authors(ALICE).unwrap();
+
+            let expected_elected = vec![BOB, ALICE, CHARLIE];
+            assert_eq!(actual_elected, expected_elected);
+            insert_into_validator_set(actual_elected).unwrap();
+
+            System::set_block_number(SESSION_END);
+
+            CurrentSession::put(1);
+            System::set_block_number(SESSION_END + SESSION_START);
+
+            assert_ok!(Pallet::is_idle(&NIX),);
+        })
+    }
+
+    #[test]
+    fn is_idle_err_author_submited_affidavit_and_participating_in_election() {
+        chain_manager_test_ext().execute_with(|| {
+            set_session_config();
+            CurrentSession::put(0);
+            System::set_block_number(SESSION_START);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(CHARLIE).unwrap();
+            set_default_user_balance_and_hold(NIX).unwrap();
+
+            set_default_user_balance_and_hold(MIKE).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, CHARLIE, NIX]).unwrap();
+
+            direct_fund_author(MIKE, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(ALAN, BOB, LARGE_FUND).unwrap();
+
+            let aff_pairs = insert_affidavit_keys_for_authors(vec![ALICE, BOB, CHARLIE], 1);
+            let alice_aff = aff_pairs[0].2.clone();
+            let bob_aff = aff_pairs[1].2.clone();
+            let charlie_aff = aff_pairs[2].2.clone();
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            submit_affidavit_for_authors(vec![alice_aff, bob_aff, charlie_aff]).unwrap();
+
+            assert_err!(Pallet::is_idle(&ALICE), AuthorActivity::ElectionCandidate);
+        })
+    }
+
+    #[test]
+    fn is_idle_err_author_elected_and_awaiting_the_next_validation_session() {
+        chain_manager_test_ext().execute_with(|| {
+            set_session_config();
+            System::set_block_number(SESSION_START);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(CHARLIE).unwrap();
+            set_default_user_balance_and_hold(MIKE).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, CHARLIE]).unwrap();
+
+            direct_fund_author(MIKE, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(ALAN, BOB, LARGE_FUND).unwrap();
+
+            let aff_pairs = insert_affidavit_keys_for_authors(vec![ALICE, BOB, CHARLIE], 1);
+            let alice_aff = aff_pairs[0].2.clone();
+            let bob_aff = aff_pairs[1].2.clone();
+            let charlie_aff = aff_pairs[2].2.clone();
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            submit_affidavit_for_authors(vec![alice_aff, bob_aff, charlie_aff]).unwrap();
+
+            System::set_block_number(ELECTION_START);
+            let actual_elected = run_election_and_elect_authors(ALICE).unwrap();
+
+            let expected_elected = vec![BOB, ALICE, CHARLIE];
+            assert_eq!(actual_elected, expected_elected);
+
+            System::set_block_number(AFDT_SUBMISSION_END + 1);
+            assert_err!(Pallet::is_idle(&ALICE), AuthorActivity::ElectionWinner);
+        })
+    }
+}

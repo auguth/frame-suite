@@ -33,6 +33,18 @@ sp-std.workspace = true
 sp-runtime.workspace = true
 scale-info.workspace = true
 
+[dev-dependencies]
+sp-keystore.workspace = true
+pallet-xp.workspace = true
+pallet-commitment.workspace = true
+pallet-authors.workspace = true
+pallet-balances.workspace = true
+pallet-im-online.workspace = true
+logtest.workspace = true
+parking_lot.workspace = true
+log.workspace = true
+serial_test.workspace = true
+
 
 [features]
 default = ["std"]
@@ -42,14 +54,20 @@ std = [
     "frame-system/std",
     "frame-suite/std",
     "frame-plugins/std",
+    "pallet-authors/std",
     "pallet-authorship/std",
+    "pallet-balances/std",
+    "pallet-im-online/std",
     "pallet-session/std",
     "pallet-session/historical",
+    "pallet-commitment/std",
     "pallet-offences/std",
+    "pallet-xp/std",
     "sp-application-crypto/std",
     "sp-core/std",
     "sp-io/std",
     "sp-inherents/std",
+    "sp-keystore/std",
     "sp-staking/std",
     "sp-std/std",
     "sp-runtime/std",

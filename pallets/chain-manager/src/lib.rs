@@ -144,6 +144,19 @@
 // `````````````````````````````````` MODULES ````````````````````````````````````
 // ===============================================================================
 
+#[cfg(test)]
+pub(crate) mod mock;
+mod mocks {
+    #[path = "balances.rs"]
+    #[cfg(test)]
+    pub mod balances;
+
+    #[path = "xp.rs"]
+    #[cfg(test)]
+    pub mod xp;
+}
+#[cfg(test)]
+mod tests;
 mod blockchain;
 mod offence;
 mod roles;
@@ -2951,5 +2964,2470 @@ pub mod pallet {
                 _ => InvalidTransaction::Call.into(),
             }
         }
+    }
+}
+
+// ===============================================================================
+// `````````````````````````````````` API TESTS ``````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod ext_tests {
+
+    // ===============================================================================
+    // ``````````````````````````````````` IMPORTS ```````````````````````````````````
+    // ===============================================================================
+
+    // --- Local crate imports ---
+    use crate::{mock::*, types::ForceGenesisConfig};
+
+    // --- Scale-codec crates ---
+    use codec::{Decode, Encode};
+
+    // --- FRAME Suite ---
+    use frame_suite::{blockchain::*, roles::*};
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_noop, assert_ok,
+        pallet_prelude::{TransactionSource, ValidateUnsigned},
+        traits::{Hooks, tokens::{Fortitude, Precision}},
+    };
+
+    // --- Substrate primitives ---
+    use sp_runtime::{
+        traits::{Convert, Zero},
+        transaction_validity::InvalidTransaction,
+        DispatchError, WeakBoundedVec,
+    };
+
+    // ===============================================================================
+    // ```````````````````````````````````` HOOKS ````````````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn on_initialize_success() {
+        chain_manager_test_ext().execute_with(|| {
+            CurrentSession::put(1);
+            SessionStartsAt::put(10);
+
+            set_user_balance_and_hold(ALICE, 100, 100).unwrap();
+            RoleAdapter::enroll(&ALICE, 100, Fortitude::Force).unwrap();
+
+            set_block_author(ALICE);
+
+            assert!(PointsAdapter::points_of(&ALICE).is_err());
+
+            System::set_block_number(11);
+            Pallet::on_initialize(11);
+
+            // Check that ALICE received a point for this session
+            let points = PointsAdapter::points_of(&ALICE).unwrap();
+            assert_eq!(points, 1);
+        });
+    }
+
+    #[test]
+    fn ocw_initializes_active_affidavit_key() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            ocw_step();
+            assert!(affidavit_key_count().is_zero());
+            assert!(get_afdt_key().is_none());
+            ocw_step();
+            assert!(get_afdt_key().is_some());
+            let afdt_key_1 = get_afdt_key().unwrap();
+            assert!(get_public_key(afdt_key_1.clone()).is_some());
+
+            ocw_step();
+            // Since, key is already initialized, no new key is initialized.
+            assert!(get_afdt_key().is_some());
+            let afdt_key_2 = get_afdt_key().unwrap();
+            assert!(get_public_key(afdt_key_2.clone()).is_some());
+            assert_eq!(afdt_key_1, afdt_key_2);
+        });
+    }
+
+    #[test]
+    fn ocw_declares_affidavit() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            init_fork_graph();
+            set_session_config();
+            CurrentSession::set(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+
+            enroll_authors_with_default_collateral(vec![ALICE]).unwrap();
+            direct_fund_author(ALAN, ALICE, STANDARD_FUND).unwrap();
+
+            assert!(affidavit_key_count().is_zero());
+            assert!(get_finalized_afdt_key().is_none());
+            while System::block_number() < AFDT_SUBMISSION_START {
+                ocw_step();
+            }
+            assert!(get_afdt_key().is_some());
+            let afdt_key_1 = get_afdt_key().unwrap();
+            assert!(get_public_key(afdt_key_1.clone()).is_some());
+            assert!(get_next_afdt_key().is_some());
+
+            let afdt_key = get_afdt_key().unwrap();
+            let for_session = CurrentSession::get() + 1;
+            AffidavitKeys::insert((for_session, afdt_key.clone()), ALICE);
+
+            env.pool_state.write().transactions.clear();
+
+            let tx = env.pool_state.read().transactions.clone();
+            assert_eq!(tx.len(), 0);
+            ocw_step();
+            let tx = env.pool_state.read().transactions.clone();
+            assert_eq!(tx.len(), 1);
+            let submited_ext = env.pool_state.read().transactions.last().unwrap().clone();
+            let ext_decode = UncheckedExtrinsic::decode(&mut &submited_ext[..]).unwrap();
+            assert!(matches!(
+                ext_decode.function,
+                RuntimeCall::ChainManager(crate::Call::declare { .. })
+            ));
+            ocw_step();
+            let tx = env.pool_state.read().transactions.clone();
+            assert_eq!(tx.len(), 2);
+            let submited_ext = env.pool_state.read().transactions.last().unwrap().clone();
+            let ext_decode = UncheckedExtrinsic::decode(&mut &submited_ext[..]).unwrap();
+            assert!(matches!(
+                ext_decode.function,
+                RuntimeCall::ChainManager(crate::Call::declare { .. })
+            ));
+        })
+    }
+
+    #[test]
+    fn ocw_submits_election_tx_when_eligible() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+
+            enroll_authors_with_default_collateral(vec![ALICE]).unwrap();
+            direct_fund_author(ALAN, ALICE, STANDARD_FUND).unwrap();
+
+            // prepare active key first.
+            while System::block_number() < AFDT_SUBMISSION_START {
+                ocw_step();
+            }
+
+            let afdt_key = get_afdt_key().unwrap();
+            let for_session = CurrentSession::get() + 1;
+            AffidavitKeys::insert((for_session, afdt_key.clone()), ALICE);
+
+            ocw_step();
+
+            let tx = env.pool_state.read().transactions.clone();
+            assert_eq!(tx.len(), 1);
+            let submited_ext = env.pool_state.read().transactions.last().unwrap().clone();
+            let ext_decode = UncheckedExtrinsic::decode(&mut &submited_ext[..]).unwrap();
+            assert!(matches!(
+                ext_decode.function,
+                RuntimeCall::ChainManager(crate::Call::declare { .. })
+            ));
+            // declare executed
+            let next_afdt_key = get_next_afdt_key().unwrap();
+            AffidavitKeys::insert((for_session + 1, next_afdt_key), ALICE);
+
+            // move into just before election-eligible block
+            while System::block_number() < ELECTION_START {
+                ocw_step();
+            }
+            env.pool_state.write().transactions.clear();
+
+            let tx = env.pool_state.read().transactions.clone();
+            assert_eq!(tx.len(), 0);
+            ocw_step();
+            let tx = env.pool_state.read().transactions.clone();
+            assert_eq!(tx.len(), 1);
+            let submited_ext = env.pool_state.read().transactions.last().unwrap().clone();
+            let ext_decode = UncheckedExtrinsic::decode(&mut &submited_ext[..]).unwrap();
+            assert!(matches!(
+                ext_decode.function,
+                RuntimeCall::ChainManager(crate::Call::elect { .. })
+            ));
+        });
+    }
+
+    // ===============================================================================
+    // `````````````````````````````` VALIDATE UNSIGNED ``````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn validate_unsigned_validate_accepts_valid_payload() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(1);
+
+            let public = generate_affidavit_keypair();
+
+            let payload = ValidatePayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+
+            let call = Call::validate { payload, signature };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::External, &call);
+
+            let valid = validity.unwrap();
+            assert_eq!(valid.priority, ValidateTxPriority::get());
+            assert_eq!(valid.longevity, 600);
+            assert!(valid.propagate);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_validate_rejects_bad_signature() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(1);
+
+            let public = generate_affidavit_keypair();
+            let wrong_public = generate_affidavit_keypair();
+
+            let payload = ValidatePayloadOf {
+                public: public.clone(),
+            };
+            let bad_signature = sign_payload(&payload.encode(), wrong_public);
+
+            let call = Call::validate {
+                payload,
+                signature: bad_signature,
+            };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::External, &call);
+
+            assert_err!(validity, InvalidTransaction::BadProof);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_declare_affidavit_accepts_registered_key_within_window() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(AFDT_SUBMISSION_START);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id.clone()).unwrap();
+            let next_afdt_id = generate_affidavit_id();
+
+            let for_session = CurrentSession::get() + 1;
+            register_affidavit_key(for_session, afdt_id, ALICE);
+
+            let payload = AffidavitPayloadOf {
+                public: public.clone(),
+                rotate: next_afdt_id,
+            };
+            let signature = sign_payload(&payload.encode(), public);
+
+            let call = Call::declare { payload, signature };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::External, &call);
+
+            let valid = validity.unwrap();
+            assert_eq!(valid.priority, AffidavitTxPriority::get());
+            assert_eq!(valid.longevity, AFDT_SUBMISSION_END - AFDT_SUBMISSION_START);
+            assert!(valid.propagate);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_declare_affidavit_rejects_bad_signature() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(AFDT_SUBMISSION_START);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id.clone()).unwrap();
+            let wrong_public = generate_affidavit_keypair();
+            let next_afdt_id = generate_affidavit_id();
+
+            let for_session = CurrentSession::get() + 1;
+            register_affidavit_key(for_session, afdt_id, ALICE);
+
+            let payload = AffidavitPayloadOf {
+                public: public.clone(),
+                rotate: next_afdt_id,
+            };
+            let bad_signature = sign_payload(&payload.encode(), wrong_public);
+
+            let call = Call::declare {
+                payload,
+                signature: bad_signature,
+            };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::External, &call);
+
+            assert_err!(validity, InvalidTransaction::BadProof);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_declare_affidavit_rejects_unregistered_key() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(AFDT_SUBMISSION_START);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id).unwrap();
+            let next_afdt_id = generate_affidavit_id();
+
+            let payload = AffidavitPayloadOf {
+                public: public.clone(),
+                rotate: next_afdt_id,
+            };
+            let signature = sign_payload(&payload.encode(), public);
+
+            let call = Call::declare { payload, signature };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::External, &call);
+
+            assert_err!(validity, InvalidTransaction::BadSigner);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_declare_affidavit_rejects_stale_call() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(AFDT_SUBMISSION_END + 1);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id.clone()).unwrap();
+            let next_afdt_id = generate_affidavit_id();
+
+            let for_session = CurrentSession::get() + 1;
+            register_affidavit_key(for_session, afdt_id, ALICE);
+
+            let payload = AffidavitPayloadOf {
+                public: public.clone(),
+                rotate: next_afdt_id,
+            };
+            let signature = sign_payload(&payload.encode(), public);
+
+            let call = Call::declare { payload, signature };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::External, &call);
+
+            assert_err!(validity, InvalidTransaction::Stale);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_elect_authors_accepts_registered_rotated_key() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(ELECTION_START);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id.clone()).unwrap();
+
+            let for_session = CurrentSession::get() + 2;
+            register_affidavit_key(for_session, afdt_id, ALICE);
+
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+
+            let call = Call::elect { payload, signature };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::Local, &call);
+
+            let valid = validity.unwrap();
+            assert_eq!(valid.priority, ElectionTxPriority::get());
+            assert_eq!(valid.longevity, AFDT_SUBMISSION_END - ELECTION_START);
+            assert!(!valid.propagate);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_elect_authors_rejects_bad_signature() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(ELECTION_START);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id.clone()).unwrap();
+            let wrong_public = generate_affidavit_keypair();
+
+            let for_session = CurrentSession::get() + 2;
+            register_affidavit_key(for_session, afdt_id, ALICE);
+
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let bad_signature = sign_payload(&payload.encode(), wrong_public);
+
+            let call = Call::elect {
+                payload,
+                signature: bad_signature,
+            };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::Local, &call);
+
+            assert_err!(validity, InvalidTransaction::BadProof);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_elect_authors_rejects_unregistered_key() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(ELECTION_START);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id).unwrap();
+
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+
+            let call = Call::elect { payload, signature };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::Local, &call);
+
+            assert_err!(validity, InvalidTransaction::BadSigner);
+        });
+    }
+
+    #[test]
+    fn validate_unsigned_elect_authors_rejects_stale_call() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session(1);
+            set_session_config();
+            System::set_block_number(AFDT_SUBMISSION_END + 1);
+
+            let afdt_id = generate_affidavit_id();
+            let public = get_public_key(afdt_id.clone()).unwrap();
+
+            let for_session = CurrentSession::get() + 2;
+            register_affidavit_key(for_session, afdt_id, ALICE);
+
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+
+            let call = Call::elect { payload, signature };
+
+            let validity = Pallet::validate_unsigned(TransactionSource::Local, &call);
+
+            assert_err!(validity, InvalidTransaction::Stale);
+        });
+    }
+
+    // ===============================================================================
+    // ````````````````````````````````` EXTRINSICS ``````````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn validate_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            init_fork_graph();
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+            insert_active_afdt_key(afdt_id.clone()).unwrap();
+            run_to_block(120);
+
+            assert!(!AffidavitKeys::contains_key((2, afdt_id.clone())));
+
+            let (payload, signature) = Pallet::sign_validate_payload().unwrap();
+            assert_ok!(Pallet::validate(
+                RuntimeOrigin::signed(ALICE),
+                payload,
+                signature,
+            ));
+
+            assert!(AffidavitKeys::contains_key((2, afdt_id)));
+        })
+    }
+
+    #[test]
+    fn validate_err_bad_origin() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            init_fork_graph();
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+            insert_active_afdt_key(afdt_id.clone()).unwrap();
+            run_to_block(120);
+
+            let (payload, signature) = Pallet::sign_validate_payload().unwrap();
+            assert_noop!(
+                Pallet::validate(RuntimeOrigin::root(), payload, signature,),
+                DispatchError::BadOrigin
+            );
+        })
+    }
+
+    #[test]
+    fn chill_err_session_id_query_failed() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+
+            assert_noop!(
+                Pallet::chill(RuntimeOrigin::signed(BOB), afdt_id),
+                Error::SessionIdQueryFailed
+            );
+        })
+    }
+
+    #[test]
+    fn chill_err_validator_cannot_chill() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+
+            let alice_session_id = Pallet::convert(ALICE.clone()).unwrap();
+            Validators::put(vec![alice_session_id]);
+
+            assert_err!(
+                Pallet::chill(RuntimeOrigin::signed(ALICE), afdt_id),
+                Error::ValidatorCannotChill
+            )
+        })
+    }
+
+    #[test]
+    fn chill_err_author_not_affidavit_owner() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+
+            RoleAdapter::enroll(&ALICE, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+
+            let nxt_afdt_id = generate_affidavit_id();
+            let payload = TestAfdtPayload {
+                active_afdt_pub: afdt_id.clone(),
+                next_afdt_pub: nxt_afdt_id.clone(),
+            };
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, payload).unwrap();
+
+            assert_err!(
+                Pallet::chill(RuntimeOrigin::signed(BOB), nxt_afdt_id),
+                Error::AuthorNotAffidavitOwner
+            )
+        })
+    }
+
+    #[test]
+    #[should_panic]
+    fn chill_err_declared_before_affidavit_period() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+
+            RoleAdapter::enroll(&ALICE, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+
+            let nxt_afdt_id = generate_affidavit_id();
+            let payload = TestAfdtPayload {
+                active_afdt_pub: afdt_id.clone(),
+                next_afdt_pub: nxt_afdt_id.clone(),
+            };
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, payload).unwrap();
+
+            System::set_block_number(AFDT_SUBMISSION_START - 1);
+            Pallet::chill(RuntimeOrigin::signed(ALICE), nxt_afdt_id).unwrap();
+        })
+    }
+
+    #[test]
+    fn chill_err_candidate_cannot_chill() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+
+            RoleAdapter::enroll(&ALICE, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+
+            let nxt_afdt_id = generate_affidavit_id();
+            let payload = TestAfdtPayload {
+                active_afdt_pub: afdt_id.clone(),
+                next_afdt_pub: nxt_afdt_id.clone(),
+            };
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, payload).unwrap();
+
+            assert_noop!(
+                Pallet::chill(RuntimeOrigin::signed(ALICE), nxt_afdt_id),
+                Error::CandidateCannotChill
+            );
+        })
+    }
+
+    #[test]
+    fn chill_err_elected_cannot_chill() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+            set_default_user_balance_and_hold(CHARLIE).unwrap();
+            set_default_user_balance_and_hold(AMY).unwrap();
+            set_default_user_balance_and_hold(NIX).unwrap();
+
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, ALAN]).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALAN, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+            ext_validate(ALAN, alan_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let alan_nxt_afdt_id: AccountId = generate_affidavit_id();
+            let bob_nxt_afdt_id: AccountId = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let alan_payload = TestAfdtPayload {
+                active_afdt_pub: alan_afdt_id.clone(),
+                next_afdt_pub: alan_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(ALAN, alan_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+
+            System::set_block_number(ELECTION_START);
+            let elected = ext_elect_authors(ALICE, alice_nxt_afdt_id.clone()).unwrap();
+            assert!(elected.iter().any(|id| *id == ALICE));
+
+            System::set_block_number(AFDT_SUBMISSION_END + 1);
+            assert_noop!(
+                Pallet::chill(RuntimeOrigin::signed(ALICE), alice_nxt_afdt_id),
+                Error::ElectedCannotChill
+            );
+        })
+    }
+
+    #[test]
+    fn chill_err_author_not_affidavit_owner_of_the_registered_key() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+
+            RoleAdapter::enroll(&ALICE, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+
+            assert_noop!(
+                Pallet::chill(RuntimeOrigin::signed(BOB), afdt_id),
+                Error::AuthorNotAffidavitOwner
+            );
+        })
+    }
+
+    #[test]
+    fn chill_err_invalid_rotated_affidavit_key() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, STANDARD_COLLATERAL, Fortitude::Force).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+            System::set_block_number(150);
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+            let gen_afdt = Pallet::gen_affidavit(&afdt_id).unwrap();
+            Pallet::submit_affidavit(&afdt_id, &gen_afdt).unwrap();
+            assert_noop!(
+                Pallet::chill(RuntimeOrigin::signed(ALICE), afdt_id),
+                Error::InvalidRotatedAffidavitKey
+            );
+        })
+    }
+
+    #[test]
+    fn chill_success_chilling_unelected_author_after_election() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+            set_default_user_balance_and_hold(CHARLIE).unwrap();
+            set_default_user_balance_and_hold(AMY).unwrap();
+            set_default_user_balance_and_hold(NIX).unwrap();
+            set_default_user_balance_and_hold(MIKE).unwrap();
+            set_default_user_balance_and_hold(LAYA).unwrap();
+            set_default_user_balance_and_hold(DAVE).unwrap();
+            set_default_user_balance_and_hold(JIM).unwrap();
+
+            let authors = vec![ALICE, BOB, ALAN, MIKE, LAYA, DAVE, JIM];
+            enroll_authors_with_default_collateral(authors.clone()).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALAN, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+            let mike_afdt_id = generate_affidavit_id();
+            let laya_afdt_id = generate_affidavit_id();
+            let dev_afdt_id = generate_affidavit_id();
+            let jim_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+            ext_validate(ALAN, alan_afdt_id.clone()).unwrap();
+            ext_validate(MIKE, mike_afdt_id.clone()).unwrap();
+            ext_validate(LAYA, laya_afdt_id.clone()).unwrap();
+            ext_validate(DAVE, dev_afdt_id.clone()).unwrap();
+            ext_validate(JIM, jim_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let alan_nxt_afdt_id = generate_affidavit_id();
+            let bob_nxt_afdt_id = generate_affidavit_id();
+            let jim_nxt_afdt_id = generate_affidavit_id();
+            let mike_nxt_afdt_id = generate_affidavit_id();
+            let dev_nxt_afdt_id = generate_affidavit_id();
+            let laya_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let alan_payload = TestAfdtPayload {
+                active_afdt_pub: alan_afdt_id.clone(),
+                next_afdt_pub: alan_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            let mike_payload = TestAfdtPayload {
+                active_afdt_pub: mike_afdt_id.clone(),
+                next_afdt_pub: mike_nxt_afdt_id.clone(),
+            };
+
+            let laya_payload = TestAfdtPayload {
+                active_afdt_pub: laya_afdt_id.clone(),
+                next_afdt_pub: laya_nxt_afdt_id.clone(),
+            };
+
+            let jim_payload = TestAfdtPayload {
+                active_afdt_pub: jim_afdt_id.clone(),
+                next_afdt_pub: jim_nxt_afdt_id.clone(),
+            };
+
+            let dev_payload = TestAfdtPayload {
+                active_afdt_pub: dev_afdt_id.clone(),
+                next_afdt_pub: dev_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(ALAN, alan_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+            ext_declare_affidavit(MIKE, mike_payload).unwrap();
+            ext_declare_affidavit(LAYA, laya_payload).unwrap();
+            ext_declare_affidavit(JIM, jim_payload).unwrap();
+            ext_declare_affidavit(DAVE, dev_payload).unwrap();
+
+            System::set_block_number(ELECTION_START);
+            let elected = ext_elect_authors(ALICE, alice_nxt_afdt_id.clone()).unwrap();
+            let mut not_elected = ALICE;
+            for author in authors {
+                if !elected.contains(&author) {
+                    not_elected = author
+                }
+            }
+            // dbg!(not_elected.clone());
+            assert!(not_elected == JIM);
+            System::set_block_number(AFDT_SUBMISSION_END + 1);
+            assert_ok!(Pallet::chill(
+                RuntimeOrigin::signed(JIM),
+                jim_nxt_afdt_id.clone()
+            ),);
+            let nxt_afdt_session = CurrentSession::get() + 2;
+            assert!(!AffidavitKeys::contains_key((
+                nxt_afdt_session,
+                jim_nxt_afdt_id
+            )))
+        })
+    }
+
+    #[test]
+    fn chill_success_before_start_affidavit() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+
+            let afdt_pub = generate_affidavit_id();
+            System::set_block_number(AFDT_SUBMISSION_START - 25);
+            ext_validate(ALICE, afdt_pub.clone()).unwrap();
+
+            assert_ok!(Pallet::chill(
+                RuntimeOrigin::signed(ALICE),
+                afdt_pub.clone()
+            ));
+            let for_session = CurrentSession::get() + 1;
+            assert!(!AffidavitKeys::contains_key((
+                for_session,
+                afdt_pub.clone()
+            )));
+        })
+    }
+
+    #[test]
+    fn chill_success_during_affidavit_period_but_before_declaring() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+
+            let afdt_pub = generate_affidavit_id();
+            System::set_block_number(AFDT_SUBMISSION_START - 25);
+            ext_validate(ALICE, afdt_pub.clone()).unwrap();
+            System::set_block_number(AFDT_SUBMISSION_START + 50);
+            assert_ok!(Pallet::chill(
+                RuntimeOrigin::signed(ALICE),
+                afdt_pub.clone()
+            ));
+            let for_session = CurrentSession::get() + 1;
+            assert!(!AffidavitKeys::contains_key((
+                for_session,
+                afdt_pub.clone()
+            )));
+        })
+    }
+
+    #[test]
+    fn chill_success_after_end_affidavit_without_declaring() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+
+            let afdt_pub = generate_affidavit_id();
+            System::set_block_number(AFDT_SUBMISSION_START - 25);
+            ext_validate(ALICE, afdt_pub.clone()).unwrap();
+
+            System::set_block_number(AFDT_SUBMISSION_END + 1);
+            assert_ok!(Pallet::chill(
+                RuntimeOrigin::signed(ALICE),
+                afdt_pub.clone()
+            ));
+            let for_session = CurrentSession::get() + 1;
+            assert!(!AffidavitKeys::contains_key((
+                for_session,
+                afdt_pub.clone()
+            )));
+        })
+    }
+
+    #[test]
+    fn chill_err_bad_origin() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+
+            let afdt_pub = generate_affidavit_id();
+
+            let for_session = CurrentSession::get() + 1;
+            ext_validate(ALICE, afdt_pub.clone()).unwrap();
+            System::set_block_number(AFDT_SUBMISSION_START - 25);
+            assert_noop!(
+                Pallet::chill(RuntimeOrigin::root(), afdt_pub.clone()),
+                sp_runtime::DispatchError::BadOrigin
+            );
+            assert!(AffidavitKeys::contains_key((for_session, afdt_pub.clone())));
+        })
+    }
+
+    #[test]
+    fn declare_affidavit_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            init_fork_graph();
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_users_balance_and_hold(vec![ALICE, BOB]).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            direct_fund_author(BOB, ALICE, 300).unwrap();
+
+            let afdt_id: sp_runtime::AccountId32 = generate_affidavit_id();
+            insert_active_afdt_key(afdt_id.clone()).unwrap();
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+
+            let for_session = CurrentSession::get() + 1;
+            assert!(AffidavitKeys::contains_key((for_session, afdt_id.clone())));
+
+            let next_adft_id = generate_affidavit_id();
+
+            let public = get_public_key(afdt_id.clone()).unwrap();
+            let affidavit_payload = AffidavitPayloadOf {
+                public: public.clone(),
+                rotate: next_adft_id.clone(),
+            };
+            let signature = sign_payload(&affidavit_payload.encode(), public);
+
+            assert!(!AuthorOfAffidavits::contains_key((for_session, ALICE)));
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            assert_ok!(Pallet::declare(
+                RuntimeOrigin::none(),
+                affidavit_payload,
+                signature
+            ));
+
+            assert!(AuthorOfAffidavits::contains_key((for_session, ALICE)));
+            let actual_afdt = AuthorOfAffidavits::get((for_session, ALICE)).unwrap();
+            let afdt: WeakBoundedVec<(Funder, u64), _> =
+                WeakBoundedVec::try_from(vec![(Funder::Direct(BOB), 300)]).unwrap();
+            let expected_afdt = (AFDT_SUBMISSION_START, afdt);
+            assert_eq!(actual_afdt, expected_afdt);
+
+            let for_session_2 = CurrentSession::get() + 2;
+
+            assert!(AffidavitKeys::contains_key((for_session_2, next_adft_id)));
+
+            #[cfg(not(feature = "dev"))]
+            {
+                System::assert_last_event(Event::AffidavitSubmitted { 
+                    afdt_id: afdt_id, 
+                    session: for_session
+                    }
+                    .into()
+                );
+            }
+
+            #[cfg(feature = "dev")]
+            {
+                let exp_afdt = Pallet::get_affidavit(&afdt_id).unwrap();
+                System::assert_last_event(Event::AffidavitSubmitted { 
+                    afdt_id: afdt_id, 
+                    session: for_session,
+                    author: ALICE,
+                    affidavit: exp_afdt
+                    }
+                    .into()
+                );
+            }
+        })
+    }
+
+    #[test]
+    fn declare_affidavit_err_bad_origin() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            init_fork_graph();
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_users_balance_and_hold(vec![ALICE, BOB]).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            direct_fund_author(BOB, ALICE, 300).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+            insert_active_afdt_key(afdt_id.clone()).unwrap();
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+
+            let for_session = CurrentSession::get() + 1;
+            assert!(AffidavitKeys::contains_key((for_session, afdt_id.clone())));
+
+            let next_adft_id = generate_affidavit_id();
+
+            let public = get_public_key(afdt_id.clone()).unwrap();
+            let affidavit_payload = AffidavitPayloadOf {
+                public: public.clone(),
+                rotate: next_adft_id.clone(),
+            };
+            let signature = sign_payload(&affidavit_payload.encode(), public);
+
+            assert!(!AuthorOfAffidavits::contains_key((for_session, ALICE)));
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+
+            System::set_block_number(136);
+            assert_noop!(
+                Pallet::declare(
+                    RuntimeOrigin::signed(ALICE),
+                    affidavit_payload.clone(),
+                    signature.clone()
+                ),
+                sp_runtime::DispatchError::BadOrigin
+            );
+
+            assert_noop!(
+                Pallet::declare(RuntimeOrigin::root(), affidavit_payload, signature),
+                sp_runtime::DispatchError::BadOrigin
+            );
+        })
+    }
+
+    #[test]
+    fn declare_affidavit_err_affidavit_author_not_found() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            init_fork_graph();
+            set_session_config();
+            CurrentSession::put(1);
+
+            set_default_users_balance_and_hold(vec![ALICE, BOB]).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            direct_fund_author(BOB, ALICE, 300).unwrap();
+
+            let afdt_id = generate_affidavit_id();
+            insert_active_afdt_key(afdt_id.clone()).unwrap();
+            ext_validate(ALICE, afdt_id.clone()).unwrap();
+
+            let for_session = CurrentSession::get() + 1;
+            assert!(AffidavitKeys::contains_key((for_session, afdt_id.clone())));
+
+            let next_adft_id = generate_affidavit_id();
+
+            let _public = get_public_key(afdt_id.clone()).unwrap();
+
+            let dummy_public = generate_affidavit_keypair();
+            let affidavit_payload = AffidavitPayloadOf {
+                public: dummy_public.clone(),
+                rotate: next_adft_id.clone(),
+            };
+            let signature = sign_payload(&affidavit_payload.encode(), dummy_public);
+
+            assert!(!AuthorOfAffidavits::contains_key((for_session, ALICE)));
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+
+            assert_noop!(
+                Pallet::declare(RuntimeOrigin::none(), affidavit_payload, signature),
+                Error::AffidavitAuthorNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn elect_authors_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, BOB, ALAN, CHARLIE, AMY, NIX, MIKE, LAYA, DAVE, JIM];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            let authors = vec![ALICE, BOB, ALAN, MIKE, LAYA, DAVE, JIM];
+            enroll_authors_with_default_collateral(authors.clone()).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALAN, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+            let mike_afdt_id = generate_affidavit_id();
+            let laya_afdt_id = generate_affidavit_id();
+            let dev_afdt_id = generate_affidavit_id();
+            let jim_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+            ext_validate(ALAN, alan_afdt_id.clone()).unwrap();
+            ext_validate(MIKE, mike_afdt_id.clone()).unwrap();
+            ext_validate(LAYA, laya_afdt_id.clone()).unwrap();
+            ext_validate(DAVE, dev_afdt_id.clone()).unwrap();
+            ext_validate(JIM, jim_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let alan_nxt_afdt_id = generate_affidavit_id();
+            let bob_nxt_afdt_id = generate_affidavit_id();
+            let jim_nxt_afdt_id = generate_affidavit_id();
+            let mike_nxt_afdt_id = generate_affidavit_id();
+            let dev_nxt_afdt_id = generate_affidavit_id();
+            let laya_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let alan_payload = TestAfdtPayload {
+                active_afdt_pub: alan_afdt_id.clone(),
+                next_afdt_pub: alan_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            let mike_payload = TestAfdtPayload {
+                active_afdt_pub: mike_afdt_id.clone(),
+                next_afdt_pub: mike_nxt_afdt_id.clone(),
+            };
+
+            let laya_payload = TestAfdtPayload {
+                active_afdt_pub: laya_afdt_id.clone(),
+                next_afdt_pub: laya_nxt_afdt_id.clone(),
+            };
+
+            let jim_payload = TestAfdtPayload {
+                active_afdt_pub: jim_afdt_id.clone(),
+                next_afdt_pub: jim_nxt_afdt_id.clone(),
+            };
+
+            let dev_payload = TestAfdtPayload {
+                active_afdt_pub: dev_afdt_id.clone(),
+                next_afdt_pub: dev_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(ALAN, alan_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+            ext_declare_affidavit(MIKE, mike_payload).unwrap();
+            ext_declare_affidavit(LAYA, laya_payload).unwrap();
+            ext_declare_affidavit(JIM, jim_payload).unwrap();
+            ext_declare_affidavit(DAVE, dev_payload).unwrap();
+
+            let public = get_public_key(alice_nxt_afdt_id).unwrap();
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+            set_block_author(ALICE);
+            System::set_block_number(ELECTION_START);
+            assert_ok!(Pallet::elect(RuntimeOrigin::none(), payload, signature));
+            let actual_elected = Internals::reveal().unwrap();
+            let expected_elected = vec![BOB, MIKE, LAYA, DAVE, ALICE, ALAN];
+            assert_eq!(actual_elected, expected_elected);
+
+            let for_session = CurrentSession::get() + 1;
+            #[cfg(feature = "dev")]
+            System::assert_last_event(Event::ElectedInstance {
+                    session: for_session,
+                    runner: ALICE,
+                    elects: actual_elected
+                }
+                .into()
+            );
+
+            #[cfg(not(feature = "dev"))]
+            System::assert_last_event(Event::ElectedInstance {
+                    session: for_session,
+                    runner: ALICE,
+                }
+                .into()
+            );
+        })
+    }
+
+    #[test]
+    fn elect_authors_err_bad_origin() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, BOB, ALAN, CHARLIE, AMY, NIX, MIKE, LAYA, DAVE, JIM];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            let authors = vec![ALICE, BOB, ALAN, MIKE, LAYA, DAVE, JIM];
+            enroll_authors_with_default_collateral(authors.clone()).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALAN, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+            let mike_afdt_id = generate_affidavit_id();
+            let laya_afdt_id = generate_affidavit_id();
+            let dev_afdt_id = generate_affidavit_id();
+            let jim_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+            ext_validate(ALAN, alan_afdt_id.clone()).unwrap();
+            ext_validate(MIKE, mike_afdt_id.clone()).unwrap();
+            ext_validate(LAYA, laya_afdt_id.clone()).unwrap();
+            ext_validate(DAVE, dev_afdt_id.clone()).unwrap();
+            ext_validate(JIM, jim_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let alan_nxt_afdt_id = generate_affidavit_id();
+            let bob_nxt_afdt_id = generate_affidavit_id();
+            let jim_nxt_afdt_id = generate_affidavit_id();
+            let mike_nxt_afdt_id = generate_affidavit_id();
+            let dev_nxt_afdt_id = generate_affidavit_id();
+            let laya_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let alan_payload = TestAfdtPayload {
+                active_afdt_pub: alan_afdt_id.clone(),
+                next_afdt_pub: alan_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            let mike_payload = TestAfdtPayload {
+                active_afdt_pub: mike_afdt_id.clone(),
+                next_afdt_pub: mike_nxt_afdt_id.clone(),
+            };
+
+            let laya_payload = TestAfdtPayload {
+                active_afdt_pub: laya_afdt_id.clone(),
+                next_afdt_pub: laya_nxt_afdt_id.clone(),
+            };
+
+            let jim_payload = TestAfdtPayload {
+                active_afdt_pub: jim_afdt_id.clone(),
+                next_afdt_pub: jim_nxt_afdt_id.clone(),
+            };
+
+            let dev_payload = TestAfdtPayload {
+                active_afdt_pub: dev_afdt_id.clone(),
+                next_afdt_pub: dev_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(ALAN, alan_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+            ext_declare_affidavit(MIKE, mike_payload).unwrap();
+            ext_declare_affidavit(LAYA, laya_payload).unwrap();
+            ext_declare_affidavit(JIM, jim_payload).unwrap();
+            ext_declare_affidavit(DAVE, dev_payload).unwrap();
+
+            let public = get_public_key(alice_nxt_afdt_id).unwrap();
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+            set_block_author(ALICE);
+            System::set_block_number(ELECTION_START);
+
+            assert_err!(
+                Pallet::elect(
+                    RuntimeOrigin::signed(ALICE),
+                    payload.clone(),
+                    signature.clone()
+                ),
+                DispatchError::BadOrigin
+            );
+
+            assert_err!(
+                Pallet::elect(RuntimeOrigin::root(), payload.clone(), signature.clone()),
+                DispatchError::BadOrigin
+            );
+        })
+    }
+
+    #[test]
+    fn elect_authors_err_affidavit_author_not_found() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, BOB, ALAN, CHARLIE, AMY, NIX, MIKE, LAYA, DAVE, JIM];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            let authors = vec![ALICE, BOB, ALAN, MIKE, LAYA, DAVE, JIM];
+            enroll_authors_with_default_collateral(authors.clone()).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALAN, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+            let mike_afdt_id = generate_affidavit_id();
+            let laya_afdt_id = generate_affidavit_id();
+            let dev_afdt_id = generate_affidavit_id();
+            let jim_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+            ext_validate(ALAN, alan_afdt_id.clone()).unwrap();
+            ext_validate(MIKE, mike_afdt_id.clone()).unwrap();
+            ext_validate(LAYA, laya_afdt_id.clone()).unwrap();
+            ext_validate(DAVE, dev_afdt_id.clone()).unwrap();
+            ext_validate(JIM, jim_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let alan_nxt_afdt_id = generate_affidavit_id();
+            let bob_nxt_afdt_id = generate_affidavit_id();
+            let jim_nxt_afdt_id = generate_affidavit_id();
+            let mike_nxt_afdt_id = generate_affidavit_id();
+            let dev_nxt_afdt_id = generate_affidavit_id();
+            let laya_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let alan_payload = TestAfdtPayload {
+                active_afdt_pub: alan_afdt_id.clone(),
+                next_afdt_pub: alan_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            let mike_payload = TestAfdtPayload {
+                active_afdt_pub: mike_afdt_id.clone(),
+                next_afdt_pub: mike_nxt_afdt_id.clone(),
+            };
+
+            let laya_payload = TestAfdtPayload {
+                active_afdt_pub: laya_afdt_id.clone(),
+                next_afdt_pub: laya_nxt_afdt_id.clone(),
+            };
+
+            let jim_payload = TestAfdtPayload {
+                active_afdt_pub: jim_afdt_id.clone(),
+                next_afdt_pub: jim_nxt_afdt_id.clone(),
+            };
+
+            let dev_payload = TestAfdtPayload {
+                active_afdt_pub: dev_afdt_id.clone(),
+                next_afdt_pub: dev_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(ALAN, alan_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+            ext_declare_affidavit(MIKE, mike_payload).unwrap();
+            ext_declare_affidavit(LAYA, laya_payload).unwrap();
+            ext_declare_affidavit(JIM, jim_payload).unwrap();
+            ext_declare_affidavit(DAVE, dev_payload).unwrap();
+
+            let _public = get_public_key(alice_nxt_afdt_id).unwrap();
+
+            let dummy_public = generate_affidavit_keypair();
+            let payload = ElectionPayloadOf {
+                public: dummy_public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), dummy_public);
+            set_block_author(ALICE);
+            System::set_block_number(ELECTION_START);
+
+            assert_err!(
+                Pallet::elect(RuntimeOrigin::none(), payload, signature),
+                Error::AffidavitAuthorNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn elect_authors_err_tried_electing_by_non_block_author() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, BOB, ALAN, CHARLIE, AMY, NIX, MIKE, LAYA, DAVE, JIM];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            let authors = vec![ALICE, BOB, ALAN, MIKE, LAYA, DAVE, JIM];
+            enroll_authors_with_default_collateral(authors.clone()).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALAN, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+            let mike_afdt_id = generate_affidavit_id();
+            let laya_afdt_id = generate_affidavit_id();
+            let dev_afdt_id = generate_affidavit_id();
+            let jim_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+            ext_validate(ALAN, alan_afdt_id.clone()).unwrap();
+            ext_validate(MIKE, mike_afdt_id.clone()).unwrap();
+            ext_validate(LAYA, laya_afdt_id.clone()).unwrap();
+            ext_validate(DAVE, dev_afdt_id.clone()).unwrap();
+            ext_validate(JIM, jim_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let alan_nxt_afdt_id = generate_affidavit_id();
+            let bob_nxt_afdt_id = generate_affidavit_id();
+            let jim_nxt_afdt_id = generate_affidavit_id();
+            let mike_nxt_afdt_id = generate_affidavit_id();
+            let dev_nxt_afdt_id = generate_affidavit_id();
+            let laya_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let alan_payload = TestAfdtPayload {
+                active_afdt_pub: alan_afdt_id.clone(),
+                next_afdt_pub: alan_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            let mike_payload = TestAfdtPayload {
+                active_afdt_pub: mike_afdt_id.clone(),
+                next_afdt_pub: mike_nxt_afdt_id.clone(),
+            };
+
+            let laya_payload = TestAfdtPayload {
+                active_afdt_pub: laya_afdt_id.clone(),
+                next_afdt_pub: laya_nxt_afdt_id.clone(),
+            };
+
+            let jim_payload = TestAfdtPayload {
+                active_afdt_pub: jim_afdt_id.clone(),
+                next_afdt_pub: jim_nxt_afdt_id.clone(),
+            };
+
+            let dev_payload = TestAfdtPayload {
+                active_afdt_pub: dev_afdt_id.clone(),
+                next_afdt_pub: dev_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(ALAN, alan_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+            ext_declare_affidavit(MIKE, mike_payload).unwrap();
+            ext_declare_affidavit(LAYA, laya_payload).unwrap();
+            ext_declare_affidavit(JIM, jim_payload).unwrap();
+            ext_declare_affidavit(DAVE, dev_payload).unwrap();
+
+            let public = get_public_key(alice_nxt_afdt_id).unwrap();
+
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+            set_block_author(BOB);
+            System::set_block_number(ELECTION_START);
+            assert_err!(
+                Pallet::elect(RuntimeOrigin::none(), payload, signature),
+                Error::TriedElectingByNonBlockAuthor
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_elects_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, BOB, ALAN, CHARLIE, AMY, NIX, MIKE, LAYA, DAVE, JIM];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            let authors = vec![ALICE, BOB, ALAN, MIKE, LAYA, DAVE, JIM];
+            enroll_authors_with_default_collateral(authors.clone()).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALAN, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+            let mike_afdt_id = generate_affidavit_id();
+            let laya_afdt_id = generate_affidavit_id();
+            let dev_afdt_id = generate_affidavit_id();
+            let jim_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+            ext_validate(ALAN, alan_afdt_id.clone()).unwrap();
+            ext_validate(MIKE, mike_afdt_id.clone()).unwrap();
+            ext_validate(LAYA, laya_afdt_id.clone()).unwrap();
+            ext_validate(DAVE, dev_afdt_id.clone()).unwrap();
+            ext_validate(JIM, jim_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let alan_nxt_afdt_id = generate_affidavit_id();
+            let bob_nxt_afdt_id = generate_affidavit_id();
+            let jim_nxt_afdt_id = generate_affidavit_id();
+            let mike_nxt_afdt_id = generate_affidavit_id();
+            let dev_nxt_afdt_id = generate_affidavit_id();
+            let laya_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let alan_payload = TestAfdtPayload {
+                active_afdt_pub: alan_afdt_id.clone(),
+                next_afdt_pub: alan_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            let mike_payload = TestAfdtPayload {
+                active_afdt_pub: mike_afdt_id.clone(),
+                next_afdt_pub: mike_nxt_afdt_id.clone(),
+            };
+
+            let laya_payload = TestAfdtPayload {
+                active_afdt_pub: laya_afdt_id.clone(),
+                next_afdt_pub: laya_nxt_afdt_id.clone(),
+            };
+
+            let jim_payload = TestAfdtPayload {
+                active_afdt_pub: jim_afdt_id.clone(),
+                next_afdt_pub: jim_nxt_afdt_id.clone(),
+            };
+
+            let dev_payload = TestAfdtPayload {
+                active_afdt_pub: dev_afdt_id.clone(),
+                next_afdt_pub: dev_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(ALAN, alan_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+            ext_declare_affidavit(MIKE, mike_payload).unwrap();
+            ext_declare_affidavit(LAYA, laya_payload).unwrap();
+            ext_declare_affidavit(JIM, jim_payload).unwrap();
+            ext_declare_affidavit(DAVE, dev_payload).unwrap();
+
+            let public = get_public_key(alice_nxt_afdt_id).unwrap();
+            let payload = ElectionPayloadOf {
+                public: public.clone(),
+            };
+            let signature = sign_payload(&payload.encode(), public);
+            set_block_author(ALICE);
+            System::set_block_number(ELECTION_START);
+            assert_ok!(Pallet::elect(RuntimeOrigin::none(), payload, signature));
+            assert_ok!(Pallet::inspect_elects(RuntimeOrigin::signed(AMY)));
+            let expected_elects = vec![BOB, MIKE, LAYA, DAVE, ALICE, ALAN];
+            System::assert_last_event(
+                Event::InspectElects { 
+                    elects: expected_elects 
+                }
+                .into()
+            );
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn prepare_validation_payload_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            System::set_block_number(10);
+            Pallet::offchain_worker(10);
+            assert_err!(
+                Pallet::prepare_validation_payload(RuntimeOrigin::signed(ALICE)),
+                Error::ActiveAfdtKeyNotYetFinalized
+            );
+
+            while System::block_number() < 30 {
+                ocw_step();
+            }
+
+            assert_ok!(Pallet::prepare_validation_payload(RuntimeOrigin::signed(ALICE))); 
+        })
+    }
+
+    #[cfg(feature = "dev")]
+    #[test]
+    fn inspect_affidavit_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, BOB, ALAN, AMY, JIM, NIX, LAYA];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            let authors = vec![ALICE, BOB];
+            enroll_authors_with_default_collateral(authors.clone()).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(ALAN, BOB, LARGE_FUND).unwrap();
+            direct_fund_author(JIM, ALICE, SMALL_FUND).unwrap();
+            direct_fund_author(LAYA, ALICE, STANDARD_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let bob_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+            ext_validate(BOB, bob_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+            let bob_nxt_afdt_id = generate_affidavit_id();
+
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            let bob_payload = TestAfdtPayload {
+                active_afdt_pub: bob_afdt_id.clone(),
+                next_afdt_pub: bob_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap();
+            ext_declare_affidavit(BOB, bob_payload).unwrap();
+
+            assert_ok!(Pallet::inspect_affidavit(RuntimeOrigin::signed(ALICE), alice_afdt_id.clone()));
+            let expected_affidavit = vec![(Funder::Direct(LAYA), STANDARD_FUND), (Funder::Direct(NIX), STANDARD_FUND), (Funder::Direct(JIM), SMALL_FUND)];
+            System::assert_last_event(
+                Event::InspectAffidavit { 
+                    author: ALICE, 
+                    afdt_id: alice_afdt_id, 
+                    session: 2, 
+                    affidavit: expected_affidavit 
+                }
+                .into()
+            );
+        })
+    }
+
+    
+    #[test]
+    fn force_genesis_config_err_bad_origin() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::signed(ALICE),
+                    ForceGenesisConfig::AllowAffidavits(true)
+                ),
+                sp_runtime::DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn force_allow_affidavits_success() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(AllowAffidavits::get(), false);
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::AllowAffidavits(true)
+            ));
+            assert_eq!(AllowAffidavits::get(), true);
+        });
+    }
+
+    #[test]
+    fn force_affidavit_begins_at_err_invalid_affidavit_period() {
+        chain_manager_test_ext().execute_with(|| {
+            AffidavitEndsAt::put(Duration::from_rational(8u32, 10u32));
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::AffidavitBeginsAt(Duration::from_rational(8u32, 10u32))
+                ),
+                Error::InvalidAffidavitPeriod
+            );
+        });
+    }
+
+    #[test]
+    fn force_affidavit_ends_at_err_invalid_affidavit_period() {
+        chain_manager_test_ext().execute_with(|| {
+            AffidavitBeginsAt::put(Duration::from_rational(2u32, 10u32));
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::AffidavitEndsAt(Duration::from_rational(2u32, 10u32))
+                ),
+                Error::InvalidAffidavitPeriod
+            );
+        });
+    }
+
+    #[test]
+    fn force_affidavit_period_updates_correctly() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(
+                AffidavitBeginsAt::get(),
+                Duration::from_rational(2u32, 10u32)
+            );
+            assert_eq!(AffidavitEndsAt::get(), Duration::from_rational(8u32, 10u32));
+            assert_eq!(
+                ElectionBeginsAt::get(),
+                Duration::from_rational(5u32, 10u32)
+            );
+
+            let begin = Duration::from_rational(3u32, 10u32);
+            let end = Duration::from_rational(7u32, 10u32);
+            let election = Duration::from_rational(4u32, 10u32);
+
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::AffidavitBeginsAt(begin)
+            ));
+
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::AffidavitEndsAt(end)
+            ));
+
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::ElectionBeginsAt(election)
+            ));
+
+            assert_eq!(AffidavitBeginsAt::get(), begin);
+            assert_eq!(AffidavitEndsAt::get(), end);
+            assert_eq!(ElectionBeginsAt::get(), election);
+        });
+    }
+
+    #[test]
+    fn force_election_runner_points_success() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(ElectionRunnerPointsUpgrade::get(), None);
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::ElectionRunnerPointsUpgrade(Some(10))
+            ));
+            assert_eq!(ElectionRunnerPointsUpgrade::get(), Some(10));
+
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::ElectionRunnerPointsUpgrade(None)
+            ));
+            assert_eq!(ElectionRunnerPointsUpgrade::get(), None);
+        })
+    }
+
+    #[test]
+    fn force_validate_tx_priority_success() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(ValidateTxPriority::get(), 1_000_000);
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::ValidateTxPriority(1)
+            ));
+            assert_eq!(ValidateTxPriority::get(), 1);
+        })
+    }
+
+    #[test]
+    fn force_validate_tx_priority_err_value_cannot_be_zero() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(ValidateTxPriority::get(), 1_000_000);
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::ValidateTxPriority(0)
+                ),
+                Error::ValueCannotBeZero
+            );
+        })
+    }
+
+    #[test]
+    fn force_affidavit_tx_priority_success() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(AffidavitTxPriority::get(), 850_000);
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::AffidavitTxPriority(2)
+            ));
+            assert_eq!(AffidavitTxPriority::get(), 2);
+        })
+    }
+
+    #[test]
+    fn force_affidavit_tx_priority_err_value_cannot_be_zero() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(AffidavitTxPriority::get(), 850_000);
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::AffidavitTxPriority(0)
+                ),
+                Error::ValueCannotBeZero
+            );
+        })
+    }
+
+    #[test]
+    fn force_election_tx_priority_success() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(ElectionTxPriority::get(), 700_000);
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::ElectionTxPriority(3)
+            ));
+            assert_eq!(ElectionTxPriority::get(), 3);
+        })
+    }
+
+    #[test]
+    fn force_election_tx_priority_err_value_cannot_be_zero() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(ElectionTxPriority::get(), 700_000);
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::ElectionTxPriority(0)
+                ),
+                Error::ValueCannotBeZero
+            );
+        })
+    }
+
+    #[test]
+    fn force_finality_after_success() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(FinalityAfter::get(), 60_000);
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::FinalityAfter(90_000)
+            ));
+            assert_eq!(FinalityAfter::get(), 90_000);
+        })
+    }
+
+    #[test]
+    fn force_finality_after_err_value_cannot_be_zero() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(FinalityAfter::get(), 60_000);
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::FinalityAfter(0)
+                ),
+                Error::ValueCannotBeZero
+            );
+        })
+    }
+
+    #[test]
+    fn force_finality_ticks_success() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(FinalityTicks::get(), 5);
+            assert_ok!(ChainManager::force_genesis_config(
+                RuntimeOrigin::root(),
+                ForceGenesisConfig::FinalityTicks(3)
+            ));
+            assert_eq!(FinalityTicks::get(), 3);
+        })
+    }
+
+    #[test]
+    fn force_finality_ticks_err_value_cannot_be_zero() {
+        chain_manager_test_ext().execute_with(|| {
+            assert_eq!(FinalityTicks::get(), 5);
+            assert_noop!(
+                ChainManager::force_genesis_config(
+                    RuntimeOrigin::root(),
+                    ForceGenesisConfig::FinalityTicks(0)
+                ),
+                Error::ValueCannotBeZero
+            );
+        })
+    }
+
+    // ===============================================================================
+    // ````````````````````````````````` PUBLIC APIS `````````````````````````````````
+    // ===============================================================================
+
+    #[test]
+    fn is_validating_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, ALAN]).unwrap();
+
+            let alice_id = Pallet::convert(ALICE).unwrap();
+            let bob_id = Pallet::convert(BOB).unwrap();
+
+            Validators::put(vec![bob_id, alice_id]);
+
+            assert!(Pallet::is_validating(ALICE));
+            assert!(Pallet::is_validating(BOB));
+            assert!(!Pallet::is_validating(ALAN));
+        })
+    }
+
+    #[test]
+    fn get_runtime_afdt_key_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, ALAN]).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+
+            CurrentSession::put(1);
+            let next_session = CurrentSession::get() + 1;
+            let next_afdt_session = next_session + 1;
+
+            AffidavitKeys::insert((next_session, alice_afdt_id.clone()), ALICE);
+            AffidavitKeys::insert((next_afdt_session, alan_afdt_id.clone()), ALAN);
+
+            let alice_active_afdt_key = Pallet::get_runtime_afdt_key(ALICE);
+            let bob_active_afdt_key = Pallet::get_runtime_afdt_key(BOB);
+            let alan_active_afdt_key = Pallet::get_runtime_afdt_key(ALAN);
+
+            assert_ok!(alan_active_afdt_key.clone());
+            assert_ok!(alice_active_afdt_key. clone());
+            assert_err!(bob_active_afdt_key, Error::AffidavitKeyPairNotFound);
+
+            assert_eq!(
+                alan_active_afdt_key.unwrap(),
+                (next_afdt_session, alan_afdt_id)
+            );
+            assert_eq!(
+                alice_active_afdt_key.unwrap(),
+                (next_session, alice_afdt_id)
+            );
+        })
+    }
+
+    #[test]
+    fn is_chilling_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, ALAN]).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+
+            CurrentSession::put(1);
+            let next_session = CurrentSession::get() + 1;
+            let next_afdt_session = next_session + 1;
+
+            AffidavitKeys::insert((next_session, alice_afdt_id), ALICE);
+            AffidavitKeys::insert((next_afdt_session, alan_afdt_id), ALAN);
+
+            assert!(!Pallet::is_chilling(ALICE));
+            assert!(!Pallet::is_chilling(ALAN));
+            assert!(Pallet::is_chilling(BOB));
+        })
+    }
+
+    #[test]
+    fn get_finalized_afdt_key_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            System::set_block_number(10);
+            Pallet::offchain_worker(10);
+            let active_afdt = Pallet::get_finalized_afdt_key();
+            assert_err!(active_afdt, Error::ActiveAfdtKeyNotYetFinalized);
+
+            while System::block_number() < 30 {
+                ocw_step();
+            }
+
+            let active_afdt = Pallet::get_finalized_afdt_key();
+            assert_ok!(active_afdt);
+        })
+    }
+
+    #[test]
+    fn sign_validate_payload_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            System::set_block_number(10);
+            Pallet::offchain_worker(10);
+            let sign_payload = Pallet::sign_validate_payload();
+            assert_err!(sign_payload, Error::ActiveAfdtKeyNotYetFinalized);
+
+            while System::block_number() < 30 {
+                ocw_step();
+            }
+
+            let sign_payload = Pallet::sign_validate_payload();
+            assert_ok!(sign_payload);
+        })
+    }
+
+    #[test]
+    fn get_public_key_sucess() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            System::set_block_number(10);
+            Pallet::offchain_worker(10);
+            while System::block_number() < 30 {
+                ocw_step();
+            }
+
+            let afdt_key = Pallet::get_finalized_afdt_key().unwrap();
+            let pub_key = Pallet::get_public_key(afdt_key);
+            assert_ok!(pub_key);
+        })
+    }
+
+    #[test]
+    fn get_elects_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE, BOB, NIX];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&MIKE, 200, Fortitude::Force).unwrap();
+
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &MIKE,
+                &Funder::Direct(NIX),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            SessionStartsAt::put(15);
+            AffidavitBeginsAt::put(Duration::from_rational(2u32, 10u32));
+            AffidavitEndsAt::put(Duration::from_rational(8u32, 10u32));
+            ElectionBeginsAt::put(Duration::from_rational(5u32, 10u32));
+
+            System::set_block_number(15);
+            System::set_block_number(135);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_B), BOB);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_C), MIKE);
+
+            let affidavit_alice_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit_alice_id).unwrap();
+            let affidavit_bob_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_B).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_B, &affidavit_bob_id).unwrap();
+            let affidavit_mike_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_C).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_C, &affidavit_mike_id).unwrap();
+
+            System::set_block_number(315);
+            assert_ok!(Internals::prepare_election(&Some(ALICE)));
+
+            let actual_elects = Pallet::get_elects().unwrap();
+            let expected_reveal = vec![BOB, MIKE, ALICE];
+            assert_eq!(actual_elects, expected_reveal);
+        })
+    }
+
+    #[test]
+    fn get_elects_returns_err_unable_to_reveal_elected() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE, BOB, NIX];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&MIKE, 200, Fortitude::Force).unwrap();
+
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &MIKE,
+                &Funder::Direct(NIX),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            SessionStartsAt::put(15);
+            AffidavitBeginsAt::put(Duration::from_rational(2u32, 10u32));
+            AffidavitEndsAt::put(Duration::from_rational(8u32, 10u32));
+            ElectionBeginsAt::put(Duration::from_rational(5u32, 10u32));
+
+            System::set_block_number(15);
+            System::set_block_number(135);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_B), BOB);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_C), MIKE);
+
+            let affidavit_alice_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit_alice_id).unwrap();
+            let affidavit_bob_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_B).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_B, &affidavit_bob_id).unwrap();
+            let affidavit_mike_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_C).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_C, &affidavit_mike_id).unwrap();
+
+            let elects = Pallet::get_elects();
+            assert_err!(elects, Error::UnableToRevealElected);
+        })
+    }
+
+    #[test]
+    fn fetch_affidavit_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, NIX, AMY, CHARLIE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, ALICE, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALICE, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap(); 
+
+            let actual_affidavit = Pallet::fetch_affidavit(alice_afdt_id.clone()).unwrap();
+            let expected_affidavit = vec![(Funder::Direct(NIX), STANDARD_FUND), (Funder::Direct(CHARLIE), LARGE_FUND), (Funder::Direct(AMY), SMALL_FUND)];
+            assert_eq!(actual_affidavit, expected_affidavit);
+
+            assert!(Pallet::fetch_affidavit(alice_nxt_afdt_id).is_err());
+        })      
+    }
+
+    #[test]
+    fn fetch_affidavit_for_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, NIX, AMY, CHARLIE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(AMY, ALICE, SMALL_FUND).unwrap();
+            direct_fund_author(CHARLIE, ALICE, LARGE_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap(); 
+
+            let for_session = CurrentSession::get() + 1;
+            let actual_affidavit = Pallet::fetch_affidavit_for(alice_afdt_id.clone(), for_session).unwrap();
+            let expected_affidavit = vec![(Funder::Direct(NIX), STANDARD_FUND), (Funder::Direct(CHARLIE), LARGE_FUND), (Funder::Direct(AMY), SMALL_FUND)];
+            assert_eq!(actual_affidavit, expected_affidavit);
+
+            let for_session = CurrentSession::get() + 2;
+            assert_err!(Pallet::fetch_affidavit_for(alice_afdt_id, for_session), Error::AffidavitKeyPairNotFound);
+        })      
+    }
+    
+    #[test]
+    fn is_contesting_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            let users = vec![ALICE, NIX];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            direct_fund_author(NIX, ALICE, STANDARD_FUND).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+
+            let alice_nxt_afdt_id = generate_affidavit_id();
+
+            let alice_payload = TestAfdtPayload {
+                active_afdt_pub: alice_afdt_id.clone(),
+                next_afdt_pub: alice_nxt_afdt_id.clone(),
+            };
+
+            System::set_block_number(AFDT_SUBMISSION_START);
+            ext_declare_affidavit(ALICE, alice_payload).unwrap(); 
+
+            assert!(Pallet::is_contesting(ALICE));           
+            assert!(!Pallet::is_contesting(NIX));  
+        })
+    }
+
+    #[test]
+    fn is_pursuing_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+            set_default_user_balance_and_hold(ALAN).unwrap();
+            enroll_authors_with_default_collateral(vec![ALICE, BOB, ALAN]).unwrap();
+
+            let alice_afdt_id = generate_affidavit_id();
+            let alan_afdt_id = generate_affidavit_id();
+
+            CurrentSession::put(1);
+            let next_session = CurrentSession::get() + 1;
+            let next_afdt_session = next_session + 1;
+
+            AffidavitKeys::insert((next_session, alice_afdt_id), ALICE);
+            AffidavitKeys::insert((next_afdt_session, alan_afdt_id), ALAN);
+
+            assert!(Pallet::is_pursuing(ALICE));
+            assert!(Pallet::is_pursuing(ALAN));
+            assert!(!Pallet::is_pursuing(BOB));
+        })
+    }
+
+    #[test]
+    fn can_declare_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            let alice_afdt_id = generate_affidavit_id();
+
+            System::set_block_number(150);
+            ext_validate(ALICE, alice_afdt_id.clone()).unwrap();
+
+            assert_ok!(Pallet::can_declare(alice_afdt_id));            
+        })
+    }
+
+    #[test]
+    fn can_declare_err_affidavit_author_not_found() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            enroll_author_with_default_collateral(ALICE).unwrap();
+            let alice_afdt_id = generate_affidavit_id();
+
+            assert_err!(Pallet::can_declare(alice_afdt_id), Error::AffidavitAuthorNotFound);            
+        })
+    }
+
+    #[test]
+    fn can_elect_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            enroll_author_with_default_collateral(ALICE).unwrap();
+
+            System::set_block_number(450);
+            set_block_author(ALICE);
+            assert_ok!(Pallet::can_elect(ALICE));            
+        })        
+    }
+
+    #[test]
+    fn can_elect_err_not_a_block_author() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(||{
+            set_session_config();
+            CurrentSession::put(1);
+            set_default_user_balance_and_hold(BOB).unwrap();
+            enroll_author_with_default_collateral(BOB).unwrap();
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            enroll_author_with_default_collateral(ALICE).unwrap();
+
+            System::set_block_number(450);
+            set_block_author(ALICE);
+            assert_err!(Pallet::can_elect(BOB), Error::NotABlockAuthor);            
+        })        
     }
 }

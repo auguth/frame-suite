@@ -95,3 +95,60 @@ where
         <T as Config>::WeightInfo::on_offence(offenders_count)
     }
 }
+
+// ===============================================================================
+// ```````````````````````````````` OFFENCE TESTS ````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` IMPORTS ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::mock::*;
+
+    // --- FRAME Suite ---
+    use frame_suite::roles::*;
+
+    // --- FRAME Support ---
+    use frame_support::traits::tokens::Fortitude;
+
+    // --- Substrate staking ---
+    use sp_staking::offence::{OffenceDetails, OnOffenceHandler};
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````` OFFENCE HANDLER ```````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn on_offence_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_user_balance_and_hold(ALICE, 250, 250).unwrap();
+            set_user_balance_and_hold(BOB, 250, 250).unwrap();
+            set_user_balance_and_hold(MIKE, 250, 250).unwrap();
+            set_user_balance_and_hold(CHARLIE, 250, 250).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 150, Fortitude::Force).unwrap();
+
+            System::set_block_number(16);
+
+            let offenders = [OffenceDetails {
+                offender: (ALICE, ALICE),
+                reporters: vec![CHARLIE, MIKE],
+            }];
+            let slash_fraction = [PenaltyRatio::from_percent(5)];
+
+            Pallet::on_offence(&offenders, &slash_fraction, 1);
+
+            // Penalty immediately scheduled for Alice
+            let penalties_of_alice = RoleAdapter::get_penalties_of(&ALICE).unwrap();
+
+            let expected_penalties_of_alice = vec![(20, PenaltyRatio::from_percent(5))];
+            assert_eq!(penalties_of_alice, expected_penalties_of_alice);
+        })
+    }
+}

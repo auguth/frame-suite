@@ -860,3 +860,1062 @@ impl<T: Config> ElectionAffidavits<AffidavitId<T>, ElectionVia<T>> for Pallet<T>
         }
     }
 }
+
+// ===============================================================================
+// `````````````````````````````````` UNIT TESTS `````````````````````````````````
+// ===============================================================================
+
+#[cfg(test)]
+mod tests {
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````````` IMPORTS ``````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    // --- Local crate imports ---
+    use crate::{mock::*, types::Duration};
+
+    // --- FRAME Suite ---
+    use frame_suite::{blockchain::*, roles::*};
+
+    // --- FRAME Support ---
+    use frame_support::{
+        assert_err, assert_ok,
+        traits::{
+            tokens::{Fortitude, Precision},
+            EstimateNextSessionRotation,
+        },
+    };
+
+    // --- Substrate primitives ---
+    use sp_runtime::WeakBoundedVec;
+
+    // --- Std ---
+    use std::vec;
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` ELECT AUTHORS ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn prepare_authors_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let candidates = vec![
+                (ALICE, vec![(Funder::Direct(CHARLIE), 30)]),
+                (BOB, vec![(Funder::Direct(ALAN), 60)]),
+                (MIKE, vec![(Funder::Direct(NIX), 20)]),
+            ];
+
+            System::set_block_number(6);
+            assert_ok!(Internals::prepare_authors(candidates));
+
+            let recent_elected = RecentElectedOn::get();
+            assert_eq!(recent_elected, 6);
+            assert_eq!(Elected::get((recent_elected, ALICE)), Some(()));
+            assert_eq!(Elected::get((recent_elected, BOB)), Some(()));
+            assert_eq!(Elected::get((recent_elected, MIKE)), Some(()));
+        })
+    }
+
+    #[test]
+    fn can_process_election_success() {
+        chain_manager_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            // Average session length = Period = 1 * HOURS = 600 blocks
+            let avg_session_len: BlockNumber = NextSessionRotation::average_session_length();
+            assert_eq!(avg_session_len, 600);
+            // Session is set to start at block 15
+            SessionStartsAt::put(15);
+            // Affidavit submission begins at 20% of session length
+            // 20% of 600 = 120 blocks
+            // 15 + 120 => 135th block
+            AffidavitBeginsAt::put(Duration::from_rational(2u32, 10u32));
+            let aff_begin_at = AffidavitBeginsAt::get();
+            assert_eq!(aff_begin_at, Duration::from_rational(2u32, 10u32));
+            // Affidavit submission ends at 80% of session length
+            // 80% of 600 = 480 blocks
+            // 15 + 480 => 495th block
+            AffidavitEndsAt::put(Duration::from_rational(8u32, 10u32));
+            let aff_ends_at = AffidavitEndsAt::get();
+            assert_eq!(aff_ends_at, Duration::from_rational(8u32, 10u32));
+            // Election processing begins at 50% of the affidavit window
+            // Affidavit window length = 495 - 135 = 360 blocks
+            // 50% of 360 = 180 blocks
+            // 135 + 180 = 315th block
+            ElectionBeginsAt::put(Duration::from_rational(5u32, 10u32));
+            let election_bgn_at = ElectionBeginsAt::get();
+            assert_eq!(election_bgn_at, Duration::from_rational(5u32, 10u32));
+            // Before affidavit submission window starts (block < 135)
+            System::set_block_number(134);
+            assert_err!(
+                Internals::can_process_election(&Some(ALICE)),
+                Error::NotAffidavitPeriod
+            );
+            // After affidavit window starts but before election window begins (block < 315)
+            System::set_block_number(314);
+            assert_err!(
+                Internals::can_process_election(&Some(ALICE)),
+                Error::NotElectionPeriod
+            );
+            // Election window has started (block >= 315 and <= 495)
+            System::set_block_number(315);
+            assert_ok!(Internals::can_process_election(&Some(ALICE)));
+            // After affidavit window has ended (block > 495)
+            System::set_block_number(496);
+            assert_err!(
+                Internals::can_process_election(&Some(ALICE)),
+                Error::ElectionPeriodEnded
+            );
+        })
+    }
+
+    #[test]
+    #[should_panic]
+    fn can_process_election_panic_invalid_affidavit_period() {
+        chain_manager_test_ext().execute_with(|| {
+            SessionStartsAt::put(1);
+            AffidavitBeginsAt::put(Duration::from_rational(5u32, 10u32));
+            AffidavitEndsAt::put(Duration::from_rational(2u32, 10u32));
+            Internals::can_process_election(&Some(ALICE)).unwrap();
+        })
+    }
+
+    #[test]
+    fn prepare_candidates_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_session(1);
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE, BOB, NIX];
+            set_default_users_balance_and_hold(users).unwrap();
+            let authors = vec![ALICE, BOB, MIKE];
+            enroll_authors_with_default_collateral(authors).unwrap();
+
+            direct_fund_author(CHARLIE, ALICE, STANDARD_FUND).unwrap();
+            direct_fund_author(ALAN, BOB, SMALL_FUND).unwrap();
+            direct_fund_author(NIX, MIKE, STANDARD_FUND).unwrap();
+
+            AffidavitKeys::insert((2, AFFIDAVIT_KEY_A), ALICE);
+            AffidavitKeys::insert((2, AFFIDAVIT_KEY_B), BOB);
+            AffidavitKeys::insert((2, AFFIDAVIT_KEY_C), MIKE);
+
+            let affidavit_alice_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit_alice_id).unwrap();
+            let affidavit_bob_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_B).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_B, &affidavit_bob_id).unwrap();
+            let affidavit_mike_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_C).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_C, &affidavit_mike_id).unwrap();
+
+            let candidates = Internals::prepare_candidates().unwrap();
+            let expected_candidates = vec![
+                (BOB, vec![(Funder::Direct(ALAN), SMALL_FUND)]),
+                (MIKE, vec![(Funder::Direct(NIX), STANDARD_FUND)]),
+                (ALICE, vec![(Funder::Direct(CHARLIE), STANDARD_FUND)]),
+            ];
+            assert_eq!(candidates, expected_candidates);
+        })
+    }
+
+    #[test]
+    fn reveal_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE, BOB, NIX];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&MIKE, 200, Fortitude::Force).unwrap();
+
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &MIKE,
+                &Funder::Direct(NIX),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_B), BOB);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_C), MIKE);
+
+            let affidavit_alice_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit_alice_id).unwrap();
+            let affidavit_bob_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_B).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_B, &affidavit_bob_id).unwrap();
+            let affidavit_mike_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_C).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_C, &affidavit_mike_id).unwrap();
+
+            let candidates = Internals::prepare_candidates().unwrap();
+            Internals::prepare_authors(candidates).unwrap();
+
+            let reveal = Internals::reveal().unwrap();
+            let expected_reveal = vec![BOB, MIKE, ALICE];
+            assert_eq!(reveal, expected_reveal);
+        })
+    }
+
+    #[test]
+    fn prepare_election_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE, BOB, NIX];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&MIKE, 200, Fortitude::Force).unwrap();
+
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &BOB,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &MIKE,
+                &Funder::Direct(NIX),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            System::set_block_number(10);
+            // Average session length = Period = 1 * HOURS = 600 blocks
+            // Session is set to start at block 15
+            SessionStartsAt::put(15);
+            // Affidavit submission begins at 20% of session length
+            AffidavitBeginsAt::put(Duration::from_rational(2u32, 10u32));
+            // Affidavit submission ends at 80% of session length
+            AffidavitEndsAt::put(Duration::from_rational(8u32, 10u32));
+            // Election processing begins at 50% of the affidavit window
+            ElectionBeginsAt::put(Duration::from_rational(5u32, 10u32));
+
+            System::set_block_number(15);
+            System::set_block_number(135);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_B), BOB);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_C), MIKE);
+
+            let affidavit_alice_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit_alice_id).unwrap();
+            let affidavit_bob_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_B).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_B, &affidavit_bob_id).unwrap();
+            let affidavit_mike_id = Pallet::gen_affidavit(&AFFIDAVIT_KEY_C).unwrap();
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_C, &affidavit_mike_id).unwrap();
+
+            System::set_block_number(315);
+            assert_ok!(Internals::prepare_election(&Some(ALICE)));
+
+            let reveal = Internals::reveal().unwrap();
+            let expected_reveal = vec![BOB, MIKE, ALICE];
+            assert_eq!(reveal, expected_reveal);
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ```````````````````````````````` AUTHOR POINTS ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn points_of_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            CurrentSession::put(1);
+            assert_err!(Pallet::points_of(&ALICE), Error::BlockPointsNotFound);
+            Pallet::add_point(&ALICE).unwrap();
+            let current_points = Pallet::points_of(&ALICE).unwrap();
+            assert_eq!(current_points, 1);
+            Pallet::add_point(&ALICE).unwrap();
+            Pallet::add_point(&ALICE).unwrap();
+            let current_points = Pallet::points_of(&ALICE).unwrap();
+            assert_eq!(current_points, 3);
+            Pallet::add_point(&ALICE).unwrap();
+            let current_points = Pallet::points_of(&ALICE).unwrap();
+            assert_eq!(current_points, 4);
+        })
+    }
+
+    #[test]
+    fn add_point_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            CurrentSession::put(1);
+            assert!(PointsAdapter::points_of(&ALICE).is_err());
+            assert_ok!(Pallet::add_point(&ALICE));
+            let current_points = PointsAdapter::points_of(&ALICE).unwrap();
+            assert_eq!(current_points, 1);
+            assert_ok!(Pallet::add_point(&ALICE));
+            assert_ok!(Pallet::add_point(&ALICE));
+
+            let current_points = PointsAdapter::points_of(&ALICE).unwrap();
+            assert_eq!(current_points, 3);
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````` REWARD AUTHORS ````````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn payout_via_returns_total_locked_stake_when_inflate_via_supply_is_disabled() {
+        chain_manager_test_ext().execute_with(|| {
+            let authors = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(authors).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let payout = Internals::payout_via();
+            assert_eq!(payout, 575);
+        })
+    }
+
+    #[test]
+    fn reward_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            System::set_block_number(5);
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+
+            System::set_block_number(16);
+            assert_ok!(Internals::reward(&ALICE, 25));
+
+            // Reward of 25 units is scheduled at block 18
+            let rewards_of = RoleAdapter::get_rewards_of(&ALICE).unwrap();
+            let expected_rewards_of = vec![(18, 25)];
+            assert_eq!(rewards_of, expected_rewards_of);
+        })
+    }
+
+    #[test]
+    fn payout_for_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let authors = vec![ALICE, CHARLIE, BOB];
+            set_default_users_balance_and_hold(authors).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&CHARLIE, 100, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 150, Fortitude::Force).unwrap();
+            CurrentSession::put(1);
+            Pallet::add_point(&ALICE).unwrap();
+            Pallet::add_point(&CHARLIE).unwrap();
+            Pallet::add_point(&BOB).unwrap();
+            Pallet::add_point(&BOB).unwrap();
+
+            let payout_for = Internals::payout_for();
+            let expected_payout_for = vec![(BOB, 2), (ALICE, 1), (CHARLIE, 1)];
+            assert_eq!(payout_for, expected_payout_for);
+        })
+    }
+
+    #[test]
+    fn payout_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let authors = vec![ALICE, BOB, ALAN, MIKE];
+            set_default_users_balance_and_hold(authors).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 150, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &BOB,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            let payout = Internals::payout();
+            // Since, the configured InflationModel is `ConstantPayout`, which always returns the
+            // statically configured reward value (100).
+            assert_eq!(payout, 100);
+        })
+    }
+
+    #[test]
+    fn reward_authors_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let authors = vec![ALICE, BOB, ALAN, MIKE];
+            set_default_users_balance_and_hold(authors).unwrap();
+
+            System::set_block_number(5);
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 150, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &BOB,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            Pallet::add_point(&ALICE).unwrap();
+            Pallet::add_point(&ALICE).unwrap();
+            Pallet::add_point(&BOB).unwrap();
+            Pallet::add_point(&BOB).unwrap();
+            Pallet::add_point(&BOB).unwrap();
+            Pallet::add_point(&ALICE).unwrap();
+            Pallet::add_point(&ALICE).unwrap();
+            Pallet::add_point(&ALICE).unwrap();
+
+            System::set_block_number(16);
+            Internals::reward_authors();
+
+            let rewards_of_alice_id = RoleAdapter::get_rewards_of(&ALICE).unwrap();
+            let rewards_of_bob_id = RoleAdapter::get_rewards_of(&BOB).unwrap();
+
+            let expected_alice_id_rewards = vec![(18, 62)];
+            let expected_bob_id_rewards = vec![(18, 38)];
+
+            assert_eq!(rewards_of_alice_id, expected_alice_id_rewards);
+            assert_eq!(rewards_of_bob_id, expected_bob_id_rewards);
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ``````````````````````````````` PENALIZE AUTHORS ``````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn penalize_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+
+            System::set_block_number(5);
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+
+            System::set_block_number(16);
+            assert_ok!(Internals::penalize(&ALICE, PenaltyRatio::from_percent(5)));
+
+            // Penalty of 5% is scheduled at block 20
+            let penalties_of = RoleAdapter::get_penalties_of(&ALICE).unwrap();
+            let expected_penalties_of = vec![(20, PenaltyRatio::from_percent(5))];
+            assert_eq!(penalties_of, expected_penalties_of);
+        })
+    }
+
+    #[test]
+    fn transform_penalty_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let penalty_for = vec![
+                (ALICE, PenaltyRatio::from_percent(10)),
+                (MIKE, PenaltyRatio::from_percent(70)),
+                (BOB, PenaltyRatio::from_percent(90)),
+                (CHARLIE, PenaltyRatio::from_percent(80)),
+            ];
+            let tran_penalty_for = Internals::transform_penalty(penalty_for);
+            // Since, the PenaltyModel used is `ThresholdPenalty` with `MyPenaltyThresholdContext` (70% threshold):
+            // penalties above 70% are capped, and lower penalties are left unchanged
+            let expected_tran = vec![
+                (ALICE, PenaltyRatio::from_percent(10)),
+                (MIKE, PenaltyRatio::from_percent(70)),
+                (BOB, PenaltyRatio::from_percent(70)),
+                (CHARLIE, PenaltyRatio::from_percent(70)),
+            ];
+            assert_eq!(tran_penalty_for, expected_tran);
+        })
+    }
+
+    #[test]
+    fn penalize_authors_success() {
+        chain_manager_test_ext().execute_with(|| {
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            set_default_user_balance_and_hold(BOB).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::enroll(&BOB, 150, Fortitude::Force).unwrap();
+
+            System::set_block_number(16);
+            let penalty_for = vec![
+                (ALICE, PenaltyRatio::from_percent(25)),
+                (BOB, PenaltyRatio::from_percent(72)),
+            ];
+
+            Internals::penalize_authors(penalty_for);
+
+            let penalties_of_alice_id = RoleAdapter::get_penalties_of(&ALICE).unwrap();
+            let expected_penalties_of_alice_id = vec![(20, PenaltyRatio::from_percent(25))];
+            assert_eq!(penalties_of_alice_id, expected_penalties_of_alice_id);
+            // BOB's penalty capped to 70%
+            let penalties_of_bob_id = RoleAdapter::get_penalties_of(&BOB).unwrap();
+            let expected_penalties_of_bob_id = vec![(20, PenaltyRatio::from_percent(70))];
+            assert_eq!(penalties_of_bob_id, expected_penalties_of_bob_id);
+        })
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ````````````````````````````` ELECTION AFFIDAVITS `````````````````````````````
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    #[test]
+    fn can_submit_affidait_success() {
+        let mut env = new_ocw_env();
+        env.ext.execute_with(|| {
+            set_session_config();
+            set_default_user_balance_and_hold(ALICE).unwrap();
+            let afdt_pub = generate_affidavit_id();
+            enroll_authors_with_default_collateral(vec![ALICE]).unwrap();
+            ext_validate(ALICE, afdt_pub.clone()).unwrap();
+            System::set_block_number(AFDT_SUBMISSION_START - 1);
+            assert_err!(
+                Pallet::can_submit_affidavit(&afdt_pub),
+                Error::NotAffidavitPeriod
+            );
+            System::set_block_number(AFDT_SUBMISSION_START);
+            assert_ok!(Pallet::can_submit_affidavit(&afdt_pub));
+            System::set_block_number(AFDT_SUBMISSION_END + 1);
+            assert_err!(
+                Pallet::can_submit_affidavit(&afdt_pub),
+                Error::AffidavitPeriodEnded
+            );
+        })
+    }
+
+    #[test]
+    fn can_submit_affidait_err_affidavit_author_not_found() {
+        chain_manager_test_ext().execute_with(|| {
+            System::set_block_number(10);
+            SessionStartsAt::put(15);
+            AllowAffidavits::put(true);
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let avg_session_len: BlockNumber = NextSessionRotation::average_session_length();
+            assert_eq!(avg_session_len, 600);
+            AffidavitBeginsAt::put(Duration::from_rational(2u32, 10u32));
+            AffidavitEndsAt::put(Duration::from_rational(8u32, 10u32));
+            ElectionBeginsAt::put(Duration::from_rational(5u32, 10u32));
+            System::set_block_number(135);
+            assert_err!(
+                Pallet::can_submit_affidavit(&AFFIDAVIT_KEY_B),
+                Error::AffidavitAuthorNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn gen_affidavit_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let election_via = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            let expected_affidavit =
+                vec![(Funder::Direct(ALAN), 150), (Funder::Direct(CHARLIE), 100)];
+            assert_eq!(election_via, expected_affidavit);
+        })
+    }
+
+    #[test]
+    fn gen_affidavit_err_affidavit_author_not_found() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            assert_err!(
+                Pallet::gen_affidavit(&AFFIDAVIT_KEY_B),
+                Error::AffidavitAuthorNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn submit_affidavit_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let affidavit = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            System::set_block_number(10);
+            assert_ok!(Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit));
+
+            let author_affidavit = AuthorOfAffidavits::get((1, ALICE)).unwrap();
+            let vec = WeakBoundedVec::try_from(vec![
+                (Funder::Direct(MIKE), 125),
+                (Funder::Direct(ALAN), 150),
+                (Funder::Direct(CHARLIE), 100),
+            ])
+            .unwrap();
+            let expected_affidavit = (10, vec);
+            assert_eq!(author_affidavit, expected_affidavit);
+        })
+    }
+
+    #[test]
+    fn get_affidavit_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let affidavit = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            System::set_block_number(10);
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit).unwrap();
+
+            let actual_affidavit = Pallet::get_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            let expected_affidavit = vec![
+                (Funder::Direct(MIKE), 125),
+                (Funder::Direct(ALAN), 150),
+                (Funder::Direct(CHARLIE), 100),
+            ];
+            assert_eq!(actual_affidavit, expected_affidavit);
+        })
+    }
+
+    #[test]
+    fn get_affidavit_err_affidavit_author_not_found() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let affidavit = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            System::set_block_number(10);
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit).unwrap();
+
+            assert_err!(
+                Pallet::get_affidavit(&AFFIDAVIT_KEY_B),
+                Error::AffidavitAuthorNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn get_affidavit_err_affidavit_not_found() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            System::set_block_number(10);
+
+            assert_err!(
+                Pallet::get_affidavit(&AFFIDAVIT_KEY_A),
+                Error::AffidavitNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn affidavit_exists_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let affidavit = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            System::set_block_number(10);
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit).unwrap();
+
+            assert_ok!(Pallet::affidavit_exists(&AFFIDAVIT_KEY_A),);
+        })
+    }
+
+    #[test]
+    fn affidavit_exists_err_affidavit_author_not_found() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let affidavit = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            System::set_block_number(10);
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit).unwrap();
+
+            assert_err!(
+                Pallet::affidavit_exists(&AFFIDAVIT_KEY_B),
+                Error::AffidavitAuthorNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn affidavit_exists_err_affidavit_not_found() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            System::set_block_number(10);
+
+            assert_err!(
+                Pallet::affidavit_exists(&AFFIDAVIT_KEY_A),
+                Error::AffidavitNotFound
+            );
+        })
+    }
+
+    #[test]
+    fn remove_affidavit_success() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let affidavit = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            System::set_block_number(10);
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit).unwrap();
+
+            let actual_affidavit = AuthorOfAffidavits::get((1, ALICE));
+            assert!(actual_affidavit.is_some());
+            assert_ok!(Pallet::remove_affidavit(&AFFIDAVIT_KEY_A));
+            assert_eq!(AuthorOfAffidavits::get((1, ALICE)), None);
+        })
+    }
+
+    #[test]
+    fn remove_affidavit_err_affidavit_author_not_found() {
+        chain_manager_test_ext().execute_with(|| {
+            let users = vec![ALICE, CHARLIE, ALAN, MIKE];
+            set_default_users_balance_and_hold(users).unwrap();
+
+            RoleAdapter::enroll(&ALICE, 200, Fortitude::Force).unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(CHARLIE),
+                100,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(ALAN),
+                150,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+            RoleAdapter::fund(
+                &ALICE,
+                &Funder::Direct(MIKE),
+                125,
+                Precision::Exact,
+                Fortitude::Force,
+            )
+            .unwrap();
+
+            AffidavitKeys::insert((1, AFFIDAVIT_KEY_A), ALICE);
+            let affidavit = Pallet::gen_affidavit(&AFFIDAVIT_KEY_A).unwrap();
+            System::set_block_number(10);
+            Pallet::submit_affidavit(&AFFIDAVIT_KEY_A, &affidavit).unwrap();
+
+            assert_err!(
+                Pallet::remove_affidavit(&AFFIDAVIT_KEY_B),
+                Error::AffidavitAuthorNotFound
+            );
+        })
+    }
+}
