@@ -1,5 +1,12 @@
 # Pallet XP
 
+[![License](https://img.shields.io/badge/license-MPL--2.0-blue)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-2021-orange?logo=rust)](https://www.rust-lang.org/)
+[![Substrate](https://img.shields.io/badge/Substrate-Framework-E6007A)](https://docs.polkadot.com/)
+[![Docs](https://img.shields.io/badge/Docs-docs.rs-7f5fff?style=flat-square&logo=docsdotrs)](https://docs.rs/pallet-xp)
+[![Crates.io](https://img.shields.io/crates/v/pallet-xp?style=flat-square&color=orange)](https://crates.io/crates/pallet-xp)
+[![Docs Site](https://img.shields.io/badge/Docs-Read_the_Docs-7f5fff?style=flat-square&logo=readthedocs&color=green)](https://auguth.github.io/frame-suite/pallet-xp/docs/)
+
 A reputation-driven XP system for runtimes that need to measure **contribution, consistency, and participation** in non-trusted environments.
 
 **XP (Experience Points)** - similar to how games measure player progression, this represents activity and reputation accumulated over time.

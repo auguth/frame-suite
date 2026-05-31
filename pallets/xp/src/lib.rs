@@ -13,6 +13,15 @@
 // ````````````````````````````````` PALLET XP ```````````````````````````````````
 // ===============================================================================
 
+//! # Pallet XP
+//!
+//! [![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-FAC775?style=flat-square)](../LICENSE)
+//! [![Crates.io](https://img.shields.io/crates/v/pallet-xp?style=flat-square&color=orange)](https://crates.io/crates/pallet-xp)
+//! [![Docs.rs](https://img.shields.io/badge/Docs-docs.rs-7f5fff?style=flat-square&logo=docsdotrs)](https://docs.rs/pallet-xp)
+//! [![Docs Site](https://img.shields.io/badge/Docs-Read_the_Docs-7f5fff?style=flat-square&logo=readthedocs&color=green)](https://auguth.github.io/frame-suite/pallet-xp/docs/)
+//! 
+//! ---
+//! 
 //! The XP pallet provides a modular and extensible system for managing
 //! **Experience Points (XP)** as a non-monetary, programmable primitive
 //! representing reputation, contribution, or progression.

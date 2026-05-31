@@ -1,0 +1,274 @@
+/* HomeFooter- Styles */
+
+.footer {
+  font-family: var(--font-family);
+  background-color: #0a0a0a;
+  padding: 0 48px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.box {
+  max-width: var(--res-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.logoMark {
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.logoMarkImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brandName {
+  font-size: var(--font-size-primary);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.tagline {
+  font-size: var(--fs-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+  word-break: normal;
+  hyphens: none;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 80px;
+}
+
+.colHeading {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.colLink {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.colLink:hover { color: var(--accent-primary); }
+
+.auguthBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auguthImgBox {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: inline-block;
+  max-width: 160px;
+}
+
+.auguthImg {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.auguthSub {
+  font-size: var(--fs-body-xs);
+  color: var(--text-muted);
+  padding-top: 5px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.linksBlock {
+  display: flex;
+  gap: 35px;
+}
+
+.innerVsep {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  align-self: stretch;
+  flex-shrink: 0;
+  margin: 0 24px;
+}
+
+.outerVsep {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+.hdivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  width: 100%;
+}
+
+.bottom {
+  border-top: 1px solid var(--accent-light);
+  padding: 14px 36px;
+  display: flex;
+  justify-content: center;
+  margin-top: 0;
+}
+
+.copy {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.fIcon {
+  margin-right: 3px;
+  justify-content: center;
+}
+
+.desktopRow {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  padding: 36px 36px 28px;
+  gap: 0;
+}
+
+.leftBlock {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
+  padding-right: 28px;
+}
+
+.licBadge {
+  display: inline-flex;
+  align-items: center;
+  max-width:fit-content;
+  gap: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  padding: 5px 14px;
+  margin-top: 15px;
+  margin-right: 15px;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none !important;
+  transition: border-color 0.2s, color 0.2s;
+  animation: fadeSlideUp 0.65s ease 0.4s both;
+}
+
+.licBadge:hover {
+  border-color: #FAC775;
+  color: rgba(220, 220, 240, 0.9);
+}
+
+.pxpBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.desktopRow > .outerVsep {
+  flex-shrink: 0;
+}
+
+.desktopAuguth {
+  padding-left: 28px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tabletLayout { display: none; }
+.mobileLayout { display: none; }
+
+
+ /* Breakpoints */
+
+@media (max-width: 900px) {
+  .footer { padding: 0 32px 0; }
+
+  .desktopRow { display: none; }
+  .mobileLayout { display: none; }
+
+  .tabletLayout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 28px 24px;
+  }
+
+  .tabletTop { display: flex; flex-direction: column; }
+
+  .tabletBottom {
+    display: grid;
+    grid-template-columns: auto 1px 1fr;
+    gap: 0;
+    align-items: start;
+  }
+
+  .tabletBottom > .auguthBlock {
+    padding-right: 24px;
+  }
+
+  .tabletBottom > .linksBlock {
+    padding-left: 24px;
+  }
+
+  .bottom { padding: 14px 24px; }
+}
+
+@media (max-width: 600px) {
+  .footer { padding: 0 20px 0; }
+
+  .desktopRow  { display: none; }
+  .tabletLayout { display: none; }
+
+  .brandRow {
+    margin-bottom: 0px;
+  }
+  .mobileLayout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 24px 16px;
+  }
+
+  .licBadge {
+    margin-top: 0px;
+  }
+
+  .brandName {
+    font-size: clamp(1rem, 5vw, 1.3rem);
+  }
+}
