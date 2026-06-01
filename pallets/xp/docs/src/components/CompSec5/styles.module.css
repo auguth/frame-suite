@@ -1,0 +1,322 @@
+/* CompSec5 - Styles */
+
+.section {
+  font-family: var(--font-family);
+  background: var(--sec-5-bg);
+  padding: var(--sec-padding);
+  position: relative;
+  overflow: hidden;
+}
+
+.inner {
+  max-width: var(--res-max-width);
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.pageTitle { margin-bottom: clamp(24px, 4vw, 44px); }
+
+.titleLine {
+  font-family: var(--font-family);
+  font-size: var(--fs-title-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  display: block;
+}
+
+.titleAccent { color: var(--accent-primary); }
+
+.titleRule {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-top: clamp(14px, 2vw, 22px);
+  width: 100%;
+}
+
+.openGrid {
+  display: grid;
+  grid-template-columns: 320px 1px 1fr;
+  gap: 0;
+  align-items: start;
+}
+
+.colRule {
+  background: rgba(255, 255, 255, 0.07);
+  align-self: stretch;
+}
+
+.colLeft  { padding-right: clamp(20px, 3vw, 40px); }
+.colRight { padding-left:  clamp(20px, 3vw, 40px); }
+
+.eyebrow {
+  font-family: var(--font-family);
+  font-size: var(--fs-lable);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-highlight);
+  margin-bottom: clamp(8px, 1.2vw, 14px);
+  display: block;
+}
+
+.colHeading {
+  font-family: var(--font-family);
+  font-size: var(--fs-title-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 clamp(6px, 1vw, 10px);
+}
+
+.subHeading {
+  font-family: var(--font-family);
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  margin: 0 0 clamp(14px, 2vw, 22px);
+  line-height: 1.5;
+}
+
+.fieldList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fieldItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(7px, 1vw, 11px) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fieldItem:last-child { border-bottom: none; }
+
+.fieldDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fieldLabel {
+  font-family: var(--font-family);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.fieldTag {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.stepGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; 
+  gap: clamp(10px, 1.5vw, 16px);
+}
+
+.stepCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.stepCardImg {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+  background: var(--image-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.stepCardText {
+  padding: clamp(12px, 2vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.stepFull {
+  grid-column: auto;   
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.stepFull:hover { border-color: rgba(124, 92, 252, 0.35); }
+
+.stepFullImg {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+  background: var(--image-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.stepFullText {
+  padding: clamp(12px, 2vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.stepImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.stepNum {
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
+  letter-spacing: 0.12em;
+  color: var(--text-highlight);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.stepHead {
+  font-family: var(--font-family);
+  font-size: var(--fs-title-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin: 0;
+}
+
+.stepSub {
+  font-family: var(--font-family);
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.stepBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.stepBadgeDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.stepBadgeText {
+  font-size: var(--fs-label);
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+/* Breakpoints */
+
+@media (max-width: 1200px) {
+  .stepGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stepFull {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+
+  .stepFullImg {
+    width: 50%;
+    aspect-ratio: auto;
+    min-height: clamp(140px, 18vw, 200px);
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+  }
+
+  .stepFullText {
+    justify-content: center;
+    padding: clamp(16px, 2.5vw, 28px);
+    flex: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .openGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .colRule  { display: none; }
+  .colLeft  { padding-right: 0; }
+  .colRight { padding-left: 0; }
+
+  .stepGrid { grid-template-columns: 1fr 1fr; }
+
+  .stepFull {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+
+  .stepFullImg {
+    width: 50%;
+    aspect-ratio: auto;
+    min-height: clamp(140px, 28vw, 200px);
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .stepFullText {
+    justify-content: center;
+    padding: 16px;
+    flex: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .section { padding: clamp(36px, 8vw, 52px) 1rem; }
+  .stepGrid { grid-template-columns: 1fr; }
+
+  .stepFull {
+    grid-column: 1 / -1;
+    flex-direction: column;
+  }
+
+  .stepFullImg {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    min-height: unset;
+  }
+
+  .stepFullText { padding: 16px; }
+}

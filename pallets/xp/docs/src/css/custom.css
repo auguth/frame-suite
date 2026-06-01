@@ -1,0 +1,291 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Fira+Code:wght@400;500&display=swap');
+
+/* ROOT TOKENS */
+:root {
+  /* Infima overrides */
+  --ifm-color-primary: #7f5fff;
+  --ifm-color-primary-dark: #6b4aff;
+  --ifm-color-primary-darker: #6040f0;
+  --ifm-color-primary-darkest: #4a2fd4;
+  --ifm-color-primary-light: #9374ff;
+  --ifm-color-primary-lighter: #a485ff;
+  --ifm-color-primary-lightest: #bda8ff;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(127, 95, 255, 0.12);
+
+  /* Font */
+  --ifm-font-family-base: 'Fira Sans', sans-serif;
+  --ifm-font-family-monospace: 'monospace', monospace;
+  --ifm-heading-font-family: 'Fira Sans', sans-serif;
+
+  --font-family: 'Fira Sans', sans-serif;
+  --bg-primary: #07070D;
+  --hero-bg: radial-gradient(circle at 70% 20%, rgba(139,92,246,0.12), transparent 35%), #07070D;
+  --hero-bg-prm:
+    radial-gradient(ellipse 60% 50% at 75% 10%, rgba(109, 74, 255, 0.45), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 20% 100%, rgba(80, 30, 180, 0.35), transparent 65%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(109, 74, 255, 0.08), transparent 70%),
+    #07070D;
+
+  --font-size-primary: 1.5rem;
+  --font-size-secondary: 1.2rem;
+  --font-size-context: 0.95rem;
+
+  /* Type scale */
+  --fs-display:   clamp(2.2rem, 5vw, 4rem);
+  --fs-title-xl:  clamp(1.9rem, 4.5vw, 3.6rem);
+  --fs-title-lg:  clamp(1.4rem, 3vw, 2.4rem);
+  --fs-title-md:  clamp(1.2rem, 2vw, 1.6rem);
+  --fs-title-sm:  clamp(1.1rem, 1.4vw, 1.2rem);
+  --fs-body-lg:   clamp(1rem, 1.2vw, 1.05rem);
+  --fs-body:      clamp(0.85rem, 1vw, 0.95rem);
+  --fs-body-sm:   clamp(0.78rem, 0.95vw, 0.88rem);
+  --fs-body-xs:   clamp(0.72rem, 0.9vw, 0.82rem);
+  --fs-label:     clamp(0.75rem, 0.85vw, 0.95rem);
+  --fs-label-sm:  0.65rem;
+  --fs-label-xs:  0.58rem;
+  --fs-code:      clamp(0.75rem,0.9vw,  0.85rem);
+
+  --sec-padding: clamp(38px, 7vw, 76px) clamp(1.25rem, 5vw, 80px);
+
+
+  --surface-1: #0E0E18;
+  --surface-2: #151524;
+  --surface-hover: #1A1A2E;
+
+  --text-primary:    #F5F5FA;
+  --text-secondary:  #A1A1B5;
+  --text-muted:      #6E6E85;
+  --text-highlight:  #7f5fff;
+
+  --button-primary: #5A2FD7;
+  --button-hover:   #6e47e4;
+
+  --accent-primary: #7f5fff;
+  --accent-hover:   #A855F7;
+  --accent-light:   #c084fc59;
+
+  --border-primary: rgba(255,255,255,0.25);
+  --border-hover:   rgba(139,92,246,0.35);
+  --image-bg:       #6159ad4d;
+
+  --res-max-width: clamp(1500px, 85vw, 1850px);
+
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-bg-prm:
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(124,92,252,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(80,40,200,0.12) 0%, transparent 55%),
+    linear-gradient(160deg, rgba(28,22,52,0.97) 0%, rgba(14,11,28,0.99) 100%);
+  --card-border: 1px solid rgba(255, 255, 255, 0.09);
+  --box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.267),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 40px rgba(124, 92, 252, 0.06);
+  --card-backdrop-filter: blur(40px) saturate(150%);
+
+  /* Section backgrounds */
+  --sec-2-bg:
+    radial-gradient(ellipse 50% 100% at 20% 0%, rgba(80, 30, 180, 0.35), transparent 65%),
+    radial-gradient(ellipse 50% 55%  at 100% 90%,  rgba(80,40,200,0.28),  transparent 60%),
+    #07070D;
+
+  --sec-3-bg:
+    radial-gradient(ellipse 50% 100% at 15% 100%, rgba(124,92,252,0.28), transparent 65%),
+    radial-gradient(ellipse 50% 55%  at 100% 5%,  rgba(80,40,200,0.28),  transparent 60%),
+    radial-gradient(ellipse 50% 55%  at 85% 100%, rgba(80,40,200,0.28),  transparent 60%),
+    #07070D;
+  --sec-4-bg:
+    radial-gradient(ellipse 50% 100% at 15% 0%,   rgba(124,92,252,0.28), transparent 65%),
+    radial-gradient(ellipse 50% 55%  at 85% 0%,   rgba(80,40,200,0.28),  transparent 60%),
+    radial-gradient(ellipse 50% 100% at 50% 100%, rgba(80,40,200,0.28),  transparent 60%),
+    #07070D;
+  --sec-5-bg:
+    radial-gradient(ellipse 50% 100% at 85% 100%, rgba(124,92,252,0.28), transparent 65%),
+    radial-gradient(ellipse 50% 100% at 50% 0%,   rgba(80,40,200,0.28),  transparent 60%),
+    #07070D;
+  --sec-6-bg:
+    radial-gradient(ellipse 50% 100% at 85% 0%,   rgba(124,92,252,0.28), transparent 65%),
+    radial-gradient(ellipse 50% 100% at 15% 100%, rgba(124,92,252,0.28), transparent 65%),
+    #07070D;
+  --sec-7-bg:
+    radial-gradient(ellipse 50% 100% at 15% 0%,   rgba(124,92,252,0.28), transparent 65%),
+    radial-gradient(ellipse 50% 100% at 85% 100%, rgba(124,92,252,0.28), transparent 65%),
+    radial-gradient(ellipse 50% 100% at 50% 100%, rgba(124,92,252,0.1),  transparent 65%),
+    #07070D;
+  --sec-8-bg:
+    radial-gradient(ellipse 50% 100% at 85% 0%,   rgba(124,92,252,0.28), transparent 65%),
+    radial-gradient(ellipse 50% 100%  at 5% 100%, rgba(80,40,200,0.28),  transparent 60%),
+    radial-gradient(ellipse 50% 100% at 50% 0%,   rgba(124,92,252,0.1),  transparent 65%),
+    radial-gradient(ellipse 50% 100% at 90% 100%,   rgba(124,92,252,0.1),  transparent 65%),
+    #07070D;
+  --sec-9-bg:
+    radial-gradient(ellipse 50% 100%  at 5% 0%, rgba(80,40,200,0.28),  transparent 60%),
+    radial-gradient(ellipse 50% 100% at 90% 0%, rgba(124,92,252,0.1),  transparent 65%),
+    radial-gradient(ellipse 50% 100% at 100% 100%,  rgba(80,40,200,0.28),  transparent 60%),
+    radial-gradient(ellipse 55% 100% at 25% 100%,  rgba(80,40,200,0.28),  transparent 60%),
+    #07070D;
+
+  /* Ifm layout */
+  --ifm-navbar-height: 0px;
+  --ifm-background-color: #07070D;
+  --ifm-background-surface-color: #0E0E18;
+  --ifm-font-color-base: #F5F5FA;
+  --ifm-font-color-secondary: #A1A1B5;
+  --ifm-link-color: #7f5fff;
+  --ifm-link-hover-color: #a485ff;
+  --ifm-heading-color: #F5F5FA;
+  --ifm-hr-border-color: rgba(255, 255, 255, 0.08);
+
+  /* Sidebar */
+  --ifm-sidebar-background: #0a0a12;
+  --ifm-menu-color: #A1A1B5;
+  --ifm-menu-color-active: #7f5fff;
+  --ifm-menu-color-background-active: rgba(127, 95, 255, 0.1);
+  --ifm-menu-color-background-hover: rgba(255, 255, 255, 0.04);
+  --ifm-toc-border-color: rgba(255, 255, 255, 0.07);
+  --ifm-toc-link-color: #6E6E85;
+
+  /* Code blocks */
+  --ifm-code-background: rgba(255, 255, 255, 0.05);
+  --ifm-pre-background: #0d0d1a;
+  --ifm-pre-border-radius: 10px;
+
+  /* Table */
+  --ifm-table-border-color: rgba(255, 255, 255, 0.08);
+  --ifm-table-head-background: rgba(127, 95, 255, 0.06);
+  --ifm-table-stripe-background: rgba(255, 255, 255, 0.02);
+
+  --ifm-breadcrumb-separator-filter: invert(1) brightness(2);
+  --ifm-menu-link-sublist-icon-filter: invert(1) brightness(2);
+
+  scroll-padding-top: 80px;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #7f5fff;
+  --ifm-color-primary-dark: #6b4aff;
+  --ifm-background-color: #07070D;
+  --ifm-background-surface-color: #0E0E18;
+  --docusaurus-highlighted-code-line-bg: rgba(127, 95, 255, 0.15);
+}
+
+.navbar {
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+ 
+.navbar-sidebar,
+.navbar-sidebar__backdrop {
+  pointer-events: auto !important;
+}
+ 
+.theme-doc-sidebar-container {
+  top: 80px !important;
+  height: calc(100vh - 80px) !important;
+  position: sticky;
+}
+ 
+.docs-wrapper {
+  padding-top: 80px;
+}
+
+table thead th {
+  background-color: rgba(127, 95, 255, 0.150);
+}
+
+.theme-layout-navbar-sidebar,
+.navbar-sidebar {
+  padding-top: 10px;
+  margin-top: 60px;
+}
+
+.toggle_vylO {
+  display: none;
+}
+
+.navbar-sidebar__close {
+  display: none;
+} 
+
+blockquote {
+  border-left: 3px solid rgba(127, 95, 255, 0.533);
+  background: rgba(127, 95, 255, 0.100);
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1.25rem;
+  color: #A1A1B5;
+  font-style: italic;
+}
+
+.table-of-contents code {
+  font-size: 0.75em;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+code {
+  font-size: 0.875em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  padding: 0.15em 0.45em;
+  color: #e2e2f0;
+}
+
+pre {
+  background: #0d0d1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  padding: 1.5rem 1.75rem !important;
+}
+
+pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.codeBlockTitle_node_modules,
+[class*='codeBlockTitle'] {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  color: #6E6E85 !important;
+  font-family: 'Fira Code', monospace !important;
+  font-size: 0.8rem !important;
+}
+
+.copyButton_node_modules,
+[class*='copyButton'] {
+  color: #6E6E85 !important;
+  transition: color 0.2s !important;
+}
+
+[class*='copyButton']:hover {
+  color: #A1A1B5 !important;
+}
+
+hr {
+  border-color: rgba(255, 255, 255, 0.08);
+  background-color: #b5a3d64e;
+  margin: 2rem 0;
+}
+
+.table-of-contents__left-border,
+div[class*='tocCollapsible'],
+div[class*='tableOfContents'] {
+  top: 80px !important;
+}
+
+.col--3 {
+  top: 20px !important;
+  height: calc(100vh - 20px) !important;
+  position: sticky;
+} 

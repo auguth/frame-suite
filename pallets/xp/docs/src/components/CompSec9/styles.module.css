@@ -1,0 +1,207 @@
+/* CompSec8 - Styles */
+
+.section {
+  font-family: var(--font-family);
+  background: var(--sec-9-bg);
+  padding: var(--sec-padding);
+  position: relative;
+  overflow: hidden;
+}
+
+.inner {
+  max-width: var(--res-max-width);
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 4vw, 48px);
+}
+
+.titleRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eyebrow {
+  font-size: var(--fs-title-sm);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-highlight);
+}
+
+.h1 {
+  font-size: var(--fs-title-xl);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.em {
+  font-style: normal;
+  color: var(--text-highlight);
+}
+
+.sub {
+  font-size: var(--fs-body-lg);
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 52ch;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 1.5vw, 16px);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: clamp(16px, 2vw, 22px);
+  text-decoration: none !important;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.card:hover {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(127, 95, 255, 0.35);
+  transform: translateY(-2px);
+}
+
+.cardHint {
+  background: rgba(45, 38, 96, 0.3);
+  border-color: rgba(127, 95, 255, 0.18);
+  cursor: default;
+}
+
+.cardHint:hover {
+  transform: none;
+  border-color: rgba(127, 95, 255, 0.25);
+}
+
+.hintEmoji {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.iconGh { background: rgba(255,255,255,0.08);   border: 1px solid rgba(255,255,255,0.14); color: #F5F5FA; }
+.iconDi { background: rgba(88,101,242,0.15);    border: 1px solid rgba(88,101,242,0.3);  color: #7289da; }
+.iconSu { background: rgba(127,95,255,0.12);    border: 1px solid rgba(127,95,255,0.25); color: #7f5fff; }
+.iconTg { background: rgba(38,169,224,0.12);    border: 1px solid rgba(38,169,224,0.25); color: #26a9e0; }
+.iconMx { background: rgba(33, 220, 151, 0.101);   border: 1px solid rgba(13, 255, 162, 0.12); color: #A1A1B5; }
+.iconTw { background: rgba(44, 44, 44, 0.06);   border: 1px solid rgba(255,255,255,0.12); color: #A1A1B5; }
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.cardTitle {
+  font-size: var(--fs-title-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.cardDesc {
+  font-size: var(--fs-body);
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.cardTag {
+  font-size: var(--fs-label-sm);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  margin-top: auto;
+}
+
+ /* Breakpoints */
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mobileList { display: none; }
+
+@media (max-width: 600px) {
+  .section {
+    padding: clamp(36px, 8vw, 52px) 1rem;
+  }
+
+  .grid       { display: none; }
+  .mobileList { display: flex; flex-direction: column; gap: 8px; }
+}
+
+.mobileCard {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-decoration: none !important;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.mobileCard:hover {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(127, 95, 255, 0.35);
+}
+
+.mobileCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mobileCardDesc {
+  font-size: var(--fs-body-xs);
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.mobileArrow {
+  font-size: 14px;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}

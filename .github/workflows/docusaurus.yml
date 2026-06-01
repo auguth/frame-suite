@@ -1,0 +1,51 @@
+name: Docusaurus site
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'pallets/xp/docs/**'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'pallets/xp/docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Pallet-Xp Docs
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: pallets/xp/docs
+        run: npm install
+
+      - name: Build Docusaurus
+        working-directory: pallets/xp/docs
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pallets/xp/docs/build
+          destination_dir: pallet-xp/
+          publish_branch: gh-pages
+          force_orphan: false
+          keep_files: true
