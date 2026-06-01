@@ -1,9 +1,10 @@
 [package]
 name = "pallet-xp"
-version = "0.1.1"
-description = "A reputation-driven XP system for tracking contribution, consistency, and participation in non-trusted runtime environments"
+version = "0.1.2"
+description = "A FRAME pallet for programmable XP (Experience Points) and reputation systems."
 readme = "README.md"
 keywords = ["substrate", "frame", "polkadot", "fungible", "non-fungible"]
+homepage = "https://auguth.github.io/frame-suite/pallet-xp"
 documentation = "https://auguth.github.io/frame-suite/rust-doc/pallet_xp/index.html"
 
 license.workspace = true
@@ -11,6 +12,9 @@ authors.workspace = true
 repository.workspace = true
 edition.workspace = true
 
+exclude = [
+    "docs/**",
+]
 
 [dependencies]
 frame-support.workspace = true
