@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkpallet_xp=self.webpackChunkpallet_xp||[]).push([["8530"],{2664(e){e.exports=JSON.parse('{"metadata":{"permalink":"/frame-suite/pallet-xp/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":0,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);

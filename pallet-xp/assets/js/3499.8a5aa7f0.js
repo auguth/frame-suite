@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkpallet_xp=self.webpackChunkpallet_xp||[]).push([["3499"],{2422(e,a,p){p.d(a,{createRadarServices:()=>l.f});var l=p(2480);p(3345)}}]);

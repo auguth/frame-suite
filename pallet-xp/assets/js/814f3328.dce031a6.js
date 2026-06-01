@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkpallet_xp=self.webpackChunkpallet_xp||[]).push([["1833"],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[]}')}}]);

@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkpallet_xp=self.webpackChunkpallet_xp||[]).push([["819"],{5390(e,c,p){p.d(c,{createArchitectureServices:()=>t.S});var t=p(5530);p(3345)}}]);

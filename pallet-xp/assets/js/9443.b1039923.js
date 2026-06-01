@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkpallet_xp=self.webpackChunkpallet_xp||[]).push([["9443"],{3214(e,a,p){p.d(a,{createPacketServices:()=>c.$});var c=p(5893);p(3345)}}]);
