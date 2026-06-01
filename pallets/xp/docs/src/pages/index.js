@@ -15,7 +15,7 @@ import styles from './index.module.css';
 
 export default function Home() {
   return (
-    <Layout title="Pallet XP" description="A reputation primitive for Web3." noFooter hideNavbar>
+    <Layout title="Experience Points (XP) for Substrate Runtimes" description="A reputation primitive for Web3." noFooter hideNavbar>
       <div className={styles.page}>
         {/* <HomeNavbar /> */}
         <main>

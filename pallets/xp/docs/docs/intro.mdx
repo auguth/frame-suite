@@ -1,42 +1,103 @@
-# Heading 1
-## Heading 2
-### Heading 3
-#### Heading 4
-##### Heading 5
-###### Heading 6
+---
+toc_min_heading_level: 2
+toc_max_heading_level: 2
+title: 🎮 Pallet XP
+---
 
-Lorem ipsum dolor sit amet, `consectetur` adipiscing elit, sed do eiusmod tempor `incididunt` ut labore et dolore magna aliqua. Ut enim ad minim veniam, 
-quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
+**pallet-xp** is a Substrate runtime module for managing **Experience Points (XP)** as a programmable, non-monetary primitive.
 
-> Lorem ipsum dolor sit amet
+> ✨ Think of XP as *reputation you earn*, not value you trade.
 
-| Lorum                   | ipsum                     |
-| ----------------------- | ------------------------- |
-| `sed do eiusmod tempor` |  Ut enim ad minim veniam  |
-| sed do eiusmod tempor   |  Ut enim ad minim veniam  |
-| sed do eiusmod tempor   |  Ut enim ad minim veniam  |
-| sed do eiusmod tempor   |  Ut enim ad minim veniam  |
-| `sed do eiusmod tempor` |  Ut enim ad minim veniam  |
-| sed do eiusmod tempor   |  Ut enim ad minim veniam  |
+---
 
+## What is XP?
 
-```mermaid
-graph TD
-    Lorem --> consectetur
-    Lorem --> eiusmod
-    Lorem --> incididunt
-    Lorem --> exercitation
-```
+XP in this system is:
 
-```rust
-fn main() {
-    let x = 5;
-    println!("The value of x is: {x}");
-    x = 6;
-    println!("The value of x is: {x}");
-}
-```
+| Property          | Meaning                                |
+| ----------------- | -------------------------------------- |
+| **Pseudo-fungible** | Numerically comparable, but not economically fungible |
+| **Non-monetary** | Balance-like, but not a transferable asset |
+| **No issuance**   | No total supply, no global inflation   |
+| **Earned**        | Comes from actions, not minting        |
+| **Identity-bound**| Linked to XP keys (`XpId`)             |
+
+Each XP entry = a **context-specific unit of progress or reputation**
+
+---
+
+## 💸 Why not tokens?
+
+Traditional tokens assume:
+
+| 🪙 Tokens       | ⚡ XP               |
+| --------------- | ------------------ |
+| Global supply   | ❌ No supply        |
+| Transferable    | ❌ Not transferable |
+| Monetary value  | ❌ No market-price  |
+| Inflation model | ❌ None             |
+
+> XP is **earned, not traded**
+
+---
+
+## When should you use pallet-xp?
+
+Use this pallet when building systems like:
+
+* 🗳️ DAO governance (reputation-based)
+* 🧑‍💻 Contributor scoring
+* 🎮 Gamification layers
+* 📊 Participation tracking
+* 🧠 Skill / progress measurement
+* 🎁 Non-financial incentives
+
+---
+
+## Key Design Principles
+
+### 1. Identity-first
+
+XP is tied to **keys**, not accounts
+
+### 2. Reputation-driven
+
+Growth depends on **consistent activity**, not one-time actions
+
+### 3. Anti-abuse by design
+
+Built-in protections against:
+
+* 🚫 Same-block farming
+* 🚫 Burst activity exploitation
+
+### ️ 4. Programmable
+
+XP behavior is controlled by **runtime logic**, not fixed rules
+
+---
+
+## High-Level Flow
 
 ```text
-Lorem = ipsum
+create -> earn -> call (via XpId) -> (lock / reserve) -> reap
 ```
+
+| Step              | Description               |
+| ------------------| ------------------------- |
+| Create            | Initialize an XP identity |
+| Earn              | Gain XP through actions   |
+| Call              | Execute logic via `XpId`  |
+| Lock / Reserve | Constrain XP if needed    |
+| Reap              | Remove inactive XP        |
+
+---
+
+## 🚀 Next Steps
+
+Not sure where to begin?
+
+👉 Start with **[🧭 Start Here](./start)**
+
+It helps you choose the right path based on what you want to do.
+

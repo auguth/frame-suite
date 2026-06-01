@@ -7,7 +7,7 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 
 const config = {
-  title: 'pallet-xp',
+  title: 'Pallet-XP',
   tagline: 'A reputation-driven XP system for tracking contribution, consistency, and participation in non-trusted runtime environments.',
   favicon: 'img/xp-favicon.svg',
 
