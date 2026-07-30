@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkPallet_Commitment=self.webpackChunkPallet_Commitment||[]).push([["3516"],{975(e){e.exports=JSON.parse('{"metadata":{"permalink":"/frame-suite/pallet-commitment/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":0,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);

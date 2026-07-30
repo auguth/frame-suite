@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkPallet_Commitment=self.webpackChunkPallet_Commitment||[]).push([["1833"],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[]}')}}]);

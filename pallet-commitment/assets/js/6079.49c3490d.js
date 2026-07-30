@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkPallet_Commitment=self.webpackChunkPallet_Commitment||[]).push([["6079"],{6402(e,t,c){c.d(t,{createArchitectureServices:()=>a.S});var a=c(5016);c(9302)}}]);
